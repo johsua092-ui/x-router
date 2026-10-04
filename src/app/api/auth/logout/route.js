@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { dropSession } from "@/lib/db";
-
-export const dynamic = "force-dynamic";
+import { clearDashboardAuthCookie } from "@/lib/auth/dashboardSession";
 
 export async function POST() {
-  const token = cookies().get("xr_session")?.value;
-  if (token) dropSession(token);
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("xr_session", "", { path: "/", maxAge: 0 });
-  return res;
+  const cookieStore = await cookies();
+  clearDashboardAuthCookie(cookieStore);
+  cookieStore.delete("oidc_state");
+  cookieStore.delete("oidc_nonce");
+  cookieStore.delete("oidc_code_verifier");
+  return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
 }

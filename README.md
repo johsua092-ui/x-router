@@ -1,152 +1,67 @@
-# X Router
+# X Router 🐴
 
-Satu endpoint untuk semua provider AI lo. OpenAI-compatible + Anthropic-compatible,
-dashboard gaya 9router dengan identitas sendiri: **oranye `#E56A4A`**, logo caduceus,
-ikon SVG + animasi, tanpa emoji.
+> Gateway LLM OpenAI + Anthropic-compatible. Satu endpoint untuk semua provider lo.
+> Di-remake dari [9router](https://github.com/serenhope/9router) (MIT) — UI, nama, logo, dan password diganti.
 
-**Live:** https://xrouter.consoleapi.qzz.io
+**Repo:** https://github.com/johsua092-ui/x-router
 
----
+## Yang beda dari 9router
 
-## Stack
-
-- **Next.js 14** (App Router) + React 18 + Tailwind v4
-- **SQLite** lewat `node:sqlite` (WAL) — skema diadopsi dari 9router
-- Login **password-only** — PBKDF2-SHA256 (200k iterasi), session cookie 12 jam
-- Auth gate di `src/middleware.js` (redirect sebelum shell render) + validasi sesi
-  sesungguhnya di `(dashboard)/layout.js`
+- **Nama & identitas** — X Router, logo caduceus, brand oranye `#E56A4A`
+- **Password default** — `synapse123` (bukan `seren123`); teks hint password dihapus dari halaman login
+- **Update diarahin ke repo ini** — cek versi, changelog, link GitHub, dan skill links semua nunjuk `johsua092-ui/x-router` (branch `main`), bukan repo upstream
+- **UI di-polish** — welcome modal baru (aurora glow + CTA masuk dashboard), title login gradient, glow pojok global, focus ring seragam oranye, toast animasi
+- **Data terisolasi** — `DATA_DIR=/root/xrouter-remake/data`, jadi nggak pernah nabrak `~/.9router` milik instalasi 9router asli
 
 ## Jalanin
 
 ```bash
-npm ci
+npm install
 npm run build
-npm start                 # port 8080
-
-# atau mode dev
-npm run dev               # port 8080
+DATA_DIR=./data INITIAL_PASSWORD=synapse123 node custom-server.js --port 8080
 ```
 
-Password admin: `synapse123`. Ganti lewat **Settings → Ganti password**
-(minimal 6 karakter, sesi lama otomatis dibuang).
+Buka `http://127.0.0.1:8080/login` → password `synapse123`.
 
-## Deploy ke Railway
+### Systemd (cara deploy di VPS ini)
 
-Repo udah disiapin:
-
-- `railway.json` — builder Nixpacks, start `npm run start:railway`,
-  healthcheck `/health`, restart `ON_FAILURE`
-- `scripts/start.mjs` — baca `PORT` / `HOSTNAME` dari env (Railway inject `PORT`)
-
-Cara pakai: connect repo `johsua092-ui/x-router` di Railway, tambah **Volume**
-di path `/data`, set env:
-
-```
-XR_DATA_DIR=/data
+```ini
+[Service]
+WorkingDirectory=/root/xrouter-remake
+Environment=DATA_DIR=/root/xrouter-remake/data
+Environment=INITIAL_PASSWORD=synapse123
+ExecStart=/usr/local/bin/node custom-server.js --port 8080
 ```
 
-Tanpa volume, DB ikut container — restart = data reset (fine buat test).
-
-### Env vars
-
-| Var | Default | Fungsi |
-|---|---|---|
-| `PORT` | `8080` | port HTTP |
-| `HOSTNAME` | `0.0.0.0` | bind address |
-| `XR_DATA_DIR` | `./data` | lokasi `xrouter.db` + backup |
-| `XR_ADMIN_PW` | random | password admin saat user pertama dibuat |
+Jangan pernah pakai `DATA_DIR` yang sama dengan instalasi 9router (default `~/.9router`) — dua app boleh jalan bareng asal datanya terpisah.
 
 ## Endpoint
 
-Base URL: `https://xrouter.consoleapi.qzz.io`
+| Endpoint | Protocol |
+|---|---|
+| `POST /v1/chat/completions` | OpenAI (+ streaming SSE) |
+| `POST /v1/messages` | Anthropic |
+| `GET  /v1/models` | daftar model |
+| `GET  /api/health` | health check |
 
-**OpenAI-style** (auth: `Authorization: Bearer <key>`)
+Base URL publik: `https://xrouter.consoleapi.qzz.io/v1`
 
-- `GET  /v1/models`
-- `POST /v1/chat/completions` — streaming SSE + non-stream
-- `POST /v1/completions`
-- `POST /v1/embeddings`
-
-**Anthropic-style** (auth: `x-api-key`, header `anthropic-version: 2023-06-01`)
-
-- `POST /v1/messages`
-
-**Ops**
-
-- `GET /health`
-
-### Contoh
-
-```bash
-curl https://xrouter.consoleapi.qzz.io/v1/chat/completions \
-  -H "Authorization: Bearer xr-..." \
-  -H "Content-Type: application/json" \
-  -d '{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"halo"}]}'
-```
-
-Streaming:
-
-```bash
-curl -N https://xrouter.consoleapi.qzz.io/v1/chat/completions \
-  -H "Authorization: Bearer xr-..." \
-  -H "Content-Type: application/json" \
-  -d '{"model":"deepseek-v4-flash","stream":true,"messages":[{"role":"user","content":"halo"}]}'
-```
-
-## Routing model
-
-1. **Namespace prefix** — `deepseek-v4-flash` → cari provider yang alias-nya
-   `deepseek`, lalu sisanya jadi id model upstream
-2. **Exact id** — id model ketemu langsung di katalog provider manapun
-3. Body request **tidak pernah di-strip** — field apa pun diteruskan utuh
-4. Model tak dikenal → `404`. Provider belum ada koneksi → `503`.
-   Key salah → `401`.
+Auth: `Authorization: Bearer sk-...` (API key dibuat dari dashboard → Endpoint & Key).
 
 ## Dashboard
 
-| Halaman | Isi |
-|---|---|
-| **Endpoint & Key** | base URL, API key (generate/cabut), snippet curl OpenAI & Anthropic |
-| **Providers** | koneksi aktif (key di-mask), form tambah, katalog 119 provider **dengan foto logo** |
-| **Models** | 777 model, digroup per provider, search (`/`), filter terhubung, klik salin id |
-| **Usage** | chart token 14 hari, bar per provider, model teratas, sparkline, p50/p95 |
-| **Console Log** | request terakhir, auto-refresh 3 detik, live/pause + auto-scroll |
-| **Settings** | tema, ganti password, info runtime, backup DB (rotasi 10), bersih log |
+`https://xrouter.consoleapi.qzz.io` — password-only login.
 
-Tema: gelap default + toggle terang, shortcut **G**. Data refresh tiap 15 detik.
+- **Endpoint & Key** — base URL, snippet cURL/Python, kelola API key
+- **Providers** — koneksi upstream + logo provider (159 PNG)
+- **Combo & Vision Adapter**, **Usage**, **Quota Tracker**, **Token Saver**, **CLI Tools**
+- **Console Log** — log realtime
+- **X Router Settings** — password, backup, pricing
 
-## Struktur
+## Stack
 
-```
-src/
-  app/
-    (dashboard)/         # 6 halaman, di-gate middleware + layout
-    api/                 # auth, keys, providers, stats, settings
-    v1/                  # gateway routes (chat, messages, models, ...)
-    login/  health/
-  lib/
-    db.js                # SQLite layer, skema 9router + auth
-    gateway.js           # resolusi model, routing, SSE relay
-    api.js               # helper auth + credit token
-  shared/components/     # Sidebar, Header, ui, Toast, Theme, ProviderIcon
-middleware.js            # auth gate (redirect sebelum shell)
-scripts/start.mjs        # start lintas-platform (Railway/VPS)
-registry/providers.json  # 119 provider / 777 model (tools/import-registry.mjs)
-railway.json
-```
+Next.js 14 · React 18 · node:sqlite (driver `better-sqlite3` 12 untuk Node 26) · Tailwind — tanpa emoji di UI (ikon Material Symbols), logo PNG caduceus.
 
-## Registry
+## Lisensi
 
-Regenerasi katalog dari fork 9router (read-only, nol sentuh repo 9r):
-
-```bash
-node tools/import-registry.mjs
-```
-
-## Isolasi dari 9router
-
-- DB sendiri: `data/xrouter.db`, bisa dipindah lewat `XR_DATA_DIR`
-- systemd sandbox: `ProtectSystem=strict` + `ReadWritePaths=/root/x-router`
-  — cuma boleh nulis di dir sendiri
-- HOME service diarahkan ke `sandbox-home` biar nggak pernah nyasar ke `~/.9router`
-- nginx server block terpisah, `nginx -t` lolos sebelum reload
+MIT — berbasis 9router (serenhope/decolua). Terima kasih upstream-nya.

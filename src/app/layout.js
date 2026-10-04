@@ -1,23 +1,42 @@
+import { Inter } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
+import "@/lib/network/initOutboundProxy"; // Auto-initialize outbound proxy env
+import "@/shared/services/bootstrap"; // Auto-run initializeApp (watchdog, auto-resume tunnel)
+import { initConsoleLogCapture } from "@/lib/consoleLogBuffer";
+import { RuntimeI18nProvider } from "@/i18n/RuntimeI18nProvider";
+
+// Hook console immediately at module load time (server-side only, runs once)
+initConsoleLogCapture();
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata = {
-  title: "X Router — OpenAI + Anthropic Gateway",
-  description:
-    "One endpoint for all your AI providers. Manage keys, monitor usage, and route anything.",
-  icons: { icon: "/logo.png" },
+  title: "X Router - AI Infrastructure Management",
+  description: "One endpoint for all your AI providers. Manage keys, monitor usage, and scale effortlessly.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
-export const viewport = { themeColor: "#1a1a1a" };
+export const viewport = {
+  themeColor: "#0a0a0a",
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* terapkan tema sebelum paint pertama — cegah flash */}
+        {/* Apply persisted theme before first paint so a reload does not flash the
+            default (light) theme before the client store hydrates. Mirrors the
+            zustand-persist "theme" key and the `dark` class applyTheme() sets. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('xr_theme');document.documentElement.classList.add(t==='light'?'light':'dark')}catch(e){document.documentElement.classList.add('dark')}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem('theme')||'null');var t=s&&s.state&&s.state.theme;document.documentElement.classList.add('dark');if(t!=='dark')document.documentElement.classList.add('glass')}catch(e){document.documentElement.classList.add('dark')}`,
           }}
         />
         <script
@@ -26,8 +45,13 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className="font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <ThemeProvider>
+          <RuntimeI18nProvider>
+            {children}
+          </RuntimeI18nProvider>
+        </ThemeProvider>
+        <GoogleAnalytics gaId={"G-LC959F603F"} />
       </body>
     </html>
   );

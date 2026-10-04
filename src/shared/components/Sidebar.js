@@ -1,21 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/shared/utils/cn";
+import { APP_CONFIG } from "@/shared/constants/config";
+import { MEDIA_PROVIDER_KINDS } from "@/shared/constants/providers";
+import useSettingsStore from "@/store/settingsStore";
 
-const cn = (...a) => a.filter(Boolean).join(" ");
+// const VISIBLE_MEDIA_KINDS = ["embedding", "image", "imageToText", "tts", "stt", "webSearch", "webFetch", "video", "music"];
+const VISIBLE_MEDIA_KINDS = ["embedding", "image", "video", "tts", "stt", "systemone"];
+// Combined entry: webSearch + webFetch share one page at /dashboard/media-providers/web
+const COMBINED_WEB_ITEM = { id: "web", label: "Web Fetch & Search", icon: "travel_explore", href: "/dashboard/media-providers/web" };
 
 const navItems = [
-  { href: "/dashboard", label: "Endpoint & Key", icon: "api" },
-  { href: "/providers", label: "Providers", icon: "dns" },
-  { href: "/models", label: "Models", icon: "deployed_code" },
-  { href: "/usage", label: "Usage", icon: "bar_chart" },
-  { href: "/logs", label: "Console Log", icon: "terminal" },
+  { href: "/dashboard/endpoint", label: "Endpoint & Key", icon: "api" },
+  { href: "/dashboard/providers", label: "Providers", icon: "dns" },
+  // { href: "/dashboard/basic-chat", label: "Basic Chat", icon: "chat" }, // Hidden
+  { href: "/dashboard/combos", label: "Combo & Vision Adapter", icon: "layers" },
+  { href: "/dashboard/usage", label: "Usage", icon: "bar_chart" },
+  { href: "/dashboard/quota", label: "Quota Tracker", icon: "data_usage" },
+  { href: "/dashboard/token-saver", label: "Token Saver", icon: "savings" },
+  // { href: "/dashboard/pxpipe", label: "PXPIPE", icon: "image" },
+  { href: "/dashboard/cli-tools", label: "CLI Tools", icon: "terminal" },
+];
+
+// Custom features added by this fork — open-ended, new tools land here too.
+const workshopItems = [
+  { href: "/dashboard/arena", label: "Compare Models", icon: "swords" },
+  { href: "/dashboard/model-editor", label: "Custom Models", icon: "auto_awesome" },
+  { href: "/dashboard/plugins", label: "Custom Plugins", icon: "widgets" },
+  { href: "/dashboard/prd-builder", label: "PRD Builder", icon: "description" },
+];
+
+const debugItems = [
+  { href: "/dashboard/console-log", label: "Console Log", icon: "monitor" },
+  { href: "/dashboard/translator", label: "Translator", icon: "translate" },
 ];
 
 const systemItems = [
-  { href: "/settings", label: "Settings", icon: "settings" },
+  { href: "/dashboard/proxy-pools", label: "Proxy Pools", icon: "lan" },
 ];
 
 function NavLink({ href, icon, label, active, onClick, sub = false }) {
@@ -43,74 +68,235 @@ function NavLink({ href, icon, label, active, onClick, sub = false }) {
       >
         {icon}
       </span>
-      <span className="text-[13px] font-medium leading-none min-w-0 truncate" title={label}>
-        {label}
-      </span>
+      <span className="text-[13px] font-medium leading-none min-w-0 truncate" title={label}>{label}</span>
     </Link>
   );
 }
 
 export default function Sidebar({ onClose }) {
   const pathname = usePathname();
-  const isActive = (href) =>
-    href === "/dashboard" ? pathname === "/dashboard" || pathname === "/"
-      : pathname.startsWith(href);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [enableTranslator, setEnableTranslator] = useState(false);
+  const [authStatus, setAuthStatus] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/auth/status")
+      .then(res => res.json())
+      .then(data => setAuthStatus(data))
+      .catch(() => {});
+  }, []);
+
+  const isApiKeyUser = authStatus?.role === "apikey";
+  const permissions = authStatus?.permissions || { manageApiKeys: true, manageModels: true, manageProviders: true, manageTools: true, manageAdvanced: true, managePlugins: true, manageMediaProviders: true, viewUsage: true };
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (!isApiKeyUser) return true;
+    if (item.href === "/dashboard/endpoint") return permissions.manageApiKeys;
+    if (item.href === "/dashboard/providers") return permissions.manageProviders;
+    if (item.href === "/dashboard/combos") return permissions.manageModels;
+    if (item.href === "/dashboard/usage") return permissions.viewUsage;
+    if (item.href === "/dashboard/api-key-usage") return permissions.viewUsage || permissions.manageApiKeys;
+    if (item.href === "/dashboard/quota") return permissions.manageProviders;
+    if (item.href === "/dashboard/token-saver" || item.href === "/dashboard/cli-tools") return permissions.manageTools;
+    return false;
+  });
+
+  const filteredWorkshopItems = workshopItems.filter((item) => {
+    if (!isApiKeyUser) return true;
+    if (item.href === "/dashboard/model-editor" || item.href === "/dashboard/arena" || item.href === "/dashboard/prd-builder") {
+      return permissions.manageModels;
+    }
+    if (item.href === "/dashboard/plugins") return permissions.managePlugins;
+    return false;
+  });
+
+  const filteredDebugItems = debugItems.filter((item) => {
+    if (!isApiKeyUser) return true;
+    return permissions.manageAdvanced;
+  });
+
+  const filteredSystemItems = systemItems.filter((item) => {
+    if (!isApiKeyUser) return true;
+    return permissions.manageAdvanced;
+  });
+
+  const canOpenMedia = !isApiKeyUser || permissions.manageMediaProviders;
+
+  // Settings are an administrator surface, so a key-signed session skips them
+  // instead of firing requests it may not read.
+  useEffect(() => {
+    if (isApiKeyUser) return;
+    useSettingsStore.getState().fetchSettings().then((data) => {
+      if (data?.enableTranslator) setEnableTranslator(true);
+    });
+  }, [isApiKeyUser]);
+
+  const isActive = (href) => {
+    if (href === "/dashboard/endpoint") {
+      return pathname === "/dashboard" || pathname.startsWith("/dashboard/endpoint");
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
-    <aside className="flex w-72 flex-col border-r border-border-subtle bg-vibrancy backdrop-blur-xl transition-colors duration-300 min-h-full">
-      {/* Logo — caduceus milik kita */}
-      <div className="px-6 py-4 flex flex-col gap-2">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt="X Router"
-            className="size-9 rounded-[10px] shadow-[var(--shadow-warm)]"
-          />
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold tracking-tight text-text-main">
-              X<span className="text-primary">Router</span>
-            </h1>
-            <span className="text-xs text-text-muted">v0.2.0 · LLM gateway</span>
-          </div>
-        </Link>
-      </div>
+    <>
+      <aside className="flex w-72 flex-col border-r border-border-subtle bg-vibrancy backdrop-blur-xl transition-colors duration-300 min-h-full">
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            {...item}
-            active={isActive(item.href)}
-            onClick={onClose}
-          />
-        ))}
+        {/* Logo */}
+        <div className="px-6 py-4 flex flex-col gap-2">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="flex items-center justify-center size-9 rounded-[10px] overflow-hidden shadow-[var(--shadow-warm)]">
+              <img src="/logo.png" alt="X Router" className="size-9 object-cover" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-semibold tracking-tight text-text-main">
+                {APP_CONFIG.name}
+              </h1>
+              <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
+            </div>
+          </Link>
+          {isApiKeyUser && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
+              <span className="material-symbols-outlined text-[15px]">key</span>
+              <span className="truncate">{authStatus?.displayName || "API Key User"}</span>
+            </div>
+          )}
+        </div>
 
-        <div className="pt-3 mt-2 space-y-0.5">
-          <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
-            System
-          </p>
-          {systemItems.map((item) => (
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+          {filteredNavItems.map((item) => (
             <NavLink
               key={item.href}
-              {...item}
+              href={item.href}
+              icon={item.icon}
+              label={item.label}
               active={isActive(item.href)}
               onClick={onClose}
             />
           ))}
-        </div>
-      </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-border-subtle">
-        <a
-          href="/logout"
-          className="relative flex items-center gap-3 rounded-[10px] px-3 py-[7px] text-text-muted hover:bg-surface-2 hover:text-text-main transition-all"
-        >
-          <span className="material-symbols-outlined text-[18px]">logout</span>
-          <span className="text-[13px] font-medium">Keluar</span>
-        </a>
-      </div>
-    </aside>
+          {/* FEATURE+ section — custom tools added by this fork */}
+          {filteredWorkshopItems.length > 0 && (
+            <div className="pt-3 mt-2 space-y-0.5">
+              <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
+                FEATURE+
+              </p>
+              {filteredWorkshopItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.label}
+                  active={isActive(item.href)}
+                  onClick={onClose}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* System section — an API key session sees only the parts it may use */}
+          {(!isApiKeyUser || canOpenMedia || filteredSystemItems.length > 0 || filteredDebugItems.length > 0) && (
+            <div className="pt-3 mt-2 space-y-0.5">
+              <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
+                System
+              </p>
+
+              {/* Media Providers accordion */}
+              {canOpenMedia && (
+              <button
+                onClick={() => setMediaOpen((v) => !v)}
+                className={cn(
+                  "relative w-full flex items-center gap-3 px-3 py-[7px] rounded-[10px] transition-all group",
+                  pathname.startsWith("/dashboard/media-providers")
+                    ? "bg-primary/10 text-primary"
+                    : "text-text-muted hover:bg-surface-2 hover:text-text-main"
+                )}
+              >
+                {pathname.startsWith("/dashboard/media-providers") && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
+                )}
+                <span className="material-symbols-outlined size-[18px] text-[18px] leading-none shrink-0">perm_media</span>
+                <span className="text-[13px] font-medium leading-none flex-1 text-left min-w-0 truncate" title="Media Providers">Media Providers</span>
+                {MEDIA_PROVIDER_KINDS.some((k) => VISIBLE_MEDIA_KINDS.includes(k.id) && k.isNew) && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[3px] bg-green-500/15 text-green-400">NEW</span>
+                )}
+                <span className="material-symbols-outlined text-[14px] transition-transform" style={{ transform: mediaOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  expand_more
+                </span>
+              </button>
+              )}
+              {canOpenMedia && mediaOpen && (
+                <div className="pl-4">
+                  {MEDIA_PROVIDER_KINDS.filter((k) => VISIBLE_MEDIA_KINDS.includes(k.id)).map((kind) => (
+                    <NavLink
+                      key={kind.id}
+                      href={`/dashboard/media-providers/${kind.id}`}
+                      icon={kind.icon}
+                      label={kind.label}
+                      active={pathname.startsWith(`/dashboard/media-providers/${kind.id}`)}
+                      onClick={onClose}
+                      sub
+                    />
+                  ))}
+                  <NavLink
+                    key={COMBINED_WEB_ITEM.id}
+                    href={COMBINED_WEB_ITEM.href}
+                    icon={COMBINED_WEB_ITEM.icon}
+                    label={COMBINED_WEB_ITEM.label}
+                    active={pathname.startsWith(COMBINED_WEB_ITEM.href)}
+                    onClick={onClose}
+                    sub
+                  />
+                </div>
+              )}
+
+              {filteredSystemItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.label}
+                  active={isActive(item.href)}
+                  onClick={onClose}
+                />
+              ))}
+
+              {/* Debug items (inside System section, before Settings) */}
+              {filteredDebugItems.map((item) => {
+                const show = item.href !== '/dashboard/translator' || enableTranslator;
+                return show ? (
+                  <NavLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={isActive(item.href)}
+                    onClick={onClose}
+                  />
+                ) : null;
+              })}
+
+              {/* Settings */}
+              {!isApiKeyUser && (
+              <NavLink
+                href='/dashboard/profile'
+                icon='settings'
+                label='X Router Settings'
+                active={isActive('/dashboard/profile')}
+                onClick={onClose}
+              />
+              )}
+            </div>
+          )}
+        </nav>
+
+      </aside>
+    </>
   );
 }
+
+Sidebar.propTypes = {
+  onClose: PropTypes.func,
+};
+

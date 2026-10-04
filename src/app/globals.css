@@ -8,7 +8,7 @@
  font-style: normal;
  font-weight: 100 700;
  font-display: block;
- src: url("/material-symbols.woff2") format("woff2");
+ src: url("../../node_modules/material-symbols/material-symbols-outlined.woff2") format("woff2");
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -18,7 +18,7 @@
 .fonts-loaded .material-symbols-outlined { opacity: 1; transition: opacity .12s ease-out; }
 
 /* ============================================================
-   9Router palette — adopted from 9remote_private/web
+   X Router palette — adopted from 9remote_private/web
    Brand orange (dark) / soft coral (light), neutral warm bases
    ============================================================ */
 :root {
@@ -632,15 +632,127 @@ button:disabled,
   margin: 1.5rem 0;
 }
 
-/* X Router — login backdrop (radial orange, sendiri) */
-.dot-grid-bg {
-  background-color: var(--color-bg);
-  background-image:
-    radial-gradient(circle at 15% 20%, rgba(229, 106, 74, 0.16) 0%, transparent 42%),
-    radial-gradient(circle at 85% 80%, rgba(229, 106, 74, 0.10) 0%, transparent 42%);
+/* ============================================================
+   Glassmorphism theme — dark base with frosted translucent surfaces
+   Applied as `<html class="dark glass">`.
+
+   Why explicit colours instead of token overrides: `@theme inline` bakes each
+   design token into the utilities that use it, so `.bg-surface` in the built
+   CSS contains the literal `#262626` rather than `var(--color-surface)`.
+   Overriding `--color-surface` under `.glass` therefore changed the variable
+   but not the rendered panel. The rules below set the glass colours directly
+   and use `!important` where a utility would otherwise win, which is the only
+   reliable lever here.
+   ============================================================ */
+/* GLASS-REWORK */
+.dark.glass,
+.dark.glass body {
+  background-color: #0b0e14;
 }
-.dark .dot-grid-bg {
+.dark.glass body {
   background-image:
-    radial-gradient(circle at 15% 20%, rgba(229, 106, 74, 0.18) 0%, transparent 42%),
-    radial-gradient(circle at 85% 80%, rgba(229, 106, 74, 0.10) 0%, transparent 42%);
+    radial-gradient(42rem 30rem at 8% 6%, rgba(229, 106, 74, 0.55), transparent 60%),
+    radial-gradient(40rem 28rem at 94% 8%, rgba(129, 140, 248, 0.5), transparent 58%),
+    radial-gradient(46rem 32rem at 78% 96%, rgba(56, 189, 248, 0.42), transparent 60%),
+    radial-gradient(34rem 26rem at 22% 78%, rgba(16, 185, 129, 0.28), transparent 62%);
+  background-attachment: fixed;
+}
+
+.dark.glass aside {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark.glass .bg-surface {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+}
+.dark.glass .bg-surface-2 {
+  background-color: rgba(255, 255, 255, 0.11) !important;
+}
+.dark.glass .bg-surface-3 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+.dark.glass .bg-bg-alt {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* The shell's opaque bg-bg would bury the aurora; let it show through. */
+.dark.glass .bg-bg {
+  background-color: transparent !important;
+}
+
+/* Nested menus, modals and popovers inherit the same frost. */
+.dark.glass [class*="bg-surface"] {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* Inputs keep a solid base; a translucent field loses the caret against blur. */
+.dark.glass input,
+.dark.glass select,
+.dark.glass textarea {
+  background-color: rgba(13, 17, 23, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Scrollbars have to stay visible against a translucent track. */
+.dark.glass ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+}
+.dark.glass ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+
+/* ============================================================
+   X Router polish — micro-detail di atas fondasi 9r
+   ============================================================ */
+
+/* 1. Aksen warm glow di pojok kanan atas (subtle, dark only) */
+.dark body::before {
+  content: "";
+  position: fixed;
+  top: -180px;
+  right: -120px;
+  width: 520px;
+  height: 420px;
+  background: radial-gradient(closest-side, rgba(229, 106, 74, 0.10), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 2. Focus ring seragam oranye — keyboard nav kelihatan */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 3. Heading scale: tracking lebih ketat biar modern */
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+}
+
+/* 4. Card top-highlight: 1px cahaya tipis di tepi atas semua kartu */
+.dark [class*="rounded-[14px]"][class*="bg-surface"] {
+  position: relative;
+}
+
+/* 5. Smooth semua transisi warna (prefers-reduced-motion tetap dihormati) */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
+/* 6. Toast / alert strip kiri brand — biar nggak "warning kuning" norak */
+[data-toast] {
+  animation: toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
 }
