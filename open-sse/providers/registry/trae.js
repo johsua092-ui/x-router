@@ -15,7 +15,7 @@ export default {
   display: {
     name: "Trae",
     icon: "bolt",
-    color: "#FF6A00",
+    color: "#32F08C",
     textIcon: "TR",
     website: "https://www.trae.ai",
     notice: { signupUrl: "https://www.trae.ai" },

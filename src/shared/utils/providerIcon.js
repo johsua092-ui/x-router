@@ -43,10 +43,10 @@ export function resolveProviderIconId(providerId) {
   return aliased;
 }
 
-/** `/providers/{id}.png` or null when previously failed. */
+/** `/providers/{id}.png?v=0.5.155` or null when previously failed. */
 export function getProviderIconSrc(providerId) {
   const id = resolveProviderIconId(providerId);
-  return id ? `/providers/${id}.png` : null;
+  return id ? `/providers/${id}.png?v=0.5.155` : null;
 }
 
 /** Call from img onError so later mounts skip the request. */
