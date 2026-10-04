@@ -3,13 +3,13 @@
 import PropTypes from "prop-types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/shared/utils/cn";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { getPageInfo } from "@/shared/utils/pageInfo";
 import { translate } from "@/i18n/runtime";
 
-/* Full-bleed heading band. With navigation on the top rail, every page opens
-   with its own instrument band that spans the whole viewport width — a ticked
-   ember eyebrow, a large title, a description, and a right-hand action slot.
+/* Full-bleed heading band. Every page opens with its own clean instrument band —
+   crumb path / eyebrow, large title, description, and page-specific action slots or sub-tabs.
    Pages that draw their own hero pass `bare` to suppress it. */
 
 export default function PageHeading({
@@ -18,6 +18,7 @@ export default function PageHeading({
   icon,
   breadcrumbs,
   actions,
+  tabs,
   bare = false,
   className = "",
 }) {
@@ -35,11 +36,11 @@ export default function PageHeading({
   if (!resolvedTitle && !hasCrumbs) return null;
 
   return (
-    <div className={`border-b border-border bg-surface/60 ${className}`}>
-      <div className="flex flex-wrap items-end justify-between gap-3 px-4 pb-3.5 pt-4 lg:px-7">
+    <div className={cn("border-b border-border bg-surface/40 backdrop-blur-sm", className)}>
+      <div className="flex flex-wrap items-end justify-between gap-3 px-4 pb-3 pt-3.5 lg:px-7">
         <div className="min-w-0">
           {/* Eyebrow: ember tick + crumb path, or the section label. */}
-          <div className="mb-1.5 flex min-w-0 items-center gap-2">
+          <div className="mb-1 flex min-w-0 items-center gap-2">
             <span className="ember-rule-left w-5 shrink-0" aria-hidden="true" />
             {hasCrumbs ? (
               <div className="flex min-w-0 items-center gap-1.5">
@@ -81,17 +82,17 @@ export default function PageHeading({
 
           <div className="flex min-w-0 items-center gap-2.5">
             {resolvedIcon && (
-              <span className="material-symbols-outlined shrink-0 text-[24px] leading-none text-primary">
+              <span className="material-symbols-outlined shrink-0 text-[22px] leading-none text-primary">
                 {resolvedIcon}
               </span>
             )}
-            <h1 className="truncate text-[21px] font-semibold leading-none tracking-tight text-text-main lg:text-[24px]">
+            <h1 className="truncate text-[20px] font-semibold leading-none tracking-tight text-text-main lg:text-[22px]">
               {translate(resolvedTitle)}
             </h1>
           </div>
 
           {resolvedDescription ? (
-            <p className="mt-1.5 max-w-3xl text-[12.5px] leading-snug text-text-muted">
+            <p className="mt-1 max-w-3xl text-[12px] leading-snug text-text-muted">
               {translate(resolvedDescription)}
             </p>
           ) : null}
@@ -99,6 +100,13 @@ export default function PageHeading({
 
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
+
+      {/* Optional Page-Specific Sub-tabs (Level-2 navigation) */}
+      {tabs && (
+        <div className="flex items-center gap-1 overflow-x-auto px-4 lg:px-7 pb-2 pt-1 custom-scrollbar border-t border-border-subtle">
+          {tabs}
+        </div>
+      )}
     </div>
   );
 }
@@ -109,6 +117,7 @@ PageHeading.propTypes = {
   icon: PropTypes.string,
   breadcrumbs: PropTypes.array,
   actions: PropTypes.node,
+  tabs: PropTypes.node,
   bare: PropTypes.bool,
   className: PropTypes.string,
 };
