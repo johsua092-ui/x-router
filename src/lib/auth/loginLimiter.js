@@ -53,6 +53,10 @@ export function getClientIp(request) {
     const realIp = request.headers.get("x-9r-real-ip");
     if (realIp) return realIp;
   }
+  // Cloudflare Tunnel real client IP
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+
   // Behind a trusted reverse proxy that overwrites XFF with the real client IP.
   if (process.env.TRUST_PROXY === "true") {
     const xff = request.headers.get("x-forwarded-for");

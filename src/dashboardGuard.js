@@ -222,6 +222,15 @@ export const __test__ = {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
+  // Block malicious probes, path traversal, and hidden/credential file leakage
+  if (
+    /\.\./.test(pathname) ||
+    /\/\.(env|git|sqlite|bak|key|conf|sh|sql|jsonl)/i.test(pathname) ||
+    /wp-admin|phpmyadmin/i.test(pathname)
+  ) {
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
+  }
+
   // Sessions signed in with an API key carry their own permission set. Read once
   // here so every gate below sees the same claims.
   const apiKeySession = await getApiKeySession(request);

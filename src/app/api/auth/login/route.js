@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/localDb";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { setDashboardAuthCookie } from "@/lib/auth/dashboardSession";
 import { isOidcConfigured } from "@/lib/auth/oidc";
@@ -92,11 +93,13 @@ export async function POST(request) {
 
     let isValid = false;
     if (storedHash) {
-      isValid = await bcrypt.compare(password, storedHash);
+      isValid = await bcrypt.compare(String(password || ""), storedHash);
     } else {
-      // Use env var or default
+      // Use env var or default with constant-time equality check (Anti-Timing Attack)
       const initialPassword = process.env.INITIAL_PASSWORD || "synapse123";
-      isValid = password === initialPassword;
+      const bufA = Buffer.from(String(password || ""));
+      const bufB = Buffer.from(initialPassword);
+      isValid = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
     }
 
     if (isValid) {
