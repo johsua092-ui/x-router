@@ -35,7 +35,7 @@ function getStatusDisplay(connected, error, errorCode) {
   if (connected > 0) {
     parts.push(
       <Badge key="connected" variant="success" size="sm" dot>
-        {connected} Connected
+        {connected} Active
       </Badge>,
     );
   }
@@ -50,7 +50,12 @@ function getStatusDisplay(connected, error, errorCode) {
     );
   }
   if (parts.length === 0) {
-    return <span className="text-text-muted">No connections</span>;
+    return (
+      <span className="text-[11px] text-text-muted group-hover:text-primary transition-colors flex items-center gap-1 font-medium">
+        <span className="material-symbols-outlined text-[13px]">add_circle</span>
+        Setup
+      </span>
+    );
   }
   return parts;
 }
@@ -947,10 +952,10 @@ function ProviderCard({
         <div className="flex items-start justify-between gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="size-10 shrink-0 rounded-[6px] border bg-surface-2 flex items-center justify-center p-1.5 transition-all duration-200 group-hover:scale-105 shadow-xs"
+              className="size-10 shrink-0 rounded-[6px] border bg-[#18181b] flex items-center justify-center p-1.5 transition-all duration-200 group-hover:scale-105 shadow-xs"
               style={{
-                borderColor: provider.color ? `${provider.color}40` : "var(--color-border)",
-                boxShadow: provider.color ? `0 0 10px ${provider.color}18` : undefined,
+                borderColor: provider.color ? `${provider.color}50` : "var(--color-border)",
+                boxShadow: provider.color ? `0 0 12px ${provider.color}25` : "0 0 8px rgba(255,255,255,0.04)",
               }}
             >
               <ProviderIcon
