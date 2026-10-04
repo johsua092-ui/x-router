@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/store/notificationStore";
-import TopRail from "../TopRail";
+import RightRail from "../RightRail";
+import MobileNav from "../MobileNav";
 import PageHeading from "../PageHeading";
 import StatusBar from "../StatusBar";
 import WelcomeModal from "../WelcomeModal";
@@ -71,7 +72,7 @@ export default function DashboardLayout({ children }) {
   const showHeading = !hasOwnHeading(pathname);
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-bg">
+    <div className="flex h-screen w-full overflow-hidden bg-bg">
       {/* Toasts */}
       <div className="fixed top-4 right-4 z-[80] flex w-[min(92vw,380px)] flex-col gap-2">
         {notifications.map((n) => {
@@ -105,32 +106,34 @@ export default function DashboardLayout({ children }) {
       </div>
       <WelcomeModal />
 
-      {/* Top rail replaces the old left sidebar — navigation is one horizontal
-          band, so the content column below runs the full width of the viewport. */}
-      <TopRail />
+      {/* Content column. Navigation lives in the right rail, so nothing is
+          docked to the top edge — pages start at the very top of the viewport. */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <UpdateBanner />
 
-      <UpdateBanner />
-
-      {/* Full-bleed content area: the heading band spans the viewport, the
-          content scrolls underneath it. */}
-      <main className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="ember-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-        {showHeading ? <PageHeading className="shrink-0" /> : null}
-        <div
-          className={
-            isChat
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-              : "min-h-0 flex-1 overflow-y-auto custom-scrollbar"
-          }
-        >
-          <div className={isChat ? "flex h-full w-full flex-col" : "w-full px-4 py-5 lg:px-7 lg:py-6"}>
-            {children}
+        <main className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="ember-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+          {showHeading ? <PageHeading className="shrink-0" /> : null}
+          <div
+            className={
+              isChat
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                : "min-h-0 flex-1 overflow-y-auto custom-scrollbar"
+            }
+          >
+            <div className={isChat ? "flex h-full w-full flex-col" : "w-full px-4 py-5 lg:px-8 lg:py-6"}>
+              {children}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      {/* Instrument status strip */}
-      <StatusBar />
+        {/* Instrument status strip */}
+        <StatusBar />
+      </div>
+
+      {/* Right-docked navigation (desktop) + floating sheet (mobile) */}
+      <RightRail />
+      <MobileNav />
     </div>
   );
 }
