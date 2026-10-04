@@ -87,25 +87,30 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Docked mobile top bar — non-floating, part of document layout */}
-      <header className="flex h-11 w-full items-center justify-between border-b border-border bg-surface px-3.5 lg:hidden shrink-0 z-20">
-        <Link href="/dashboard/endpoint" className="flex items-center gap-2">
-          <div className="size-6 rounded-[5px] border border-brand-500/40 bg-surface-2 flex items-center justify-center shrink-0 shadow-xs">
-            <span className="material-symbols-outlined text-primary text-[15px] leading-none">health_and_safety</span>
+      {/* Mobile Top Bar — docked at top of viewport so it never scrolls away or disappears */}
+      <header className="sticky top-0 z-30 flex h-12 w-full items-center justify-between border-b border-border bg-surface px-4 lg:hidden shrink-0 shadow-xs">
+        <Link href="/dashboard/endpoint" className="flex items-center gap-2.5">
+          <div className="size-7 rounded-[6px] border border-brand-500/40 bg-surface-2 flex items-center justify-center shrink-0 shadow-xs">
+            <span className="material-symbols-outlined text-primary text-[17px] leading-none">health_and_safety</span>
           </div>
-          <span className="text-xs font-bold tracking-wider uppercase text-text-main">
-            {APP_CONFIG.name}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-[12.5px] font-bold tracking-wider uppercase text-text-main leading-tight">
+              {APP_CONFIG.name}
+            </span>
+            <span className="text-[9.5px] font-mono text-text-muted leading-tight">
+              v{APP_CONFIG.version}
+            </span>
+          </div>
         </Link>
 
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open navigation menu"
-          className="flex items-center gap-1.5 rounded-[5px] border border-border bg-surface-2 px-2.5 py-1 text-xs font-medium text-text-main hover:border-brand-500/50 hover:bg-surface-3 transition-colors cursor-pointer"
+          className="flex h-8 items-center gap-1.5 rounded-[5px] border border-brand-500/40 bg-surface-2 px-3 text-text-main hover:border-brand-500 hover:bg-surface-3 transition-colors cursor-pointer shadow-xs active:scale-95"
         >
-          <span className="material-symbols-outlined text-primary text-[17px] leading-none">menu</span>
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-text-main">Menu</span>
+          <span className="material-symbols-outlined text-primary text-[19px] leading-none">menu</span>
+          <span className="text-xs font-semibold tracking-wider uppercase text-text-main">MENU</span>
         </button>
       </header>
 
