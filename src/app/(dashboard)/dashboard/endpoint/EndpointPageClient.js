@@ -154,6 +154,7 @@ export default function APIPageClient({ machineId }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [keySearch, setKeySearch] = useState("");
   const [activeSnippetTab, setActiveSnippetTab] = useState("curl");
+  const [showCodeSnippet, setShowCodeSnippet] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyLimit, setNewKeyLimit] = useState("");
   const [newKeyReset, setNewKeyReset] = useState("never");
@@ -1065,134 +1066,160 @@ const scopedModelPatterns =
   });
 
   const getCodeSnippet = (lang) => {
-    const keyStr = keys[0] ? keys[0].key : "<YOUR_XROUTER_KEY>";
+    const keyStr = keys[0] ? keys[0].key : "<YOUR_KEY>";
     if (lang === "curl") {
       return `curl ${currentEndpoint}/chat/completions \\
   -H "Authorization: Bearer ${keyStr}" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "model": "deepseek-chat",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'`;
+  -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"Hello"}]}'`;
     }
     if (lang === "python") {
       return `from openai import OpenAI
 
-client = OpenAI(
-    base_url="${currentEndpoint}",
-    api_key="${keyStr}"
-)
-
-response = client.chat.completions.create(
+client = OpenAI(base_url="${currentEndpoint}", api_key="${keyStr}")
+res = client.chat.completions.create(
     model="deepseek-chat",
-    messages=[{"role": "user", "content": "Hello!"}]
+    messages=[{"role": "user", "content": "Hello"}]
 )
-print(response.choices[0].message.content)`;
+print(res.choices[0].message.content)`;
     }
     if (lang === "node") {
       return `import OpenAI from "openai";
 
-const client = new OpenAI({
-  baseURL: "${currentEndpoint}",
-  apiKey: "${keyStr}"
-});
-
-const response = await client.chat.completions.create({
+const client = new OpenAI({ baseURL: "${currentEndpoint}", apiKey: "${keyStr}" });
+const res = await client.chat.completions.create({
   model: "deepseek-chat",
-  messages: [{ role: "user", content: "Hello!" }]
+  messages: [{ role: "user", content: "Hello" }]
 });
-console.log(response.choices[0].message.content);`;
+console.log(res.choices[0].message.content);`;
     }
     return "";
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5 pb-16 lg:pb-8">
       {/* 1. Master Gateway Console Card */}
-      <div className="relative rounded-[6px] border border-border bg-surface p-5 shadow-[var(--shadow-elev)] overflow-hidden">
+      <div className="relative rounded-[6px] border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-elev)] overflow-hidden">
         {/* Accent top stripe */}
         <span className="absolute top-0 inset-x-0 h-[2px] bg-brand-500" aria-hidden="true" />
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="material-symbols-outlined text-primary text-[20px]">router</span>
-              <h2 className="text-base font-semibold text-text-main uppercase tracking-wider">
-                AI Gateway Endpoint
-              </h2>
-              <span className="px-2 py-0.5 rounded-[4px] bg-success/12 border border-success/30 text-success text-[10.5px] font-mono flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-success animate-pulse" />
-                ONLINE · HTTP 200
-              </span>
-            </div>
-            <p className="text-xs text-text-muted">
-              Unified OpenAI & Anthropic compatible reverse-proxy gateway
-            </p>
+        {/* Header */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="material-symbols-outlined text-primary text-[19px]">router</span>
+            <h2 className="text-sm sm:text-base font-semibold text-text-main uppercase tracking-wider">
+              Gateway Endpoint
+            </h2>
+            <span className="px-2 py-0.5 rounded-[4px] bg-success/15 border border-success/30 text-success text-[10.5px] font-mono flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-success animate-pulse" />
+              ONLINE · 200 OK
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => copy(currentEndpoint, "gateway_url")}
-              className="flex items-center gap-1.5 rounded-[4px] border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-main hover:border-brand-500/50 hover:bg-surface-3 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[15px] text-primary">
-                {copied === "gateway_url" ? "check" : "content_copy"}
+          <div className="flex items-center gap-2 text-xs">
+            <span className={cn(
+              "px-2 py-0.5 rounded-[4px] font-mono text-[10.5px] border flex items-center gap-1",
+              requireApiKey
+                ? "bg-brand-500/10 border-brand-500/30 text-primary"
+                : "bg-warning/10 border-warning/30 text-warning"
+            )}>
+              <span className="material-symbols-outlined text-[13px]">
+                {requireApiKey ? "lock" : "lock_open"}
               </span>
-              <span>{copied === "gateway_url" ? "Copied Endpoint!" : "Copy Endpoint"}</span>
-            </button>
+              <span>{requireApiKey ? "Auth Required" : "Public Endpoint"}</span>
+            </span>
           </div>
         </div>
 
-        {/* Primary Monospace URL Display */}
-        <div className="mt-4 flex items-center justify-between gap-3 p-3 rounded-[6px] border border-border bg-surface-2 font-mono text-xs sm:text-sm text-text-main overflow-x-auto custom-scrollbar">
-          <span className="text-primary font-semibold select-none">$BASE_URL</span>
-          <span className="font-mono text-text-main flex-1 truncate">{currentEndpoint}</span>
-          <span className="text-[11px] text-text-muted font-sans shrink-0 uppercase tracking-wide">
-            v1 API
+        {/* Primary URL Field with Integrated 1-Click Copy */}
+        <div className="mt-3 flex items-center gap-1.5 rounded-[6px] border border-border bg-surface-2 p-1.5 transition-all focus-within:border-brand-500">
+          <span className="px-2 py-0.5 rounded-[3px] bg-surface border border-border-subtle font-mono text-[10px] font-semibold text-primary shrink-0">
+            URL
           </span>
+          <input
+            type="text"
+            readOnly
+            value={currentEndpoint}
+            className="flex-1 min-w-0 bg-transparent px-1.5 py-0.5 font-mono text-[11.5px] sm:text-xs text-text-main outline-none select-all"
+          />
+          <button
+            type="button"
+            onClick={() => copy(currentEndpoint, "gateway_url")}
+            className="flex items-center gap-1 rounded-[4px] bg-surface px-2.5 py-1 text-xs font-medium text-text-main border border-border hover:border-brand-500 hover:text-primary transition-colors shrink-0 cursor-pointer shadow-xs"
+            title="Copy Base URL"
+          >
+            <span className="material-symbols-outlined text-[15px] text-primary">
+              {copied === "gateway_url" ? "check" : "content_copy"}
+            </span>
+            <span className="text-[11px]">{copied === "gateway_url" ? "Copied!" : "Copy"}</span>
+          </button>
         </div>
 
-        {/* Quick Usage Snippets */}
-        <div className="mt-4 pt-3 border-t border-border-subtle space-y-2">
+        {/* Collapsible Quick Code Integration */}
+        <div className="mt-3 pt-3 border-t border-border-subtle">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1 text-xs">
-              {["curl", "python", "node"].map((lang) => (
-                <button
-                  key={lang}
-                  type="button"
-                  onClick={() => setActiveSnippetTab(lang)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-[4px] font-mono text-[11px] uppercase transition-colors border cursor-pointer",
-                    activeSnippetTab === lang
-                      ? "bg-brand-500 text-white border-brand-500 font-semibold"
-                      : "bg-surface-2 border-border text-text-muted hover:text-text-main"
-                  )}
-                >
-                  {lang === "curl" ? "cURL" : lang === "python" ? "Python SDK" : "Node.js SDK"}
-                </button>
-              ))}
-            </div>
-
             <button
               type="button"
-              onClick={() => copy(getCodeSnippet(activeSnippetTab), "snippet_code")}
-              className="text-[11px] text-text-muted hover:text-primary flex items-center gap-1 font-mono transition-colors cursor-pointer"
+              onClick={() => setShowCodeSnippet((prev) => !prev)}
+              className="flex items-center gap-1.5 text-xs font-medium text-text-muted hover:text-primary transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[14px]">
-                {copied === "snippet_code" ? "check" : "content_copy"}
+              <span className="material-symbols-outlined text-[16px] text-primary">code</span>
+              <span>{showCodeSnippet ? "Hide Client Code Snippets" : "Show Client Code Snippets"}</span>
+              <span
+                className="material-symbols-outlined text-[15px] transition-transform duration-200"
+                style={{ transform: showCodeSnippet ? "rotate(180deg)" : "rotate(0deg)" }}
+              >
+                expand_more
               </span>
-              <span>{copied === "snippet_code" ? "Copied" : "Copy Code"}</span>
             </button>
+
+            {showCodeSnippet && (
+              <button
+                type="button"
+                onClick={() => copy(getCodeSnippet(activeSnippetTab), "snippet_code")}
+                className="text-[11px] text-text-muted hover:text-primary flex items-center gap-1 font-mono transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {copied === "snippet_code" ? "check" : "content_copy"}
+                </span>
+                <span>{copied === "snippet_code" ? "Copied" : "Copy Code"}</span>
+              </button>
+            )}
           </div>
 
-          <pre className="p-3 rounded-[6px] border border-border-subtle bg-bg font-mono text-[11px] text-text-main overflow-x-auto custom-scrollbar whitespace-pre leading-relaxed">
-            {getCodeSnippet(activeSnippetTab)}
-          </pre>
+          {showCodeSnippet && (
+            <div className="mt-2.5 space-y-2">
+              <div className="flex items-center gap-1 text-xs">
+                {[
+                  { id: "curl", label: "cURL" },
+                  { id: "python", label: "Python" },
+                  { id: "node", label: "Node.js" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveSnippetTab(item.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-[4px] font-mono text-[11px] uppercase transition-colors border cursor-pointer",
+                      activeSnippetTab === item.id
+                        ? "bg-brand-500 text-white border-brand-500 font-semibold"
+                        : "bg-surface-2 border-border text-text-muted hover:text-text-main"
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <pre className="p-3 rounded-[6px] border border-border-subtle bg-bg font-mono text-[11px] text-text-main overflow-x-auto custom-scrollbar whitespace-pre-wrap leading-relaxed break-all">
+                {getCodeSnippet(activeSnippetTab)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 2. Network Routing Rack (Local, Tunnel, Tailscale) */}
+      {/* 2. Network Routing & Exposure Section */}
       {!isApiKeyUser && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 border-b border-border pb-1.5">
@@ -1202,13 +1229,13 @@ console.log(response.choices[0].message.content);`;
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Local Host */}
             <div className="flex flex-col justify-between p-3.5 rounded-[6px] border border-border bg-surface shadow-[var(--shadow-elev)]">
               <div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[18px]">computer</span>
+                    <span className="material-symbols-outlined text-primary text-[17px]">computer</span>
                     <span className="text-xs font-semibold text-text-main uppercase">Local Host</span>
                   </div>
                   <span className="px-1.5 py-0.5 rounded-[3px] bg-success/15 text-success text-[10px] font-mono font-medium">
@@ -1220,7 +1247,7 @@ console.log(response.choices[0].message.content);`;
                 </p>
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-border-subtle flex justify-end">
+              <div className="mt-3 pt-2 border-t border-border-subtle flex justify-end">
                 <button
                   type="button"
                   onClick={() => copy(currentEndpoint, "local_url")}
@@ -1239,7 +1266,7 @@ console.log(response.choices[0].message.content);`;
               <div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[18px]">cloud_sync</span>
+                    <span className="material-symbols-outlined text-primary text-[17px]">cloud_sync</span>
                     <span className="text-xs font-semibold text-text-main uppercase">Cloudflare Tunnel</span>
                   </div>
                   <span className={cn(
@@ -1260,12 +1287,12 @@ console.log(response.choices[0].message.content);`;
                   </p>
                 ) : (
                   <p className="mt-2 text-xs text-text-muted">
-                    {tunnelLoading ? (tunnelProgress || "Starting tunnel...") : "Expose your endpoint securely to the public internet without open ports."}
+                    {tunnelLoading ? (tunnelProgress || "Starting tunnel...") : "Expose your endpoint securely to the public internet."}
                   </p>
                 )}
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between gap-2">
+              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between gap-2">
                 {tunnelEnabled && tunnelReachable ? (
                   <>
                     <button
@@ -1300,9 +1327,9 @@ console.log(response.choices[0].message.content);`;
                       }
                       setShowEnableTunnelModal(true);
                     }}
-                    className="w-full"
+                    className="w-full text-xs"
                   >
-                    Enable Public Tunnel
+                    Enable Tunnel
                   </Button>
                 )}
               </div>
@@ -1313,7 +1340,7 @@ console.log(response.choices[0].message.content);`;
               <div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[18px]">vpn_lock</span>
+                    <span className="material-symbols-outlined text-primary text-[17px]">vpn_lock</span>
                     <span className="text-xs font-semibold text-text-main uppercase">Tailscale Mesh</span>
                   </div>
                   <span className={cn(
@@ -1334,12 +1361,12 @@ console.log(response.choices[0].message.content);`;
                   </p>
                 ) : (
                   <p className="mt-2 text-xs text-text-muted">
-                    {tsLoading ? (tsProgress || "Connecting Tailscale...") : "Access router privately over your personal Tailscale tailnet mesh."}
+                    {tsLoading ? (tsProgress || "Connecting Tailscale...") : "Access router privately over your personal Tailscale mesh."}
                   </p>
                 )}
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between gap-2">
+              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between gap-2">
                 {tsEnabled && tsReachable ? (
                   <>
                     <button
@@ -1368,7 +1395,7 @@ console.log(response.choices[0].message.content);`;
                     icon="vpn_lock"
                     loading={tsLoading || tsConnecting}
                     onClick={handleOpenTsModal}
-                    className="w-full"
+                    className="w-full text-xs"
                   >
                     Connect Tailscale
                   </Button>
@@ -1377,8 +1404,8 @@ console.log(response.choices[0].message.content);`;
             </div>
           </div>
 
-          {/* Security & Access Switches Strip */}
-          <div className="p-3.5 rounded-[6px] border border-border bg-surface-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+          {/* Security & Access Policy Switches */}
+          <div className="p-3 rounded-[6px] border border-border bg-surface-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
               <Toggle
                 checked={requireApiKey}
@@ -1387,7 +1414,7 @@ console.log(response.choices[0].message.content);`;
               <div>
                 <span className="font-semibold text-text-main">Require API Key Authentication</span>
                 <p className="text-text-muted text-[11px]">
-                  {requireApiKey ? "Active: unauthorized requests will be rejected with HTTP 401" : "Warning: anyone can send requests to your endpoints without a key"}
+                  {requireApiKey ? "Active: requests without a valid key are rejected with HTTP 401" : "Warning: anyone can access your router endpoint without a key"}
                 </p>
               </div>
             </div>
@@ -1400,7 +1427,7 @@ console.log(response.choices[0].message.content);`;
                 />
                 <div>
                   <span className="font-semibold text-text-main">Allow Dashboard over Tunnel</span>
-                  <p className="text-text-muted text-[11px]">Open admin GUI through public tunnel address</p>
+                  <p className="text-text-muted text-[11px]">Allow web GUI through tunnel URL</p>
                 </div>
               </div>
             )}
@@ -1409,17 +1436,17 @@ console.log(response.choices[0].message.content);`;
       )}
 
       {/* 3. API Keys Credential Vault */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-2.5">
+      <div className="space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-border pb-2">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">vpn_key</span>
-            <h2 className="text-base font-semibold text-text-main uppercase tracking-wider">
-              API Key Vault
+            <span className="material-symbols-outlined text-primary text-[19px]">vpn_key</span>
+            <h2 className="text-sm sm:text-base font-semibold text-text-main uppercase tracking-wider">
+              API Keys
             </h2>
-            <span className="text-xs font-mono text-text-muted">({keys.length} keys registered)</span>
+            <span className="text-xs font-mono text-text-muted">({keys.length})</span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-[15px]">
                 search
@@ -1429,7 +1456,7 @@ console.log(response.choices[0].message.content);`;
                 placeholder="Filter keys..."
                 value={keySearch}
                 onChange={(e) => setKeySearch(e.target.value)}
-                className="w-40 sm:w-56 pl-8 pr-3 py-1 bg-surface-2 border border-border rounded-[6px] text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-brand-500"
+                className="w-36 sm:w-48 pl-8 pr-3 py-1 bg-surface-2 border border-border rounded-[6px] text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -1440,20 +1467,20 @@ console.log(response.choices[0].message.content);`;
         </div>
 
         {filteredKeys.length === 0 ? (
-          <div className="text-center py-12 rounded-[6px] border border-dashed border-border bg-surface p-6">
-            <span className="material-symbols-outlined text-4xl text-text-muted opacity-40 mb-2 block">
+          <div className="text-center py-10 rounded-[6px] border border-dashed border-border bg-surface p-6">
+            <span className="material-symbols-outlined text-3xl text-text-muted opacity-40 mb-2 block">
               vpn_key
             </span>
-            <p className="text-sm font-medium text-text-main">No API keys found</p>
-            <p className="text-xs text-text-muted mt-1 mb-4">
+            <p className="text-xs font-medium text-text-main">No API keys found</p>
+            <p className="text-[11px] text-text-muted mt-0.5 mb-3">
               {keySearch ? "No keys matching your search filter." : "Create your first key to start authenticating clients."}
             </p>
             <Button size="sm" icon="add" onClick={() => setShowAddModal(true)}>
-              Create New Key
+              Create Key
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {filteredKeys.map((key) => {
               const isQuotaExceeded = key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit;
               const isKeyDisabled = key.isActive === false;
@@ -1462,35 +1489,34 @@ console.log(response.choices[0].message.content);`;
                 <div
                   key={key.id}
                   className={cn(
-                    "group relative flex flex-col justify-between p-4 rounded-[6px] border bg-surface transition-all duration-200 shadow-[var(--shadow-elev)]",
+                    "group relative flex flex-col justify-between p-3.5 rounded-[6px] border bg-surface transition-all duration-150 shadow-[var(--shadow-elev)]",
                     isKeyDisabled
                       ? "opacity-60 border-border bg-surface-2"
                       : "border-border hover:border-brand-500/50 hover:bg-surface-2"
                   )}
                 >
-                  {/* Left accent line on active */}
                   {!isKeyDisabled && (
                     <span className="absolute inset-y-0 left-0 w-[3px] bg-brand-500" aria-hidden="true" />
                   )}
 
                   {/* Top row: Status + Name + Creator + Actions */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className={cn(
                         "size-2 rounded-full shrink-0",
                         !isKeyDisabled ? "bg-success" : "bg-warning"
                       )} />
-                      <h4 className="text-sm font-semibold text-text-main truncate">
+                      <h4 className="text-xs sm:text-sm font-semibold text-text-main truncate">
                         {key.name}
                       </h4>
                       {creatorLabelFor(key) && (
-                        <span className="text-[10px] font-mono text-text-muted px-1.5 py-0.5 rounded bg-surface-3">
+                        <span className="text-[9.5px] font-mono text-text-muted px-1.5 py-0.5 rounded bg-surface-3 shrink-0">
                           {creatorLabelFor(key)}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Toggle
                         size="sm"
                         checked={!isKeyDisabled}
@@ -1499,7 +1525,7 @@ console.log(response.choices[0].message.content);`;
                         title={isKeyDisabled ? "Activate key" : "Disable key"}
                       />
 
-                      <div className="h-4 w-px bg-border mx-1" />
+                      <div className="h-3.5 w-px bg-border mx-0.5" />
 
                       <button
                         type="button"
@@ -1524,55 +1550,46 @@ console.log(response.choices[0].message.content);`;
                           setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
                         }}
                         disabled={isOwnKey(key)}
-                        className="p-1.5 rounded-[4px] hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
-                        title="Edit key permissions & quota"
+                        className="p-1 rounded hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
+                        title="Edit key"
                       >
-                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDuplicateKey(key)}
                         disabled={isOwnKey(key)}
-                        className="p-1.5 rounded-[4px] hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
-                        title="Duplicate key settings"
+                        className="p-1 rounded hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
+                        title="Duplicate"
                       >
-                        <span className="material-symbols-outlined text-[16px]">library_add</span>
+                        <span className="material-symbols-outlined text-[15px]">library_add</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleManualResetUsage(key)}
                         disabled={isOwnKey(key)}
-                        className="p-1.5 rounded-[4px] hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
+                        className="p-1 rounded hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
                         title="Reset token usage"
                       >
-                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setShowSnippetModal(key); setSnippetLang("curl"); }}
-                        className="p-1.5 rounded-[4px] hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
-                        title="View Code Snippet"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">code</span>
+                        <span className="material-symbols-outlined text-[15px]">restart_alt</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteKey(key.id)}
                         disabled={isOwnKey(key)}
-                        className="p-1.5 rounded-[4px] hover:bg-danger/10 text-danger transition-colors cursor-pointer"
+                        className="p-1 rounded hover:bg-danger/10 text-danger transition-colors cursor-pointer"
                         title="Delete key"
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Middle row: Monospace key credential bar */}
-                  <div className="my-2.5 flex items-center justify-between gap-2 p-2 rounded-[4px] border border-border-subtle bg-surface-2 font-mono text-xs">
+                  <div className="my-2 flex items-center justify-between gap-2 p-1.5 rounded-[4px] border border-border-subtle bg-surface-2 font-mono text-[11px]">
                     <span className="text-text-main truncate select-all">
                       {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
                     </span>
@@ -1584,7 +1601,7 @@ console.log(response.choices[0].message.content);`;
                         className="p-1 rounded hover:bg-surface-3 text-text-muted hover:text-text-main transition-colors cursor-pointer"
                         title={visibleKeys.has(key.id) ? "Hide key" : "Reveal key"}
                       >
-                        <span className="material-symbols-outlined text-[15px]">
+                        <span className="material-symbols-outlined text-[14px]">
                           {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
                         </span>
                       </button>
@@ -1593,9 +1610,9 @@ console.log(response.choices[0].message.content);`;
                         type="button"
                         onClick={() => copy(key.key, key.id)}
                         className="p-1 rounded hover:bg-surface-3 text-text-muted hover:text-primary transition-colors cursor-pointer"
-                        title="Copy key string"
+                        title="Copy key"
                       >
-                        <span className="material-symbols-outlined text-[15px]">
+                        <span className="material-symbols-outlined text-[14px]">
                           {copied === key.id ? "check" : "content_copy"}
                         </span>
                       </button>
@@ -1603,18 +1620,18 @@ console.log(response.choices[0].message.content);`;
                   </div>
 
                   {/* Bottom row: Telemetry & Policy chips */}
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1 text-[10.5px]">
                     <span className={cn(
-                      "px-2 py-0.5 rounded-[3px] font-mono",
+                      "px-1.5 py-0.5 rounded-[3px] font-mono",
                       isQuotaExceeded
                         ? "bg-danger-bg text-danger font-semibold border border-danger/30"
                         : "bg-brand-500/10 text-primary border border-brand-500/20"
                     )}>
-                      Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) : "Unlimited"}
+                      Tokens: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) : "Unlimited"}
                     </span>
 
                     {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <span className="px-2 py-0.5 rounded-[3px] bg-surface-2 border border-border-subtle text-text-muted font-mono">
+                      <span className="px-1.5 py-0.5 rounded-[3px] bg-surface-2 border border-border-subtle text-text-muted font-mono">
                         Reset: every {key.resetInterval}
                       </span>
                     )}
@@ -1623,25 +1640,25 @@ console.log(response.choices[0].message.content);`;
                       <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                     )}
 
-                    <span className="px-2 py-0.5 rounded-[3px] bg-info-bg text-info border border-info-border font-mono">
+                    <span className="px-1.5 py-0.5 rounded-[3px] bg-info-bg text-info border border-info-border font-mono">
                       Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
                     </span>
 
                     {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
-                      <span className="px-2 py-0.5 rounded-[3px] bg-info-bg text-info border border-info-border font-mono">
+                      <span className="px-1.5 py-0.5 rounded-[3px] bg-info-bg text-info border border-info-border font-mono">
                         {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
 
                     {key.ipWhitelist && (
-                      <span className="px-2 py-0.5 rounded-[3px] bg-success-bg text-success border border-success-border font-mono">
-                        IP Whitelist
+                      <span className="px-1.5 py-0.5 rounded-[3px] bg-success-bg text-success border border-success-border font-mono">
+                        IP Guard
                       </span>
                     )}
 
                     {isKeyDisabled && (
-                      <span className="px-2 py-0.5 rounded-[3px] bg-warning-bg text-warning border border-warning-border font-medium">
-                        Switched Off
+                      <span className="px-1.5 py-0.5 rounded-[3px] bg-warning-bg text-warning border border-warning-border font-medium">
+                        Disabled
                       </span>
                     )}
                   </div>
