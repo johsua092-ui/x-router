@@ -6,7 +6,9 @@ import {
   isAnthropicCompatibleProvider,
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
-import { getProviderConnections, getCombos, getCustomModels, getModelAliases, getStudioModels } from "@/lib/localDb";
+import { getProviderConnections, getCombos, getCustomModels, getModelAliases, getStudioModels, getSettings } from "@/lib/localDb";
+import { apiKeyGateFailure } from "@/sse/services/auth.js";
+import { isValidApiKey } from "@/sse/services/auth.js";
 import { getAllowedModelsOfKey, matchesAllowedModels } from "@/lib/db/repos/apiKeysRepo.js";
 import { getDisabledModels } from "@/lib/disabledModelsDb";
 import { buildStudioTargetIndex } from "@/shared/utils/studioModelVisibility";
@@ -705,6 +707,24 @@ export async function OPTIONS() {
  */
 export async function GET(request) {
   try {
+    const settings = await getSettings();
+    const apiKey = readCallerApiKey(request);
+    if (settings?.requireApiKey) {
+      if (!apiKey) {
+        return Response.json(
+          { error: { message: "API key required", type: "invalid_request_error", code: "unauthorized" } },
+          { status: 401, headers: { "Access-Control-Allow-Origin": "*" } }
+        );
+      }
+      const failure = apiKeyGateFailure(await isValidApiKey(apiKey), true);
+      if (failure) {
+        return Response.json(
+          { error: { message: failure.message, type: "invalid_request_error" } },
+          { status: failure.status, headers: { "Access-Control-Allow-Origin": "*" } }
+        );
+      }
+    }
+
     // Detect cross-instance recursive /models fetch (another xrouter fetching our /models)
     const skipDynamicFetch = request?.headers?.get(INTERNAL_MODELS_FETCH_HEADER) === "1";
     const data = await buildModelsList([LLM_KIND], { skipDynamicFetch, request });

@@ -160,6 +160,17 @@ async function hasValidApiKey(request) {
 }
 
 async function canAccessPublicLlmApi(request) {
+  const settings = await loadSettings();
+  const requireApiKey = settings ? settings.requireApiKey === true : false;
+
+  // When 'Require API Key' is enabled, every client MUST provide a valid API key.
+  // Neither local network nor web session cookies can bypass the API key requirement.
+  if (requireApiKey) {
+    if (await hasValidCliToken(request)) return true;
+    return await hasValidApiKey(request);
+  }
+
+  // Open mode: allow local loopback, active dashboard session, or valid API key
   if (isLocalRequest(request)) return true;
   if (await hasValidCliToken(request)) return true;
   if (await hasValidToken(request)) return true;
