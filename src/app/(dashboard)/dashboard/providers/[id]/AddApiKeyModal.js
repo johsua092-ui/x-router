@@ -229,7 +229,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
             />
             {bulkResult && (
               <div className={`text-sm font-medium ${bulkResult.failed > 0 ? "text-yellow-400" : "text-green-400"}`}>
-                ✓ {bulkResult.success} added{bulkResult.failed > 0 ? `, ✗ ${bulkResult.failed} failed` : ""}
+                <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1 text-success" aria-hidden="true">check_circle</span>{bulkResult.success} added{bulkResult.failed > 0 ? `, ${bulkResult.failed} failed` : ""}
               </div>
             )}
             <div className="flex gap-2">

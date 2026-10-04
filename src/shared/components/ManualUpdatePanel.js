@@ -47,7 +47,7 @@ export default function ManualUpdatePanel({ latestVersion, installCmd, copied, o
             Cancel
           </Button>
           <Button variant="primary" fullWidth onClick={onCopyAndShutdown} disabled={isCountingDown}>
-            {copied ? "✓ Copied — shutting down..." : isCountingDown ? `Shutting down in ${countdown}s` : "Copy & Shutdown"}
+            {copied ? "Tersalin. Mematikan..." : isCountingDown ? `Mematikan dalam ${countdown}s` : "Copy & Shutdown"}
           </Button>
         </div>
       )}

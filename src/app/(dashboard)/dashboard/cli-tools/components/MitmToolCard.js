@@ -186,7 +186,7 @@ export default function MitmToolCard({
               <p>Toggle DNS to redirect {tool.name} traffic through X Router via MITM.</p>
               {!dnsActive && (
                 <p className="text-amber-600 text-[10px] mt-1">
-                  ⚠️ Enable DNS to edit model mappings
+                  <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1" aria-hidden="true">warning</span>Enable DNS to edit model mappings
                 </p>
               )}
             </div>

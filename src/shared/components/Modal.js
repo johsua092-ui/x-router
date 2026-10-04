@@ -78,7 +78,7 @@ export default function Modal({
                       title="Close"
                       className="w-4 h-4 rounded-full bg-[#FF5F56] hover:brightness-90 transition-all cursor-pointer flex items-center justify-center group/dot"
                     >
-                      <span className="text-[9px] font-bold text-white opacity-0 group-hover/dot:opacity-100 transition-opacity leading-none">✕</span>
+                      <span className="material-symbols-outlined text-[9px] text-white opacity-0 group-hover/dot:opacity-100 transition-opacity leading-none" aria-hidden="true">close</span>
                     </button>
                   </Tooltip>
                   <div className="w-4 h-4 rounded-full bg-[#3a3a3a]/20 dark:bg-white/15 cursor-not-allowed" />

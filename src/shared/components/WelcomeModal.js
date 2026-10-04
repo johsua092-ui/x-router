@@ -42,47 +42,49 @@ export default function WelcomeModal() {
       footer={null}
     >
       <div className="space-y-5 text-text-main text-sm">
-        <div className="relative flex flex-col items-center justify-center text-center px-6 pt-7 pb-6 gap-4 rounded-2xl border border-border-subtle overflow-hidden">
-          {/* warm aurora di belakang logo */}
+        <div className="relative flex flex-col items-center justify-center text-center px-6 pt-7 pb-6 gap-5 rounded-2xl border border-border-subtle overflow-hidden">
+          {/* Identity motif: the ember veil, rising behind the mark. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 h-40 w-64 rounded-full blur-3xl opacity-40"
-            style={{ background: "radial-gradient(closest-side, var(--color-brand-500), transparent)" }}
+            className="pointer-events-none absolute inset-x-0 top-0 h-28"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 100% at 50% 0%, color-mix(in srgb, var(--color-primary) 26%, transparent), transparent 72%)",
+            }}
           />
-          <div className="relative">
-            <img
-              src="/logo.png"
-              alt="X Router"
-              className="h-16 w-16 rounded-2xl shadow-[var(--shadow-warm)]"
-            />
-            <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500 opacity-60" />
-              <span className="relative inline-flex h-4 w-4 rounded-full border-2 border-surface bg-brand-500" />
-            </span>
-          </div>
-          <div className="relative space-y-1.5">
+          <img
+            src="/logo.png"
+            alt="X Router"
+            className="relative h-16 w-16 rounded-2xl border border-border-subtle object-cover"
+          />
+
+          <div className="relative space-y-2 max-w-sm">
             <p className="text-base font-semibold tracking-tight">
-              Gateway lo sudah nyala
+              Gateway kamu sudah nyala
             </p>
-            <p className="text-text-muted text-xs max-w-xs mx-auto leading-relaxed">
-              Endpoint OpenAI + Anthropic siap dipakai, katalog model lengkap, dan
-              usage terpantau real-time dari dashboard ini.
+            <p className="text-text-muted text-xs leading-relaxed">
+              Endpoint OpenAI dan Anthropic siap dipakai. Katalog model lengkap, dan usage terpantau langsung dari dashboard ini.
             </p>
           </div>
 
-          <div className="relative flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 w-full">
             <a
               href={GITHUB_CONFIG.repoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto"
+              className="flex-1 sm:flex-none"
             >
               <Button variant="outline" icon="star" fullWidth>
                 Star di GitHub
               </Button>
             </a>
-            <Button variant="primary" icon="arrow_forward" onClick={handleClose} className="w-full sm:w-auto">
-              Masuk ke Dashboard
+            <Button
+              variant="primary"
+              icon="arrow_forward"
+              onClick={handleClose}
+              className="flex-1 sm:flex-none whitespace-nowrap"
+            >
+              Masuk Dashboard
             </Button>
           </div>
 

@@ -31,7 +31,7 @@ function estimateCost(modelName, usage, studioTargets) {
 
 // Battle costs are usually sub-cent, so two decimals would render every row as $0.00.
 function showCost(cost) {
-  if (cost === null || cost === undefined || Number.isNaN(cost)) return "—";
+  if (cost === null || cost === undefined || Number.isNaN(cost)) return "–";
   if (cost >= 0.01) return formatCost(cost);
   if (cost < 0.0001) return `$${cost.toExponential(1)}`;
   return `$${cost.toFixed(4)}`;
@@ -405,7 +405,7 @@ function ArenaContent() {
             return (
               <Card key={index} padding="sm" className="h-full flex flex-col min-w-0">
                 <div className="flex items-center justify-between gap-2 pb-3 border-b border-border mb-3">
-                  <span className="font-mono text-sm font-semibold truncate min-w-0">{model || "—"}</span>
+                  <span className="font-mono text-sm font-semibold truncate min-w-0">{model || "–"}</span>
                   {loading && <Elapsed startedAt={results[index]?.startedAt} />}
                   {result && !loading && (
                     <span
@@ -678,16 +678,16 @@ function FinalResult({ ranked, pick, setPick, runId }) {
                 )}
                   </td>
                   <td className="py-2 px-3 text-right font-mono tabular-nums">
-                    {entry.ok ? `${entry.ms}ms` : "—"}
+                    {entry.ok ? `${entry.ms}ms` : "–"}
                   </td>
                   <td className="py-2 px-3 text-right font-mono tabular-nums">
-                    {entry.ttftMs != null ? `${entry.ttftMs}ms` : "—"}
+                    {entry.ttftMs != null ? `${entry.ttftMs}ms` : "–"}
                   </td>
                   <td className="py-2 px-3 text-right font-mono tabular-nums">
-                    {entry.ok ? entry.totalTokens || "—" : "—"}
+                    {entry.ok ? entry.totalTokens || "–" : "–"}
                   </td>
                   <td className="py-2 px-3 text-right font-mono tabular-nums">
-                    {entry.ok ? showCost(entry.cost) : "—"}
+                    {entry.ok ? showCost(entry.cost) : "–"}
                   </td>
                   <td className="py-2 pl-3 text-right">
                     <button

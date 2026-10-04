@@ -1,4 +1,4 @@
-# X Router 🐴
+# X Router
 
 > Gateway LLM OpenAI + Anthropic-compatible. Satu endpoint untuk semua provider lo.
 > Di-remake dari [9router](https://github.com/serenhope/9router) (MIT) — UI, nama, logo, dan password diganti.

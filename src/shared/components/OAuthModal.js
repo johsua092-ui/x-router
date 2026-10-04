@@ -766,14 +766,14 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
                   onClick={() => { setAuthMode("browser"); setError(null); setStep("waiting"); startOAuthFlow(); }}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${authMode === "browser" ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary"}`}
                 >
-                  🌐 Sign in with browser
+                  <span className="material-symbols-outlined text-[16px] align-[-3px] mr-1.5" aria-hidden="true">public</span>Sign in with browser
                 </button>
                 <button
                   type="button"
                   onClick={() => { setAuthMode("paste-token"); setError(null); setStep("input"); }}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${authMode === "paste-token" ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary"}`}
                 >
-                  🔑 Paste token
+                  <span className="material-symbols-outlined text-[16px] align-[-3px] mr-1.5" aria-hidden="true">key</span>Paste token
                 </button>
               </div>
             )}

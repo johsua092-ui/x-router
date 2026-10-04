@@ -10,7 +10,7 @@ const getColorClasses = (remainingPercentage) => {
       text: "text-green-500",
       bg: "bg-green-500",
       bgLight: "bg-green-500/10",
-      emoji: "🟢"
+      icon: "check_circle"
     };
   }
 
@@ -19,7 +19,7 @@ const getColorClasses = (remainingPercentage) => {
       text: "text-yellow-500",
       bg: "bg-yellow-500",
       bgLight: "bg-yellow-500/10",
-      emoji: "🟡"
+      icon: "error"
     };
   }
 
@@ -28,7 +28,7 @@ const getColorClasses = (remainingPercentage) => {
     text: "text-red-500",
     bg: "bg-red-500",
     bgLight: "bg-red-500/10",
-    emoji: "🔴"
+    icon: "cancel"
   };
 };
 

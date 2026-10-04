@@ -268,7 +268,7 @@ export default function XiaomiMimoAuthModal({ isOpen, onSuccess, onClose }) {
                   <div className="text-sm text-blue-800 dark:text-blue-200">
                     <p className="font-medium">This account is already connected (no need to import again)</p>
                     <p className="text-xs mt-0.5 opacity-80">
-                      UID: {detectResult.uid || "—"} · Status: {existingConnection.testStatus === "active" ? "Active" : "Untested"}
+                      UID: {detectResult.uid || "–"} · Status: {existingConnection.testStatus === "active" ? "Active" : "Untested"}
                     </p>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export default function XiaomiMimoAuthModal({ isOpen, onSuccess, onClose }) {
                   <div className="text-sm text-green-800 dark:text-green-200">
                     <p className="font-medium">Xiaomi MiMo Desktop credentials found!</p>
                     <p className="text-xs mt-0.5 opacity-80">
-                      UID: {detectResult.uid || "—"} · Source: {detectResult.source?.split(/[\\/]/).pop()}
+                      UID: {detectResult.uid || "–"} · Source: {detectResult.source?.split(/[\\/]/).pop()}
                     </p>
                   </div>
                 </div>

@@ -21,7 +21,7 @@ export default function GetStarted() {
             
             <div className="flex flex-col gap-6">
               <div className="flex gap-4">
-                <div className="flex-none w-8 h-8 rounded-full bg-[#f97815]/20 text-[#f97815] flex items-center justify-center font-bold">1</div>
+                <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">1</div>
                 <div>
                   <h4 className="font-bold text-lg">Install X Router</h4>
                   <p className="text-sm text-gray-500 mt-1">Run npx command to start the server instantly</p>
@@ -29,7 +29,7 @@ export default function GetStarted() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-none w-8 h-8 rounded-full bg-[#f97815]/20 text-[#f97815] flex items-center justify-center font-bold">2</div>
+                <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">2</div>
                 <div>
                   <h4 className="font-bold text-lg">Open Dashboard</h4>
                   <p className="text-sm text-gray-500 mt-1">Configure providers and API keys via web interface</p>
@@ -37,7 +37,7 @@ export default function GetStarted() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-none w-8 h-8 rounded-full bg-[#f97815]/20 text-[#f97815] flex items-center justify-center font-bold">3</div>
+                <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">3</div>
                 <div>
                   <h4 className="font-bold text-lg">Route Requests</h4>
                   <p className="text-sm text-gray-500 mt-1">Point your CLI tools to http://localhost:20128</p>
@@ -66,19 +66,19 @@ export default function GetStarted() {
                   <span className="text-green-400">$</span>
                   <span className="text-white">npx xrouter</span>
                   <span className="ml-auto text-gray-500 text-xs opacity-0 group-hover:opacity-100">
-                    {copied === "landing" ? "✓ Copied" : "Copy"}
+                    {copied === "landing" ? "Tersalin" : "Copy"}
                   </span>
                 </div>
                 
                 <div className="text-gray-400 mb-6">
-                  <span className="text-[#f97815]">&gt;</span> Starting X Router...<br/>
-                  <span className="text-[#f97815]">&gt;</span> Server running on <span className="text-blue-400">http://localhost:20128</span><br/>
-                  <span className="text-[#f97815]">&gt;</span> Dashboard: <span className="text-blue-400">http://localhost:20128/dashboard</span><br/>
-                  <span className="text-green-400">&gt;</span> Ready to route! ✓
+                  <span className="text-[var(--color-brand-500)]">&gt;</span> Starting X Router...<br/>
+                  <span className="text-[var(--color-brand-500)]">&gt;</span> Server running on <span className="text-blue-400">http://localhost:20128</span><br/>
+                  <span className="text-[var(--color-brand-500)]">&gt;</span> Dashboard: <span className="text-blue-400">http://localhost:20128/dashboard</span><br/>
+                  <span className="text-green-400">&gt;</span> Ready to route.
                 </div>
                 
                 <div className="text-xs text-gray-500 mb-2 border-t border-gray-700 pt-4">
-                  📝 Configure providers in dashboard or use environment variables
+                  Configure providers in dashboard or use environment variables
                 </div>
                 
                 <div className="text-gray-400 text-xs">

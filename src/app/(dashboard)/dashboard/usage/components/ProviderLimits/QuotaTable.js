@@ -48,7 +48,7 @@ function getColorClasses(remainingPercentage) {
       text: "text-green-600 dark:text-green-400",
       bg: "bg-green-500",
       bgLight: "bg-green-500/10",
-      emoji: "🟢",
+      icon: "check_circle",
     };
   }
 
@@ -57,7 +57,7 @@ function getColorClasses(remainingPercentage) {
       text: "text-yellow-600 dark:text-yellow-400",
       bg: "bg-yellow-500",
       bgLight: "bg-yellow-500/10",
-      emoji: "🟡",
+      icon: "error",
     };
   }
 
@@ -65,7 +65,7 @@ function getColorClasses(remainingPercentage) {
     text: "text-red-600 dark:text-red-400",
     bg: "bg-red-500",
     bgLight: "bg-red-500/10",
-    emoji: "🔴",
+    icon: "cancel",
   };
 }
 
@@ -153,7 +153,7 @@ export default function QuotaTable({
           const isUnlimited = quota.unlimited === true;
           const isCreditBalance = quota.isCreditBalance === true;
           const colors = isCreditBalance
-            ? { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500", bgLight: "bg-blue-500/10", emoji: "💰" }
+            ? { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500", bgLight: "bg-blue-500/10", icon: "account_balance_wallet" }
             : getColorClasses(quota.remaining);
           const countdown = formatResetTime(quota.resetAt);
           const resetDisplay = formatResetTimeDisplay(quota.resetAt);
@@ -173,7 +173,7 @@ export default function QuotaTable({
                 {/* Name row */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="text-[11px] shrink-0">{colors.emoji}</span>
+                    <span className={`material-symbols-outlined shrink-0 text-[13px] leading-none ${colors.text}`} aria-hidden="true">{colors.icon}</span>
                     <span className={`${nameText} font-medium text-text-main truncate`}>
                       {quota.name}
                     </span>

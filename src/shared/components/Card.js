@@ -29,7 +29,7 @@ export default function Card({
         "rounded-[14px] shadow-[var(--shadow-soft)]",
         elev && "shadow-[var(--shadow-elev)]",
         hover &&
-          "hover:shadow-[var(--shadow-warm)] hover:border-brand-500/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer",
+          "hover:border-brand-500/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer",
         !hover && "transition-colors",
         paddings[padding],
         className

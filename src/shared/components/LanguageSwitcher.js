@@ -14,46 +14,46 @@ function getLocaleFromCookie() {
   return normalizeLocale(value);
 }
 
-// Locale display names and flags - will be translated by runtime i18n
+// Locale display names and code badges - will be translated by runtime i18n
 const getLocaleInfo = (locale) => {
   const locales = {
-    "en": { name: "English", flag: "🇺🇸" },
-    "vi": { name: "Tiếng Việt", flag: "🇻🇳" },
-    "zh-CN": { name: "简体中文", flag: "🇨🇳" },
-    "zh-TW": { name: "繁體中文", flag: "🇹🇼" },
-    "ja": { name: "日本語", flag: "🇯🇵" },
-    "pt-BR": { name: "Português (Brasil)", flag: "🇧🇷" },
-    "pt-PT": { name: "Português (Portugal)", flag: "🇵🇹" },
-    "ko": { name: "한국어", flag: "🇰🇷" },
-    "es": { name: "Español", flag: "🇪🇸" },
-    "de": { name: "Deutsch", flag: "🇩🇪" },
-    "fr": { name: "Français", flag: "🇫🇷" },
-    "he": { name: "עברית", flag: "🇮🇱" },
-    "ar": { name: "العربية", flag: "🇸🇦" },
-    "ru": { name: "Русский", flag: "🇷🇺" },
-    "pl": { name: "Polski", flag: "🇵🇱" },
-    "cs": { name: "Čeština", flag: "🇨🇿" },
-    "nl": { name: "Nederlands", flag: "🇳🇱" },
-    "tr": { name: "Türkçe", flag: "🇹🇷" },
-    "uk": { name: "Українська", flag: "🇺🇦" },
-    "tl": { name: "Tagalog", flag: "🇵🇭" },
-    "id": { name: "Indonesia", flag: "🇮🇩" },
-    "th": { name: "ไทย", flag: "🇹🇭" },
-    "km": { name: "ខ្មែរ", flag: "🇰🇭" },
-    "hi": { name: "हिन्दी", flag: "🇮🇳" },
-    "bn": { name: "বাংলা", flag: "🇧🇩" },
-    "ur": { name: "اردو", flag: "🇵🇰" },
-    "ro": { name: "Română", flag: "🇷🇴" },
-    "sv": { name: "Svenska", flag: "🇸🇪" },
-    "it": { name: "Italiano", flag: "🇮🇹" },
-    "el": { name: "Ελληνικά", flag: "🇬🇷" },
-    "hu": { name: "Magyar", flag: "🇭🇺" },
-    "fi": { name: "Suomi", flag: "🇫🇮" },
-    "da": { name: "Dansk", flag: "🇩🇰" },
-    "no": { name: "Norsk", flag: "🇳🇴" },
-    "fa": { name: "فارسی", flag: "🇮🇷" }
+    "en": { name: "English", code: "EN" },
+    "vi": { name: "Tiếng Việt", code: "VI" },
+    "zh-CN": { name: "简体中文", code: "ZH" },
+    "zh-TW": { name: "繁體中文", code: "TW" },
+    "ja": { name: "日本語", code: "JA" },
+    "pt-BR": { name: "Português (Brasil)", code: "PT" },
+    "pt-PT": { name: "Português (Portugal)", code: "PT-PT" },
+    "ko": { name: "한국어", code: "KO" },
+    "es": { name: "Español", code: "ES" },
+    "de": { name: "Deutsch", code: "DE" },
+    "fr": { name: "Français", code: "FR" },
+    "he": { name: "עברית", code: "HE" },
+    "ar": { name: "العربية", code: "AR" },
+    "ru": { name: "Русский", code: "RU" },
+    "pl": { name: "Polski", code: "PL" },
+    "cs": { name: "Čeština", code: "CS" },
+    "nl": { name: "Nederlands", code: "NL" },
+    "tr": { name: "Türkçe", code: "TR" },
+    "uk": { name: "Українська", code: "UK" },
+    "tl": { name: "Tagalog", code: "TL" },
+    "id": { name: "Indonesia", code: "ID" },
+    "th": { name: "ไทย", code: "TH" },
+    "km": { name: "ខ្មែរ", code: "KM" },
+    "hi": { name: "हिन्दी", code: "HI" },
+    "bn": { name: "বাংলা", code: "BN" },
+    "ur": { name: "اردو", code: "UR" },
+    "ro": { name: "Română", code: "RO" },
+    "sv": { name: "Svenska", code: "SV" },
+    "it": { name: "Italiano", code: "IT" },
+    "el": { name: "Ελληνικά", code: "EL" },
+    "hu": { name: "Magyar", code: "HU" },
+    "fi": { name: "Suomi", code: "FI" },
+    "da": { name: "Dansk", code: "DA" },
+    "no": { name: "Norsk", code: "NO" },
+    "fa": { name: "فارسی", code: "FA" }
   };
-  return locales[locale] || { name: locale, flag: "🌐" };
+  return locales[locale] || { name: locale, code: locale.slice(0, 2).toUpperCase() };
 };
 
 export default function LanguageSwitcher({ className = "", isOpen: controlledOpen, onClose, hideTrigger = false }) {
@@ -124,7 +124,7 @@ export default function LanguageSwitcher({ className = "", isOpen: controlledOpe
         >
           <span className="material-symbols-outlined text-[20px]">language</span>
           <span className="text-sm font-medium">{getLocaleInfo(locale).name}</span>
-          <span className="text-lg">{getLocaleInfo(locale).flag}</span>
+          <span className="font-mono text-[11px] font-semibold tracking-wider">{getLocaleInfo(locale).code}</span>
         </button>
       )}
 
@@ -172,7 +172,7 @@ export default function LanguageSwitcher({ className = "", isOpen: controlledOpe
                       } ${isPending ? "opacity-70 cursor-wait" : ""}`}
                       title={info.name}
                     >
-                      <span className="text-2xl">{info.flag}</span>
+                      <span className="font-mono text-[13px] font-semibold tracking-wider w-7 text-center shrink-0">{info.code}</span>
                       {/* Fixed 2-line height so all cards are uniform */}
                       <span className="text-center leading-tight line-clamp-2 h-8 flex items-center">{info.name}</span>
                       {active && (
