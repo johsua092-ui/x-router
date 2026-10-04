@@ -568,7 +568,7 @@ function ComboCard({ combo, getCaps, comboByName = {}, activeProviders = [], cop
               checked={selected}
               onChange={onToggleSelect}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               aria-label={`Select ${combo.name}`}
             />
           </label>
@@ -627,7 +627,7 @@ function ComboCard({ combo, getCaps, comboByName = {}, activeProviders = [], cop
                 {judge && (
                   <button
                     onClick={() => onSetStrategy({ judgeModel: "" })}
-                    className="p-0.5 rounded text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    className="p-0.5 rounded text-text-muted hover:text-danger hover:bg-danger-bg transition-colors"
                     title="Reset judge to Auto"
                   >
                     <span className="material-symbols-outlined text-[13px]">close</span>
@@ -671,7 +671,7 @@ function ComboCard({ combo, getCaps, comboByName = {}, activeProviders = [], cop
             </button>
             <button
               onClick={onDelete}
-              className="flex flex-col items-center rounded px-2 py-1 text-red-500 transition-colors hover:bg-red-500/10"
+              className="flex flex-col items-center rounded px-2 py-1 text-danger transition-colors hover:bg-danger-bg"
               title="Delete"
             >
               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -827,7 +827,7 @@ function CapacityAdapterCap({ cap, entry, onChange, activeProviders, getCaps }) 
                       <span className="truncate">{model}</span>
                       <CapacityBadges caps={getCaps?.(model)} />
                       {model === DEFAULT_FALLBACK_MODEL && (
-                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-sans text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="rounded bg-success-bg px-1.5 py-0.5 font-sans text-[10px] font-medium text-success">
                           free default
                         </span>
                       )}
@@ -871,7 +871,7 @@ function CapacityAdapterCap({ cap, entry, onChange, activeProviders, getCaps }) 
                       className={`p-1 rounded transition-colors ${
                         !enabled
                           ? "text-text-muted/20 cursor-not-allowed"
-                          : "text-text-muted hover:text-red-500 hover:bg-red-500/10"
+                          : "text-text-muted hover:text-danger hover:bg-danger-bg"
                       }`}
                       title="Remove model"
                     >
@@ -997,7 +997,7 @@ function ModelItem({ id, index, model, isFirst, isLast, context, onEdit, onMoveU
       {/* Remove */}
       <button
         onClick={onRemove}
-        className="p-0.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-500 transition-all"
+        className="p-0.5 hover:bg-danger-bg rounded text-text-muted hover:text-danger transition-all"
         title="Remove"
       >
         <span className="material-symbols-outlined text-[12px]">close</span>

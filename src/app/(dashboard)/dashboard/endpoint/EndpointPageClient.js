@@ -66,7 +66,7 @@ function ResetCountdown({ resetInterval, lastResetAt }) {
   if (!due) return null;
   const remaining = new Date(due).getTime() - now;
   return (
-    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-gray-500/10 text-text-muted">
+    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-surface-2 text-text-muted">
       {remaining <= 0 ? "Resetting..." : `Next reset: ${formatDuration(remaining)}`}
     </span>
   );
@@ -1095,7 +1095,7 @@ const scopedModelPatterns =
                 </button>
                 <button
                   onClick={() => setShowDisableTunnelModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Disable Tunnel"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1103,13 +1103,13 @@ const scopedModelPatterns =
               </>
             ) : tunnelEnabled && !tunnelLoading && !tunnelReachable ? (
               <>
-                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-amber-300 dark:border-amber-800 bg-amber-500/5 text-sm text-amber-600 dark:text-amber-400">
+                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-warning-border bg-warning-bg text-sm text-warning">
                   <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
                   {tunnelEverReachable ? "Tunnel reconnecting..." : "Tunnel checking..."}
                 </div>
                 <button
                   onClick={() => setShowDisableTunnelModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Disable Tunnel"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1123,7 +1123,7 @@ const scopedModelPatterns =
                 </div>
                 <button
                   onClick={() => { setTunnelLoading(false); setTunnelProgress(""); }}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Stop"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1131,7 +1131,7 @@ const scopedModelPatterns =
               </>
             ) : tunnelStatus?.type === "error" ? (
               <>
-                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-red-300 dark:border-red-800 bg-red-500/5 text-sm text-red-600 dark:text-red-400">
+                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-danger-border bg-danger-bg text-sm text-danger">
                   <span className="material-symbols-outlined text-sm">error</span>
                   {tunnelStatus.message}
                 </div>
@@ -1145,7 +1145,7 @@ const scopedModelPatterns =
                 </div>
                 <button
                   onClick={() => setTunnelChecking(false)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Stop"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1183,7 +1183,7 @@ const scopedModelPatterns =
                 </button>
                 <button
                   onClick={() => setShowDisableTsModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Disable Tailscale"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1191,13 +1191,13 @@ const scopedModelPatterns =
               </>
             ) : tsEnabled && !tsLoading && !tsReachable ? (
               <>
-                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-amber-300 dark:border-amber-800 bg-amber-500/5 text-sm text-amber-600 dark:text-amber-400">
+                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-warning-border bg-warning-bg text-sm text-warning">
                   <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
                   {tsEverReachable ? "Tailscale reconnecting..." : "Tailscale checking..."}
                 </div>
                 <button
                   onClick={() => setShowDisableTsModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Disable Tailscale"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1220,7 +1220,7 @@ const scopedModelPatterns =
                 )}
                 <button
                   onClick={() => { setTsLoading(false); setTsConnecting(false); setTsProgress(""); clearUserAuth(); }}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
+                  className="p-2 hover:bg-danger-bg rounded text-danger transition-colors shrink-0"
                   title="Stop"
                 >
                   <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -1228,7 +1228,7 @@ const scopedModelPatterns =
               </>
             ) : tsStatus?.type === "error" ? (
               <>
-                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-red-300 dark:border-red-800 bg-red-500/5 text-sm text-red-600 dark:text-red-400">
+                <div className="min-w-0 flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-danger-border bg-danger-bg text-sm text-danger">
                   <span className="material-symbols-outlined text-sm">error</span>
                   {tsStatus.message}
                 </div>
@@ -1241,7 +1241,7 @@ const scopedModelPatterns =
                 onClick={() => {
                   handleOpenTsModal();
                 }}
-                className="bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white!"
+                className="bg-linear-to-r from-brand-600 to-brand-500 hover:from-brand-600 hover:to-brand-500 text-white!"
               >
                 Enable
               </Button>
@@ -1366,35 +1366,35 @@ const scopedModelPatterns =
                       Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) + " tokens" : "Unlimited"}
                     </span>
                     {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-gray-500/10 text-text-muted">
+                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-surface-2 text-text-muted">
                         Reset: every {key.resetInterval}
                       </span>
                     )}
                     {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
                       <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                     )}
-                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
+                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-info-bg text-info font-medium">
                       Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
                     </span>
                     {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-medium">
+                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-info-bg text-info font-medium">
                         Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
                     {key.ipWhitelist && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium">
+                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-success-bg text-success font-medium">
                         IP Guard: Active
                       </span>
                     )}
                     {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-semibold">
+                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-danger-bg text-danger font-semibold">
                         Quota Exceeded
                       </span>
                     )}
                   </div>
                   {key.isActive === false && (
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 font-semibold">
+                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-warning-bg text-warning font-semibold">
                         Key switched off
                       </span>
                     </div>
@@ -1464,7 +1464,7 @@ const scopedModelPatterns =
                   <button
                     onClick={() => handleDeleteKey(key.id)}
                     disabled={isOwnKey(key)}
-                    className={cn("p-2 hover:bg-red-500/10 rounded text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
+                    className={cn("p-2 hover:bg-danger-bg rounded text-danger opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>
@@ -1567,7 +1567,7 @@ const scopedModelPatterns =
                     <button
                       type="button"
                       onClick={() => removeAllowedModel("create", m)}
-                      className="hover:text-red-500 transition-colors"
+                      className="hover:text-danger transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">close</span>
                     </button>
@@ -1704,7 +1704,7 @@ const scopedModelPatterns =
                     <button
                       type="button"
                       onClick={() => removeAllowedModel("edit", m)}
-                      className="hover:text-red-500 transition-colors"
+                      className="hover:text-danger transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">close</span>
                     </button>
@@ -1778,11 +1778,11 @@ const scopedModelPatterns =
         onClose={() => setCreatedKey(null)}
       >
         <div className="flex flex-col gap-4">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2 font-medium">
+          <div className="bg-warning-bg border border-warning-border rounded-lg p-4">
+            <p className="text-sm text-warning mb-2 font-medium">
               Save this key now!
             </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            <p className="text-sm text-warning">
               Store this key now, because it is shown only once.
             </p>
           </div>
@@ -1932,7 +1932,7 @@ const scopedModelPatterns =
           {/* Installed: show Connect button */}
           {tsInstalled === true && !tsInstalling && (
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-2 text-sm text-success">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
                 Tailscale installed
               </div>

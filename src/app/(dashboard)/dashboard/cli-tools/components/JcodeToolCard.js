@@ -224,9 +224,9 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h3 className="font-medium text-sm">{tool.name}</h3>
-              {configStatus === "configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">Connected</span>}
-              {configStatus === "not_configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-full">Not configured</span>}
-              {configStatus === "other" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full">Other</span>}
+              {configStatus === "configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-success-bg text-success rounded-full">Connected</span>}
+              {configStatus === "not_configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-warning-bg text-warning rounded-full">Not configured</span>}
+              {configStatus === "other" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-info-bg text-info rounded-full">Other</span>}
             </div>
             <p className="text-xs text-text-muted truncate">{tool.description}</p>
           </div>
@@ -245,11 +245,11 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
 
           {!checkingJcode && jcodeStatus && !jcodeStatus.installed && (
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex flex-col gap-3 p-4 bg-warning-bg border border-warning-border rounded-lg">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-yellow-500">warning</span>
+                  <span className="material-symbols-outlined text-warning">warning</span>
                   <div className="flex-1">
-                    <p className="font-medium text-yellow-600 dark:text-yellow-400">jcode CLI not detected locally</p>
+                    <p className="font-medium text-warning">jcode CLI not detected locally</p>
                     <p className="text-sm text-text-muted mt-1">Install jcode to enable automatic configuration:</p>
                     <code className="block mt-2 p-2 bg-black/20 rounded text-xs font-mono">
                       curl -fsSL https://raw.githubusercontent.com/1jehuang/jcode/master/scripts/install.sh | bash
@@ -258,7 +258,7 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pl-9">
-                  <Button variant="secondary" size="sm" onClick={() => setShowManualConfigModal(true)} className="!bg-yellow-500/20 !border-yellow-500/40 !text-yellow-700 dark:!text-yellow-300 hover:!bg-yellow-500/30">
+                  <Button variant="secondary" size="sm" onClick={() => setShowManualConfigModal(true)} className="!bg-warning-bg !border-warning-border !text-warning dark:!text-warning hover:!bg-warning-bg">
                     <span className="material-symbols-outlined text-[18px] mr-1">content_copy</span>
                     Manual Config
                   </Button>
@@ -275,9 +275,9 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
                   <div className="flex flex-col gap-2 mb-2">
                     {tool.notes.map((note, idx) => (
                       <div key={idx} className={`flex items-start gap-2 p-2 rounded text-xs ${
-                        note.type === "info" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
-                        note.type === "warning" ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" :
-                        "bg-gray-500/10 text-text-muted"
+                        note.type === "info" ? "bg-info-bg text-info" :
+                        note.type === "warning" ? "bg-warning-bg text-warning" :
+                        "bg-surface-2 text-text-muted"
                       }`}>
                         <span className="material-symbols-outlined text-[14px] mt-0.5">
                           {note.type === "info" ? "info" : note.type === "warning" ? "warning" : "help"}
@@ -328,21 +328,21 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
                   <span className="material-symbols-outlined hidden text-text-muted text-[14px] sm:inline">arrow_forward</span>
                   <div className="relative w-full min-w-0">
                     <input type="text" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} placeholder="cc/claude-opus-4-7" className="w-full min-w-0 pl-2 pr-7 py-2 bg-surface rounded border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 sm:py-1.5" />
-                    {selectedModel && <button onClick={() => setSelectedModel("")} className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-red-500 rounded transition-colors" title="Clear"><span className="material-symbols-outlined text-[14px]">close</span></button>}
+                    {selectedModel && <button onClick={() => setSelectedModel("")} className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-danger rounded transition-colors" title="Clear"><span className="material-symbols-outlined text-[14px]">close</span></button>}
                   </div>
                   <button onClick={() => setModalOpen(true)} disabled={!hasActiveProviders} className={`w-full sm:w-auto rounded border px-2 py-2 text-xs transition-colors sm:py-1.5 whitespace-nowrap sm:shrink-0 ${hasActiveProviders ? "bg-surface border-border text-text-main hover:border-primary cursor-pointer" : "opacity-50 cursor-not-allowed border-border"}`}>Select</button>
                 </div>
 
                 {/* Usage hint */}
-                <div className="flex flex-col gap-1 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Usage:</p>
+                <div className="flex flex-col gap-1 p-3 bg-info-bg border border-info-border rounded-lg">
+                  <p className="text-xs font-medium text-info">Usage:</p>
                   <code className="text-xs font-mono text-text-muted">jcode --provider-profile xrouter</code>
                   <code className="text-xs font-mono text-text-muted">jcode --provider-profile xrouter --model {selectedModel || "cc/claude-opus-4-7"}</code>
                 </div>
               </div>
 
               {message && (
-                <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
+                <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}>
                   <span className="material-symbols-outlined text-[14px]">{message.type === "success" ? "check_circle" : "error"}</span>
                   <span>{message.text}</span>
                 </div>

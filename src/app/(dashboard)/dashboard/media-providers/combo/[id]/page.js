@@ -255,7 +255,7 @@ export default function ComboDetailPage() {
             <code className="text-lg font-semibold font-mono">{combo.name}</code>
           </div>
         </div>
-        <Button variant="outline" icon="delete" onClick={handleDelete} className="text-red-500 border-red-200 hover:bg-red-50">
+        <Button variant="outline" icon="delete" onClick={handleDelete} className="text-danger border-danger-border hover:bg-danger-bg">
           Delete
         </Button>
       </div>
@@ -318,7 +318,7 @@ export default function ComboDetailPage() {
                     <button onClick={() => handleMove(idx, 1)} disabled={idx === providers.length - 1} className={`p-1 rounded ${idx === providers.length - 1 ? "text-text-muted/20" : "text-text-muted hover:text-primary hover:bg-black/5"}`} title="Move down">
                       <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
                     </button>
-                    <button onClick={() => handleRemoveProvider(idx)} className="p-1 rounded text-text-muted hover:text-red-500 hover:bg-red-500/10" title="Remove">
+                    <button onClick={() => handleRemoveProvider(idx)} className="p-1 rounded text-text-muted hover:text-danger hover:bg-danger-bg" title="Remove">
                       <span className="material-symbols-outlined text-[16px]">close</span>
                     </button>
                   </div>
@@ -342,7 +342,7 @@ export default function ComboDetailPage() {
             {curlExample}
           </pre>
           {testError && (
-            <p className="mt-3 text-xs text-red-500 break-words">{testError}</p>
+            <p className="mt-3 text-xs text-danger break-words">{testError}</p>
           )}
           {testResult && (
             <div className="mt-3 flex flex-col gap-3">

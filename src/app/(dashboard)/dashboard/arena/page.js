@@ -411,10 +411,10 @@ function ArenaContent() {
                     <span
                       className={`text-xs px-2 py-1 rounded font-mono shrink-0 ${
                         !result.ok
-                          ? "bg-red-500/10 text-red-500"
+                          ? "bg-danger-bg text-danger"
                           : result.kind === "empty" || result.stopped
-                            ? "bg-amber-500/10 text-amber-500"
-                            : "bg-green-500/10 text-green-500"
+                            ? "bg-warning-bg text-warning"
+                            : "bg-success-bg text-success"
                       }`}
                     >
                       {!result.ok
@@ -445,15 +445,15 @@ function ArenaContent() {
                     <div className="flex flex-col h-full min-w-0">
                       {result.kind === "error" ? (
                         <div className="flex flex-col gap-2 min-w-0">
-                          <p className="text-sm text-red-500 break-words min-w-0">{result.content}</p>
+                          <p className="text-sm text-danger break-words min-w-0">{result.content}</p>
                           <div className="flex flex-wrap gap-1.5 text-[10px]">
                             {result.status && (
-                              <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 font-mono">
+                              <span className="px-1.5 py-0.5 rounded bg-danger-bg text-danger font-mono">
                                 HTTP {result.status}
                               </span>
                             )}
                             {result.cooldown && (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">
+                              <span className="px-1.5 py-0.5 rounded bg-warning-bg text-warning">
                                 {result.cooldown}
                               </span>
                             )}
@@ -479,7 +479,7 @@ function ArenaContent() {
                         </div>
                       ) : result.kind === "empty" ? (
                         <div className="flex flex-col gap-1.5 min-w-0">
-                          <p className="text-sm text-amber-500 break-words min-w-0">{result.hint}</p>
+                          <p className="text-sm text-warning break-words min-w-0">{result.hint}</p>
                           {!result.stopped && (
                             <p className="text-[11px] text-text-muted">The provider answered with HTTP 200 and nothing inside.</p>
                           )}
@@ -525,7 +525,7 @@ function ArenaContent() {
                         </div>
                       )}
                       {result.stopped && result.kind !== "empty" && (
-                        <p className="mt-2 text-[11px] text-amber-500 break-words min-w-0">{result.stoppedNote}</p>
+                        <p className="mt-2 text-[11px] text-warning break-words min-w-0">{result.stoppedNote}</p>
                       )}
                     </div>
                   ) : (
@@ -618,7 +618,7 @@ function FinalResult({ ranked, pick, setPick, runId }) {
     <Card padding="md" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="material-symbols-outlined text-amber-500 text-[20px]">trophy</span>
+          <span className="material-symbols-outlined text-warning text-[20px]">trophy</span>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-text-main">Final Result</h3>
             <p className="text-[11px] text-text-muted">
@@ -672,7 +672,7 @@ function FinalResult({ ranked, pick, setPick, runId }) {
                       {isPicked && <Badge icon="check" text="your pick" accent />}
                     </div>
                     {!entry.answered && !entry.stopped && (
-                  <span className={`text-[11px] ${entry.ok ? "text-amber-500" : "text-red-500"}`}>
+                  <span className={`text-[11px] ${entry.ok ? "text-warning" : "text-danger"}`}>
                     {entry.ok ? "empty answer" : "failed"}
                   </span>
                 )}

@@ -126,14 +126,14 @@ export default function CustomConfigCard({ providerId }) {
                     spellCheck={false}
                     title={overridden ? "Overridden" : row.name.trim() in builtin ? "Registry default" : ""}
                     className={`min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none ${
-                      overridden ? "border-amber-400/60" : "border-border"
+                      overridden ? "border-warning-border" : "border-border"
                     }`}
                   />
                   <button
                     type="button"
                     title="Remove header"
                     onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : [{ name: "", value: "" }]))}
-                    className="shrink-0 text-text-muted hover:text-red-500"
+                    className="shrink-0 text-text-muted hover:text-danger"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>

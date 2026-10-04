@@ -15,7 +15,7 @@ export default function GetStarted() {
           {/* Left: Steps */}
           <div className="flex-1">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Get Started in 30 Seconds</h2>
-            <p className="text-gray-400 text-lg mb-8">
+            <p className="text-muted text-lg mb-8">
               Install X Router, configure your providers via web dashboard, and start routing AI requests.
             </p>
             
@@ -24,7 +24,7 @@ export default function GetStarted() {
                 <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">1</div>
                 <div>
                   <h4 className="font-bold text-lg">Install X Router</h4>
-                  <p className="text-sm text-gray-500 mt-1">Run npx command to start the server instantly</p>
+                  <p className="text-sm text-muted mt-1">Run npx command to start the server instantly</p>
                 </div>
               </div>
               
@@ -32,7 +32,7 @@ export default function GetStarted() {
                 <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">2</div>
                 <div>
                   <h4 className="font-bold text-lg">Open Dashboard</h4>
-                  <p className="text-sm text-gray-500 mt-1">Configure providers and API keys via web interface</p>
+                  <p className="text-sm text-muted mt-1">Configure providers and API keys via web interface</p>
                 </div>
               </div>
               
@@ -40,7 +40,7 @@ export default function GetStarted() {
                 <div className="flex-none w-8 h-8 rounded-full bg-[var(--color-brand-500)]/20 text-[var(--color-brand-500)] flex items-center justify-center font-bold">3</div>
                 <div>
                   <h4 className="font-bold text-lg">Route Requests</h4>
-                  <p className="text-sm text-gray-500 mt-1">Point your CLI tools to http://localhost:20128</p>
+                  <p className="text-sm text-muted mt-1">Point your CLI tools to http://localhost:20128</p>
                 </div>
               </div>
             </div>
@@ -50,11 +50,11 @@ export default function GetStarted() {
           <div className="flex-1 w-full">
             <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-[#3a2f27] shadow-2xl">
               {/* Terminal header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-[#252526] border-b border-gray-700">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <div className="ml-2 text-xs text-gray-500 font-mono">terminal</div>
+              <div className="flex items-center gap-2 px-4 py-3 bg-[#252526] border-b border-border">
+                <div className="w-3 h-3 rounded-full bg-danger-solid"></div>
+                <div className="w-3 h-3 rounded-full bg-warning-solid"></div>
+                <div className="w-3 h-3 rounded-full bg-success-solid"></div>
+                <div className="ml-2 text-xs text-muted font-mono">terminal</div>
               </div>
               
               {/* Terminal content */}
@@ -63,28 +63,28 @@ export default function GetStarted() {
                   className="flex items-center gap-2 mb-4 group cursor-pointer"
                   onClick={() => handleCopy("npx xrouter")}
                 >
-                  <span className="text-green-400">$</span>
+                  <span className="text-success">$</span>
                   <span className="text-white">npx xrouter</span>
-                  <span className="ml-auto text-gray-500 text-xs opacity-0 group-hover:opacity-100">
+                  <span className="ml-auto text-muted text-xs opacity-0 group-hover:opacity-100">
                     {copied === "landing" ? "Tersalin" : "Copy"}
                   </span>
                 </div>
                 
-                <div className="text-gray-400 mb-6">
+                <div className="text-muted mb-6">
                   <span className="text-[var(--color-brand-500)]">&gt;</span> Starting X Router...<br/>
-                  <span className="text-[var(--color-brand-500)]">&gt;</span> Server running on <span className="text-blue-400">http://localhost:20128</span><br/>
-                  <span className="text-[var(--color-brand-500)]">&gt;</span> Dashboard: <span className="text-blue-400">http://localhost:20128/dashboard</span><br/>
-                  <span className="text-green-400">&gt;</span> Ready to route.
+                  <span className="text-[var(--color-brand-500)]">&gt;</span> Server running on <span className="text-info">http://localhost:20128</span><br/>
+                  <span className="text-[var(--color-brand-500)]">&gt;</span> Dashboard: <span className="text-info">http://localhost:20128/dashboard</span><br/>
+                  <span className="text-success">&gt;</span> Ready to route.
                 </div>
                 
-                <div className="text-xs text-gray-500 mb-2 border-t border-gray-700 pt-4">
+                <div className="text-xs text-muted mb-2 border-t border-border pt-4">
                   Configure providers in dashboard or use environment variables
                 </div>
                 
-                <div className="text-gray-400 text-xs">
-                  <span className="text-purple-400">Data Location:</span><br/>
-                  <span className="text-gray-500">  macOS/Linux:</span> ~/.xrouter/db/data.sqlite<br/>
-                  <span className="text-gray-500">  Windows:</span> %APPDATA%/xrouter/db/data.sqlite
+                <div className="text-muted text-xs">
+                  <span className="text-info">Data Location:</span><br/>
+                  <span className="text-muted">  macOS/Linux:</span> ~/.xrouter/db/data.sqlite<br/>
+                  <span className="text-muted">  Windows:</span> %APPDATA%/xrouter/db/data.sqlite
                 </div>
               </div>
             </div>

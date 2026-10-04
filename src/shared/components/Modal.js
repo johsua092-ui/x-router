@@ -3,8 +3,11 @@
 import { useEffect } from "react";
 import { cn } from "@/shared/utils/cn";
 import Button from "./Button";
-import Tooltip from "./Tooltip";
 
+/* Modal. Solid panel, single ember rule under the header, no traffic lights —
+   the close affordance is one labelled button instead of three decorative
+   dots. showTrafficLights is kept as an accepted prop so existing call sites
+   keep working. */
 export default function Modal({
   isOpen,
   onClose,
@@ -13,7 +16,6 @@ export default function Modal({
   footer,
   size = "md",
   closeOnOverlay = true,
-  showTrafficLights = true,
   className,
 }) {
   const sizes = {
@@ -47,65 +49,48 @@ export default function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/55 fade-in"
+        className="absolute inset-0 bg-black/60 fade-in"
         onClick={closeOnOverlay ? onClose : undefined}
+        aria-hidden="true"
       />
 
-      {/* Modal content */}
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
-          "relative w-full bg-surface",
-          "border border-border-subtle",
-          "rounded-[14px] shadow-[var(--shadow-elev)]",
-          "modal-in",
+          "relative w-full flex flex-col bg-surface border border-border rounded-[12px]",
+          "shadow-[var(--shadow-elev)] modal-in",
+          "max-h-[calc(100vh-2rem)]",
           sizes[size],
           className
         )}
       >
-        {/* Header */}
-        {(title || showTrafficLights) && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border-subtle min-h-[52px]">
-            <div className="flex items-center min-w-0 flex-1">
-              {/* Traffic lights — desktop only */}
-              {showTrafficLights && (
-                <div className="hidden md:flex items-center gap-2 mr-4 ml-1 shrink-0">
-                  <Tooltip text="Close" position="top" color="#FF5F56">
-                    <button
-                      onClick={onClose}
-                      aria-label="Close"
-                      title="Close"
-                      className="w-4 h-4 rounded-full bg-[#FF5F56] hover:brightness-90 transition-all cursor-pointer flex items-center justify-center group/dot"
-                    >
-                      <span className="material-symbols-outlined text-[9px] text-white opacity-0 group-hover/dot:opacity-100 transition-opacity leading-none" aria-hidden="true">close</span>
-                    </button>
-                  </Tooltip>
-                  <div className="w-4 h-4 rounded-full bg-[#3a3a3a]/20 dark:bg-white/15 cursor-not-allowed" />
-                  <div className="w-4 h-4 rounded-full bg-[#3a3a3a]/20 dark:bg-white/15 cursor-not-allowed" />
-                </div>
-              )}
-              {title && (
-                <h2 className="text-base font-semibold text-text-main truncate min-w-0">{title}</h2>
-              )}
-            </div>
-            {/* X button — mobile only */}
+        <div className="relative shrink-0 px-5 pt-4 pb-3">
+          <div className="flex items-start justify-between gap-4">
+            {title ? (
+              <h2 className="text-[15px] font-semibold tracking-tight text-text-main min-w-0">
+                {title}
+              </h2>
+            ) : (
+              <span />
+            )}
             <button
+              type="button"
               onClick={onClose}
               aria-label="Close"
-              className="md:hidden shrink-0 p-1 rounded-[10px] text-text-muted hover:bg-surface-2 hover:text-text-main transition-colors"
+              className="-mt-0.5 -mr-1 shrink-0 p-1.5 rounded-[7px] text-text-subtle hover:bg-surface-2 hover:text-text-main transition-colors"
             >
-              <span className="material-symbols-outlined text-[20px] leading-none">close</span>
+              <span className="material-symbols-outlined text-[18px] leading-none">close</span>
             </button>
           </div>
-        )}
+          <span className="ember-rule mt-3" aria-hidden="true" />
+        </div>
 
-        {/* Body */}
-        <div className="p-6 max-h-[calc(85vh-100px)] overflow-y-auto custom-scrollbar">{children}</div>
+        <div className="px-5 py-4 overflow-y-auto custom-scrollbar">{children}</div>
 
-        {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-border-subtle">
+          <div className="shrink-0 flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border-subtle bg-bg-alt rounded-b-[12px]">
             {footer}
           </div>
         )}
@@ -142,7 +127,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-text-muted">{message}</p>
+      <p className="text-[13px] text-text-muted leading-relaxed">{message}</p>
     </Modal>
   );
 }

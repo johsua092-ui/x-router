@@ -7,27 +7,27 @@ import { formatResetTime } from "./utils";
 const getColorClasses = (remainingPercentage) => {
   if (remainingPercentage > 70) {
     return {
-      text: "text-green-500",
-      bg: "bg-green-500",
-      bgLight: "bg-green-500/10",
+      text: "text-success",
+      bg: "bg-success-solid",
+      bgLight: "bg-success-bg",
       icon: "check_circle"
     };
   }
 
   if (remainingPercentage >= 30) {
     return {
-      text: "text-yellow-500",
-      bg: "bg-yellow-500",
-      bgLight: "bg-yellow-500/10",
+      text: "text-warning",
+      bg: "bg-warning-solid",
+      bgLight: "bg-warning-bg",
       icon: "error"
     };
   }
 
   // 0-29% including 0% (out of quota) - show red
   return {
-    text: "text-red-500",
-    bg: "bg-red-500",
-    bgLight: "bg-red-500/10",
+    text: "text-danger",
+    bg: "bg-danger-solid",
+    bgLight: "bg-danger-bg",
     icon: "cancel"
   };
 };

@@ -127,10 +127,10 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
     <>
       {visible && (
         <div className="mx-6 lg:mx-10 mb-4 max-w-7xl slide-in-top">
-          <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 sm:flex-row sm:items-center">
-            <span className="material-symbols-outlined shrink-0 text-[20px] text-amber-500">system_update_alt</span>
+          <div className="flex flex-col gap-2.5 rounded-xl border border-warning-border bg-warning-bg px-4 py-3 sm:flex-row sm:items-center">
+            <span className="material-symbols-outlined shrink-0 text-[20px] text-warning">system_update_alt</span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+              <p className="text-sm font-medium text-warning">
                 {info.behindBy ? `Update available: ${info.behindBy} commit${info.behindBy > 1 ? "s" : ""} behind` : `Update available: ${info.latestVersion}`}
               </p>
               <p className="text-xs text-text-muted">{summaryFor(info)}</p>
@@ -177,7 +177,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
                   }
                   setDismissed(identity);
                 }}
-                className="rounded p-1 text-text-muted transition-colors hover:text-amber-500"
+                className="rounded p-1 text-text-muted transition-colors hover:text-warning"
                 title="Close"
                 aria-label="Dismiss update notice"
               >
@@ -216,7 +216,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
             />
           ) : (
             <div className="text-center p-8">
-              <div className="flex items-center justify-center size-16 rounded-full bg-red-500/20 text-red-500 mx-auto mb-4">
+              <div className="flex items-center justify-center size-16 rounded-full bg-danger-bg text-danger mx-auto mb-4">
                 <span className="material-symbols-outlined text-[32px]">power_off</span>
               </div>
               <h2 className="text-xl font-semibold text-white mb-2">Server Disconnected</h2>

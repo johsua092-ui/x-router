@@ -262,7 +262,7 @@ export function SttExampleCard({ providerId }) {
           <pre className="bg-sidebar rounded-lg px-3 py-2.5 text-xs font-mono text-text-main overflow-x-auto whitespace-pre-wrap break-all">{curlSnippet}</pre>
         </div>
 
-        {error && <p className="text-xs text-red-500 break-words">{error}</p>}
+        {error && <p className="text-xs text-danger break-words">{error}</p>}
 
         {/* Response */}
         <div>

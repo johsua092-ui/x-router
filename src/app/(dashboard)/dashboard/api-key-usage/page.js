@@ -40,7 +40,7 @@ function QuotaBar({ used, limit, percent }) {
   if (!limit) {
     return <p className="text-xs text-text-muted">No token limit</p>;
   }
-  const color = percent >= 100 ? "bg-red-500" : percent >= 80 ? "bg-amber-500" : "bg-primary";
+  const color = percent >= 100 ? "bg-danger-solid" : percent >= 80 ? "bg-warning-solid" : "bg-primary";
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
@@ -96,7 +96,7 @@ function KeyCard({ k, expanded, onToggle }) {
         </div>
         <div className="rounded-lg bg-surface-2/50 p-2">
           <p className="text-[10px] uppercase tracking-wider text-text-muted">Errors</p>
-          <p className={`text-sm font-semibold ${k.errorRate > 0.1 ? "text-red-500" : ""}`}>
+          <p className={`text-sm font-semibold ${k.errorRate > 0.1 ? "text-danger" : ""}`}>
             {(k.errorRate * 100).toFixed(1)}%
           </p>
         </div>
@@ -182,8 +182,8 @@ export default function ApiKeyUsagePage() {
       </div>
 
       {error && (
-        <Card className="border-red-300 bg-red-500/5">
-          <p className="text-sm text-red-500">{error}</p>
+        <Card className="border-danger-border bg-danger-bg">
+          <p className="text-sm text-danger">{error}</p>
         </Card>
       )}
 

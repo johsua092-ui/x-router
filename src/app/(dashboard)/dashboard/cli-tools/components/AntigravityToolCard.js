@@ -289,11 +289,11 @@ export default function AntigravityToolCard({
                     {isLoading ? (
                       <span className="material-symbols-outlined text-[14px] text-primary animate-spin">progress_activity</span>
                     ) : (
-                      <span className={`material-symbols-outlined text-[14px] ${ok ? "text-green-500" : "text-text-muted"}`}>
+                      <span className={`material-symbols-outlined text-[14px] ${ok ? "text-success" : "text-text-muted"}`}>
                         {ok ? "check_circle" : "radio_button_unchecked"}
                       </span>
                     )}
-                    <span className={`text-xs font-medium ${isLoading ? "text-primary" : ok ? "text-green-500" : "text-text-muted"}`}>
+                    <span className={`text-xs font-medium ${isLoading ? "text-primary" : ok ? "text-success" : "text-text-muted"}`}>
                       {label}
                     </span>
                   </div>
@@ -309,7 +309,7 @@ export default function AntigravityToolCard({
               <button
                 onClick={handleStop}
                 disabled={loading}
-                className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 font-medium text-sm flex items-center gap-2 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-danger-bg border border-danger-border text-danger font-medium text-sm flex items-center gap-2 hover:bg-danger-bg transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">stop_circle</span>
                 Stop MITM
@@ -327,7 +327,7 @@ export default function AntigravityToolCard({
           </div>
 
           {message?.type === "error" && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-danger-bg text-danger">
               <span className="material-symbols-outlined text-[14px]">error</span>
               <span>{message.text}</span>
             </div>
@@ -358,14 +358,14 @@ export default function AntigravityToolCard({
                 <div key={model.alias} className="grid grid-cols-1 gap-1.5 sm:grid-cols-[8rem_auto_1fr_auto] sm:items-center sm:gap-2">
                   <span
                     className={`text-xs font-semibold sm:text-right sm:text-sm ${
-                      isClaude55(model.alias) && claude55Blocked ? "text-red-500" : "text-text-main"
+                      isClaude55(model.alias) && claude55Blocked ? "text-danger" : "text-text-main"
                     }`}
                   >
                     {model.name}
                   </span>
                   {isClaude55(model.alias) && claude55Blocked && (
                     <span
-                      className="material-symbols-outlined text-red-500 text-[14px] sm:inline"
+                      className="material-symbols-outlined text-danger text-[14px] sm:inline"
                       title="Needs Antigravity standard-tier. This account is on free-tier, so upstream answers this model with 404."
                     >
                       error
@@ -383,7 +383,7 @@ export default function AntigravityToolCard({
                     {modelMappings[model.alias] && (
                       <button
                         onClick={() => handleModelMappingChange(model.alias, "")}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-red-500 rounded transition-colors"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-danger rounded transition-colors"
                         title="Clear"
                       >
                         <span className="material-symbols-outlined text-[14px]">close</span>
@@ -416,7 +416,7 @@ export default function AntigravityToolCard({
 
           {/* Windows admin warning */}
           {!isRunning && serverIsWindows && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-warning-bg text-warning border border-warning-border">
               <span className="material-symbols-outlined text-[14px]">warning</span>
               <span>Windows: Run terminal (X Router) as Administrator to enable MITM</span>
             </div>
@@ -450,8 +450,8 @@ export default function AntigravityToolCard({
         size="sm"
       >
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <span className="material-symbols-outlined text-yellow-500 text-[20px]">warning</span>
+          <div className="flex items-start gap-3 p-3 bg-warning-bg border border-warning-border rounded-lg">
+            <span className="material-symbols-outlined text-warning text-[20px]">warning</span>
             <p className="text-xs text-text-muted">Required for SSL certificate and DNS configuration</p>
           </div>
 
@@ -466,7 +466,7 @@ export default function AntigravityToolCard({
           />
 
           {message && (
-            <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
+            <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}>
               <span className="material-symbols-outlined text-[14px]">{message.type === "success" ? "check_circle" : "error"}</span>
               <span>{message.text}</span>
             </div>

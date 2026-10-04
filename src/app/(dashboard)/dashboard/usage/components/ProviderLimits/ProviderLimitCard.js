@@ -122,24 +122,24 @@ export default function ProviderLimitCard({
 
       {/* Error State */}
       {!loading && error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+        <div className="p-4 rounded-lg bg-danger-bg border border-danger-border">
           <div className="flex items-start gap-2">
-            <span className="material-symbols-outlined text-red-500 text-[20px]">
+            <span className="material-symbols-outlined text-danger text-[20px]">
               error
             </span>
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           </div>
         </div>
       )}
 
       {/* Info Message (for providers without API) */}
       {!loading && !error && message && (
-        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+        <div className="p-4 rounded-lg bg-info-bg border border-info-border">
           <div className="flex items-start gap-2">
-            <span className="material-symbols-outlined text-blue-500 text-[20px]">
+            <span className="material-symbols-outlined text-info text-[20px]">
               info
             </span>
-            <p className="text-sm text-blue-600 dark:text-blue-400">
+            <p className="text-sm text-info">
               {message}
             </p>
           </div>

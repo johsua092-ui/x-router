@@ -3,7 +3,7 @@
 /** Security warning banner with optional action link */
 export default function SecurityWarning({ message, action }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg border border-warning-border text-warning">
       <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">warning</span>
       <p className="text-xs flex-1">{message}</p>
       {action && (

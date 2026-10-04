@@ -287,7 +287,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
               <span className="material-symbols-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           ) : error ? (
-            <p className="text-red-500">{error}</p>
+            <p className="text-danger">{error}</p>
           ) : htmlBySource[shown] ? (
             <div dangerouslySetInnerHTML={{ __html: htmlBySource[shown] }} />
           ) : (

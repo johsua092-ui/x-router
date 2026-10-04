@@ -5,25 +5,25 @@ import { Card, Button } from "@/shared/components";
 import { CONSOLE_LOG_CONFIG } from "@/shared/constants/config";
 
 const LOG_LEVEL_COLORS = {
-  LOG: "text-green-400",
-  INFO: "text-blue-400",
-  WARN: "text-yellow-400",
-  ERROR: "text-red-400",
-  DEBUG: "text-purple-400",
+  LOG: "text-success",
+  INFO: "text-info",
+  WARN: "text-warning",
+  ERROR: "text-danger",
+  DEBUG: "text-info",
 };
 
 function colorLine(line, index) {
   // Detect log level from tags like [LOG], [INFO], [WARN], [ERROR], [DEBUG]
-  let levelColor = "text-gray-300";
-  if (line.includes("[ERROR]") || line.includes("✗")) levelColor = "text-red-400";
-  else if (line.includes("[WARN]")) levelColor = "text-yellow-400";
-  else if (line.includes("[INFO]") || line.includes("▶")) levelColor = "text-blue-400";
-  else if (line.includes("[DEBUG]")) levelColor = "text-purple-400";
-  else if (line.includes("✓") || line.includes("done")) levelColor = "text-green-400";
+  let levelColor = "text-muted";
+  if (line.includes("[ERROR]") || line.includes("✗")) levelColor = "text-danger";
+  else if (line.includes("[WARN]")) levelColor = "text-warning";
+  else if (line.includes("[INFO]") || line.includes("▶")) levelColor = "text-info";
+  else if (line.includes("[DEBUG]")) levelColor = "text-info";
+  else if (line.includes("✓") || line.includes("done")) levelColor = "text-success";
 
   return (
     <div className="flex gap-2 hover:bg-white/5 px-1 rounded">
-      <span className="text-gray-600 select-none shrink-0 w-8 text-right">{index + 1}</span>
+      <span className="text-muted select-none shrink-0 w-8 text-right">{index + 1}</span>
       <span className={levelColor}>{line}</span>
     </div>
   );
@@ -88,7 +88,7 @@ export default function ConsoleLogClient() {
             <span className="text-xs text-text-muted">({logs.length} lines)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded ${connected ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+            <span className={`text-xs px-2 py-0.5 rounded ${connected ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}>
               {connected ? "Connected" : "Disconnected"}
             </span>
             <Button size="sm" variant="outline" icon="delete" onClick={handleClear}>

@@ -1,40 +1,50 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/store/notificationStore";
-import Sidebar from "../Sidebar";
-import Header from "../Header";
+import TopRail from "../TopRail";
+import PageHeading from "../PageHeading";
+import StatusBar from "../StatusBar";
 import WelcomeModal from "../WelcomeModal";
 import UpdateBanner from "../UpdateBanner";
 
+/* Toast variants pull from the semantic token triplet, so the same toast is
+   legible in Ember dark and in light without a dark: override per variant. */
 function getToastStyle(type) {
   if (type === "success") {
-    return {
-      wrapper: "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400",
-      icon: "check_circle",
-    };
+    return { wrapper: "border-success/40 bg-success/12 text-success", icon: "check_circle" };
   }
   if (type === "error") {
-    return {
-      wrapper: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
-      icon: "error",
-    };
+    return { wrapper: "border-danger/40 bg-danger/12 text-danger", icon: "error" };
   }
   if (type === "warning") {
-    return {
-      wrapper: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
-      icon: "warning",
-    };
+    return { wrapper: "border-warning/40 bg-warning/12 text-warning", icon: "warning" };
   }
-  return {
-    wrapper: "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    icon: "info",
-  };
+  return { wrapper: "border-border bg-surface text-text-main", icon: "info" };
+}
+
+/* Pages that render their own hero / heading block, so the layout heading band
+   would duplicate them. Keyed by the exact pathname or a prefix. */
+const PAGES_WITH_OWN_HEADING = [
+  "/dashboard/basic-chat",
+  "/dashboard/providers/new",
+  "/dashboard/plugins",
+  "/dashboard/api-key-usage",
+  "/dashboard/translator",
+];
+
+function hasOwnHeading(pathname) {
+  if (!pathname) return false;
+  if (PAGES_WITH_OWN_HEADING.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  // Provider / media-provider detail pages draw their own hero with the logo.
+  if (/^\/dashboard\/providers\/[^/]+$/.test(pathname)) return true;
+  if (/^\/dashboard\/media-providers\/[^/]+\/[^/]+$/.test(pathname)) return true;
+  if (/^\/dashboard\/cli-tools\/[^/]+$/.test(pathname)) return true;
+  return false;
 }
 
 export default function DashboardLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const notifications = useNotificationStore((state) => state.notifications);
   const removeNotification = useNotificationStore((state) => state.removeNotification);
@@ -57,27 +67,32 @@ export default function DashboardLayout({ children }) {
     }
   }, []);
 
+  const isChat = pathname === "/dashboard/basic-chat";
+  const showHeading = !hasOwnHeading(pathname);
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-bg">
+      {/* Toasts */}
       <div className="fixed top-4 right-4 z-[80] flex w-[min(92vw,380px)] flex-col gap-2">
         {notifications.map((n) => {
           const style = getToastStyle(n.type);
           return (
             <div
               key={n.id}
-              className={`slide-in-right rounded-[12px] border px-3.5 py-2.5 shadow-[var(--shadow-elev)] ${style.wrapper}`}
+              role="status"
+              className={`slide-in-right rounded-[10px] border px-3.5 py-2.5 shadow-[var(--shadow-elev)] ${style.wrapper}`}
             >
               <div className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-[18px] leading-5 shrink-0 mt-0.5">{style.icon}</span>
+                <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] leading-5">{style.icon}</span>
                 <div className="min-w-0 flex-1">
-                  {n.title ? <p className="text-xs font-semibold mb-0.5">{n.title}</p> : null}
-                  <p className="text-xs whitespace-pre-wrap break-words">{n.message}</p>
+                  {n.title ? <p className="mb-0.5 text-xs font-semibold">{n.title}</p> : null}
+                  <p className="whitespace-pre-wrap break-words text-xs">{n.message}</p>
                 </div>
                 {n.dismissible ? (
                   <button
                     type="button"
                     onClick={() => removeNotification(n.id)}
-                    className="text-current/70 hover:text-current"
+                    className="opacity-70 transition-opacity hover:opacity-100"
                     aria-label="Dismiss notification"
                   >
                     <span className="material-symbols-outlined text-[16px]">close</span>
@@ -90,38 +105,32 @@ export default function DashboardLayout({ children }) {
       </div>
       <WelcomeModal />
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {/* Top rail replaces the old left sidebar — navigation is one horizontal
+          band, so the content column below runs the full width of the viewport. */}
+      <TopRail />
+
+      <UpdateBanner />
+
+      {/* Full-bleed content area: the heading band spans the viewport, the
+          content scrolls underneath it. */}
+      <main className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="ember-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+        {showHeading ? <PageHeading className="shrink-0" /> : null}
         <div
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Desktop */}
-      <div className="hidden lg:flex">
-        <Sidebar />
-      </div>
-
-      {/* Sidebar - Mobile */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <Sidebar onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main content */}
-      <main className="flex flex-col flex-1 h-full min-w-0 relative transition-colors duration-300 isolate">
-        {/* Faint grid background */}
-        <div className="landing-grid absolute inset-0 pointer-events-none -z-10" aria-hidden="true" />
-        <Header key={pathname} onMenuClick={() => setSidebarOpen(true)} />
-        <UpdateBanner />
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${pathname === "/dashboard/basic-chat" ? "" : "p-6 lg:p-10"} ${pathname === "/dashboard/basic-chat" ? "flex flex-col overflow-hidden" : ""}`}>
-          <div className={`${pathname === "/dashboard/basic-chat" ? "flex-1 w-full h-full flex flex-col" : "max-w-7xl mx-auto"}`}>{children}</div>
+          className={
+            isChat
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+              : "min-h-0 flex-1 overflow-y-auto custom-scrollbar"
+          }
+        >
+          <div className={isChat ? "flex h-full w-full flex-col" : "w-full px-4 py-5 lg:px-7 lg:py-6"}>
+            {children}
+          </div>
         </div>
       </main>
+
+      {/* Instrument status strip */}
+      <StatusBar />
     </div>
   );
 }

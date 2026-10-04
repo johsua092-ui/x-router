@@ -93,7 +93,7 @@ function ModelStudioContent() {
           <span className="text-sm font-medium text-text-main">
             {models.length} {models.length === 1 ? "model" : "models"}
           </span>
-          {error && <span className="text-xs text-red-500 truncate">{error}</span>}
+          {error && <span className="text-xs text-danger truncate">{error}</span>}
         </div>
         <Button size="sm" icon="add" onClick={openCreate}>
           Add Model
@@ -133,7 +133,7 @@ function ModelStudioContent() {
                       {model.callName}
                     </code>
                     {copiedName === model.callName ? (
-                      <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-green-500">
+                      <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-success">
                         <span className="material-symbols-outlined text-[14px]">check</span>
                         Copied
                       </span>
@@ -159,7 +159,7 @@ function ModelStudioContent() {
                     onClick={() => handleDelete(model)}
                     disabled={removing === model.callName}
                     title="Delete"
-                    className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger-bg transition-colors disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[16px]">
                       {removing === model.callName ? "progress_activity" : "delete"}
@@ -336,7 +336,7 @@ function StudioFormModal({
                 <button
                   type="button"
                   onClick={() => setTargetModel("")}
-                  className="text-[11px] text-text-muted hover:text-red-500 transition-colors"
+                  className="text-[11px] text-text-muted hover:text-danger transition-colors"
                 >
                   clear
                 </button>
@@ -376,7 +376,7 @@ function StudioFormModal({
               Any model you have connected — built-in, custom provider or combo.
             </p>
             {cycleError && (
-              <p className="text-[11px] text-red-500 mt-1">{cycleError}</p>
+              <p className="text-[11px] text-danger mt-1">{cycleError}</p>
             )}
           </div>
 
@@ -389,7 +389,7 @@ function StudioFormModal({
               autoFocus
             />
             {nameError ? (
-              <p className="text-[11px] text-red-500 mt-1">{nameError}</p>
+              <p className="text-[11px] text-danger mt-1">{nameError}</p>
             ) : (
               <p className="text-[11px] text-text-muted mt-1">
                 Clients call <code className="font-mono">{`"${callName || "name"}"`}</code> as the model ID.

@@ -21,7 +21,7 @@ function originLabel(entry) {
 function StatusPill({ status }) {
   const dot =
     status === "unavailable" ? "bg-error" :
-    status === "cooldown" || status === "limited" ? "bg-amber-500" :
+    status === "cooldown" || status === "limited" ? "bg-warning-solid" :
     "bg-success";
   const label =
     status === "unavailable" ? "Unavailable" :

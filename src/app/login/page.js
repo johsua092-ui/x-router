@@ -350,7 +350,7 @@ export default function LoginPage() {
                 {passwordAvailable ? (
                   <form onSubmit={handleLogin} className="flex flex-col gap-4">
                     {isSsoEnabled && !ssoAvailable && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                      <p className="text-xs text-warning">
                         Login {activeSsoType === "saml" ? "SAML" : "OIDC"} aktif tapi konfigurasinya belum lengkap. Password masih bisa dipakai untuk masuk.
                       </p>
                     )}
@@ -415,7 +415,7 @@ export default function LoginPage() {
                         </div>
 
                         {error && (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
+                          <p className="text-xs text-danger flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px]">error</span>
                             {error}
                           </p>
@@ -440,7 +440,7 @@ export default function LoginPage() {
                         </div>
 
                         {retryAfter > 0 && (
-                          <p className="text-xs text-amber-600 dark:text-amber-400">
+                          <p className="text-xs text-warning">
                             Terkunci sementara. Coba lagi dalam <span className="font-mono">{retryAfter}s</span>.
                           </p>
                         )}
@@ -481,7 +481,7 @@ export default function LoginPage() {
                     </Button>
                   </form>
                 ) : (
-                  error && <p className="text-xs text-red-500">{error}</p>
+                  error && <p className="text-xs text-danger">{error}</p>
                 )}
               </div>
             )}

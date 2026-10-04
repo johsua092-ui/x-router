@@ -228,7 +228,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
               onChange={(e) => setBulkText(e.target.value)}
             />
             {bulkResult && (
-              <div className={`text-sm font-medium ${bulkResult.failed > 0 ? "text-yellow-400" : "text-green-400"}`}>
+              <div className={`text-sm font-medium ${bulkResult.failed > 0 ? "text-warning" : "text-success"}`}>
                 <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1 text-success" aria-hidden="true">check_circle</span>{bulkResult.success} added{bulkResult.failed > 0 ? `, ${bulkResult.failed} failed` : ""}
               </div>
             )}
@@ -326,7 +326,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
           </Badge>
         )}
         {error && (
-          <p className="text-xs text-red-500 break-words">{error}</p>
+          <p className="text-xs text-danger break-words">{error}</p>
         )}
         {isCompatible && (
           <p className="text-xs text-text-muted">

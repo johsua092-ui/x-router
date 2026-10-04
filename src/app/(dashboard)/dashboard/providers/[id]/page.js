@@ -1060,7 +1060,7 @@ export default function ProviderDetailPage() {
                 type="checkbox"
                 checked={isSelected(conn.id)}
                 onChange={() => toggleSelectConnection(conn.id)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -1286,7 +1286,7 @@ export default function ProviderDetailPage() {
           <button
             onClick={handleImportQoderModels}
             disabled={importingQoderModels}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-blue-500/40 px-3 py-2 text-xs text-blue-600 dark:text-blue-400 transition-colors hover:border-blue-500 hover:bg-blue-500/5 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-info-border px-3 py-2 text-xs text-info transition-colors hover:border-info-border hover:bg-info-bg sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-sm" style={importingQoderModels ? { animation: "spin 1s linear infinite" } : undefined}>
               {importingQoderModels ? "progress_activity" : "download"}
@@ -1300,7 +1300,7 @@ export default function ProviderDetailPage() {
           <button
             onClick={handleImportClineModels}
             disabled={importingClineModels}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-blue-500/40 px-3 py-2 text-xs text-blue-600 dark:text-blue-400 transition-colors hover:border-blue-500 hover:bg-blue-500/5 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-info-border px-3 py-2 text-xs text-info transition-colors hover:border-info-border hover:bg-info-bg sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-sm" style={importingClineModels ? { animation: "spin 1s linear infinite" } : undefined}>
               {importingClineModels ? "progress_activity" : "download"}
@@ -1329,7 +1329,7 @@ export default function ProviderDetailPage() {
             <div className="w-full mt-2">
               <p className="text-xs text-text-muted mb-2">Suggested free models:</p>
               {suggestedModelsError && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">{suggestedModelsError}</p>
+                <p className="text-[11px] text-warning mb-2">{suggestedModelsError}</p>
               )}
               <div className="flex flex-wrap gap-2">
                 {notAdded.map((m) => (
@@ -1468,22 +1468,22 @@ export default function ProviderDetailPage() {
       </div>
 
       {providerInfo.deprecated && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-          <span className="material-symbols-outlined text-[16px] text-yellow-500 mt-0.5 shrink-0">warning</span>
-          <p className="text-xs text-red-600 dark:text-yellow-400 leading-relaxed">{providerInfo.deprecationNotice}</p>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg border border-warning-border">
+          <span className="material-symbols-outlined text-[16px] text-warning mt-0.5 shrink-0">warning</span>
+          <p className="text-xs text-danger dark:text-warning leading-relaxed">{providerInfo.deprecationNotice}</p>
         </div>
       )}
 
       {providerInfo.notice?.text && !providerInfo.deprecated && (
-        <div className="flex flex-col gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 sm:flex-row sm:items-center">
-          <span className="material-symbols-outlined text-[16px] text-blue-500 shrink-0">info</span>
-          <p className="min-w-0 flex-1 text-xs leading-relaxed text-blue-600 dark:text-blue-400">{providerInfo.notice.text}</p>
+        <div className="flex flex-col gap-2 rounded-lg border border-info-border bg-info-bg px-3 py-2 sm:flex-row sm:items-center">
+          <span className="material-symbols-outlined text-[16px] text-info shrink-0">info</span>
+          <p className="min-w-0 flex-1 text-xs leading-relaxed text-info">{providerInfo.notice.text}</p>
           {providerInfo.notice.apiKeyUrl && (
             <a
               href={providerInfo.notice.apiKeyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex justify-center rounded bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 sm:py-0.5"
+              className="inline-flex justify-center rounded bg-info-solid px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-info-solid sm:py-0.5"
             >
               Get API Key →
             </a>
@@ -1691,7 +1691,7 @@ export default function ProviderDetailPage() {
                     <span>Passed: {oneByOneSummary.passed}</span>
                     <span>Failed: {oneByOneSummary.failed}</span>
                     {oneByOneSummary.stopped && (
-                      <span className="text-amber-600 dark:text-amber-400">Stopped</span>
+                      <span className="text-warning">Stopped</span>
                     )}
                     {oneByOneRunning && oneByOneCurrentConnectionId && (
                       <span>Running: {connections.find((conn) => conn.id === oneByOneCurrentConnectionId)?.name || oneByOneCurrentConnectionId}</span>
@@ -1706,7 +1706,7 @@ export default function ProviderDetailPage() {
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleSelectAllConnections}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                      className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
                     />
                     Select All
                   </label>
@@ -1835,7 +1835,7 @@ export default function ProviderDetailPage() {
         </div>
         {!!modelsTestError && (
           <div className="mb-3">
-            <p className="text-xs text-red-500 break-words">{modelsTestError}</p>
+            <p className="text-xs text-danger break-words">{modelsTestError}</p>
             {/RegionError|hosted in China|regionNotAllowed/i.test(modelsTestError) && (() => {
               const str = typeof modelsTestError === "string" ? modelsTestError : JSON.stringify(modelsTestError);
               const linkMatch = str.match(/https:\/\/opencode\.ai\/workspace\/[^\s"')]+/);
@@ -1852,7 +1852,7 @@ export default function ProviderDetailPage() {
                     href={targetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 hover:bg-amber-500/20 dark:text-amber-400 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning hover:bg-warning-bg dark:text-warning transition-colors"
                   >
                     <span>Allow China-hosted models</span>
                     <span className="material-symbols-outlined text-[13px]">open_in_new</span>
@@ -1863,7 +1863,7 @@ export default function ProviderDetailPage() {
           </div>
         )}
         {providerId === "zed" && !!liveModelsError && (
-          <p className="text-xs text-red-500 mb-3 break-words">{liveModelsError}</p>
+          <p className="text-xs text-danger mb-3 break-words">{liveModelsError}</p>
         )}
         {renderModelsSection()}
       </Card>

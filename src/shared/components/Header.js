@@ -224,52 +224,53 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
   };
 
   return (
-    <header className="relative shrink-0 flex items-center justify-between gap-3 px-4 lg:px-8 pt-3 pb-2 border-b border-border-subtle bg-surface lg:bg-bg z-20 after:absolute after:inset-x-0 after:-bottom-px after:h-[2px] after:bg-gradient-to-r after:from-primary/85 after:via-primary/30 after:to-transparent after:pointer-events-none">
+    <header className="relative z-20 shrink-0 flex items-center justify-between gap-3 h-[52px] px-3 lg:px-6 bg-surface border-b border-border">
       {/* Mobile menu button */}
-      <div className="flex items-center gap-3 lg:hidden shrink-0">
+      <div className="flex items-center gap-2 lg:hidden shrink-0">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="flex items-center justify-center p-1.5 rounded-[10px] text-text-main hover:text-primary hover:bg-surface-2 transition-colors"
+            aria-label="Open navigation"
+            className="flex items-center justify-center size-8 rounded-[7px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined text-[20px] leading-none">menu</span>
           </button>
         )}
       </div>
 
       {/* Page title with breadcrumbs */}
-      <div className="flex flex-col min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
         {breadcrumbs.length > 0 ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             {breadcrumbs.map((crumb, index) => (
               <div
                 key={`${crumb.label}-${crumb.href || "current"}`}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5 min-w-0"
               >
                 {index > 0 && (
-                  <span className="material-symbols-outlined text-text-muted text-base">
+                  <span className="material-symbols-outlined text-[14px] leading-none text-text-subtle shrink-0">
                     chevron_right
                   </span>
                 )}
                 {crumb.href ? (
                   <Link
                     href={crumb.href}
-                    className="text-text-muted hover:text-primary transition-colors"
+                    className="text-xs text-text-muted hover:text-primary transition-colors truncate"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     {crumb.image && (
                       <ProviderIcon
                         src={crumb.image}
                         alt={crumb.label}
-                        size={28}
-                        className="object-contain rounded max-w-[28px] max-h-[28px]"
+                        size={20}
+                        className="object-contain rounded max-w-[20px] max-h-[20px] shrink-0"
                         fallbackText={crumb.label.slice(0, 2).toUpperCase()}
                       />
                     )}
-                    <h1 className="text-base lg:text-2xl font-semibold text-text-main tracking-tight truncate">
+                    <h1 className="text-[15px] font-semibold text-text-main tracking-tight truncate">
                       {translate(crumb.label)}
                     </h1>
                   </div>
@@ -278,25 +279,21 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
             ))}
           </div>
         ) : title ? (
-          <div>
-            <div className="flex items-center gap-2.5">
-              {icon && (
-                <div className="hidden sm:flex items-center justify-center size-8 rounded-[10px] bg-brand-500/10 border border-brand-500/20">
-                  <span className="material-symbols-outlined text-primary text-lg">
-                    {icon}
-                  </span>
-                </div>
+          <div className="flex items-center gap-2.5 min-w-0">
+            {icon && (
+              <span className="material-symbols-outlined text-[18px] leading-none text-primary shrink-0">
+                {icon}
+              </span>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-[15px] font-semibold tracking-tight truncate leading-tight">
+                {translate(title)}
+              </h1>
+              {description && (
+                <p className="hidden lg:block text-[11px] text-text-subtle truncate leading-tight mt-0.5">
+                  {translate(description)}
+                </p>
               )}
-              <div className="min-w-0">
-                <h1 className="text-base lg:text-2xl font-semibold tracking-tight truncate">
-                  {translate(title)}
-                </h1>
-                {description && (
-                  <p className="hidden lg:block text-sm text-text-muted truncate">
-                    {translate(description)}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         ) : null}

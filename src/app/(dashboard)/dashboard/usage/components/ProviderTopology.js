@@ -102,7 +102,7 @@ function RouterNode({ data }) {
     <div
       className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] ${
         powering
-          ? "topology-router-core border-yellow-300 bg-gradient-to-br from-primary/30 via-yellow-400/20 to-cyan-400/25"
+          ? "topology-router-core border-warning-border bg-gradient-to-br from-primary/30 via-brand-500 to-brand-500"
           : "border-primary bg-primary/5 shadow-md"
       }`}
     >
@@ -118,11 +118,11 @@ function RouterNode({ data }) {
         loading="lazy"
         decoding="async"
       />
-      <span className={`text-sm font-bold ${powering ? "topology-router-label text-yellow-300" : "text-primary"}`}>
+      <span className={`text-sm font-bold ${powering ? "topology-router-label text-warning" : "text-primary"}`}>
         X Router
       </span>
       {data.activeCount > 0 && (
-        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-yellow-400 text-black text-xs font-bold topology-router-badge">
+        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-warning-solid text-black text-xs font-bold topology-router-badge">
           {data.activeCount}
         </span>
       )}

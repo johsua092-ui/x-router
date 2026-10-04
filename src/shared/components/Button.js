@@ -2,24 +2,36 @@
 
 import { cn } from "@/shared/utils/cn";
 
+/* Solid fills only. The upstream gradient button read as decoration, not
+   affordance — a flat warm fill with one hairline top-light is enough, and
+   white-on-fill contrast stays guaranteed in both themes. */
 const variants = {
   primary:
-    "bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-[var(--shadow-warm)] disabled:from-surface-3 disabled:to-surface-3 disabled:text-text-muted disabled:shadow-none",
+    "bg-brand-600 hover:bg-brand-700 text-white " +
+    "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_1px_2px_rgba(0,0,0,0.16)] " +
+    "hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.20),0_2px_6px_rgba(0,0,0,0.18)] " +
+    "disabled:bg-surface-3 disabled:text-text-subtle disabled:shadow-none",
   secondary:
-    "bg-surface-2 hover:bg-surface-3 text-text-main border border-border hover:border-brand-500/30 disabled:opacity-50",
+    "bg-surface-2 hover:bg-surface-3 text-text-main border border-border " +
+    "hover:border-brand-500/40 disabled:opacity-50",
   outline:
-    "border border-border text-text-main hover:bg-surface-2 hover:border-brand-500/40",
+    "bg-transparent border border-border text-text-main " +
+    "hover:bg-surface-2 hover:border-brand-500/50",
   ghost: "text-text-muted hover:bg-surface-2 hover:text-text-main",
   danger:
-    "bg-red-500 hover:bg-red-600 text-white shadow-sm disabled:bg-surface-3 disabled:text-text-muted",
+    "bg-danger-solid hover:brightness-110 text-white " +
+    "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] disabled:bg-surface-3 disabled:text-text-subtle disabled:shadow-none",
   success:
-    "bg-green-600 hover:bg-green-700 text-white shadow-sm disabled:bg-surface-3 disabled:text-text-muted",
+    "bg-success-solid hover:brightness-110 text-white " +
+    "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] disabled:bg-surface-3 disabled:text-text-subtle disabled:shadow-none",
 };
 
+/* Tighter than the upstream scale (7/9/11 -> 7/9/10). Controls sit on a
+   8px radius so cards (12px) read as a different layer. */
 const sizes = {
-  sm: "h-7 px-3 text-xs rounded-[8px]",
-  md: "h-9 px-4 text-sm rounded-[10px]",
-  lg: "h-11 px-6 text-sm rounded-[10px]",
+  sm: "h-7 px-2.5 text-xs rounded-[7px] gap-1.5",
+  md: "h-9 px-3.5 text-[13px] rounded-[8px] gap-1.5",
+  lg: "h-10 px-5 text-sm rounded-[8px] gap-2",
 };
 
 export default function Button({
@@ -34,11 +46,14 @@ export default function Button({
   className,
   ...props
 }) {
+  const iconSize = size === "sm" ? "text-[15px]" : "text-[17px]";
+
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 ease-out cursor-pointer",
-        "active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+        "inline-flex items-center justify-center font-semibold whitespace-nowrap",
+        "transition-[background-color,box-shadow,border-color,transform] duration-150 ease-out",
+        "active:scale-[0.98] disabled:opacity-100 disabled:cursor-not-allowed disabled:active:scale-100",
         variants[variant],
         sizes[size],
         fullWidth && "w-full",
@@ -48,13 +63,15 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+        <span className={cn("material-symbols-outlined animate-spin leading-none", iconSize)}>
+          progress_activity
+        </span>
       ) : icon ? (
-        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+        <span className={cn("material-symbols-outlined leading-none", iconSize)}>{icon}</span>
       ) : null}
       {children}
       {iconRight && !loading && (
-        <span className="material-symbols-outlined text-[18px]">{iconRight}</span>
+        <span className={cn("material-symbols-outlined leading-none", iconSize)}>{iconRight}</span>
       )}
     </button>
   );

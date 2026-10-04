@@ -261,7 +261,7 @@ export default function BulkImportGrokCliModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         {fileCountInfo && (
-          <div className="flex items-center gap-1.5 text-xs text-green-400 font-medium bg-green-500/10 border border-green-500/20 px-2.5 py-1.5 rounded">
+          <div className="flex items-center gap-1.5 text-xs text-success font-medium bg-success-bg border border-success-border px-2.5 py-1.5 rounded">
             <span className="material-symbols-outlined text-sm">check_circle</span>
             <span>
               {translate("Loaded")} {fileCountInfo.accountsCount} {translate("account(s) from")}{" "}
@@ -271,18 +271,18 @@ export default function BulkImportGrokCliModal({ isOpen, onClose, onSuccess }) {
         )}
 
         {parseError && (
-          <p className="text-xs text-red-500 break-words">{parseError}</p>
+          <p className="text-xs text-danger break-words">{parseError}</p>
         )}
 
         {result && result.failed > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-sm font-medium text-yellow-400">
+            <div className="text-sm font-medium text-warning">
               <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1 text-danger" aria-hidden="true">cancel</span>{result.failed} {translate("failed")}
             </div>
             {failedItems.length > 0 && (
               <ul className="rounded border border-accent/20 bg-sidebar/50 p-2 text-xs font-mono max-h-40 overflow-y-auto">
                 {failedItems.map((item) => (
-                  <li key={item.index} className="text-red-400">
+                  <li key={item.index} className="text-danger">
                     [{item.index}] {item.error}
                   </li>
                 ))}

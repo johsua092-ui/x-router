@@ -9,9 +9,9 @@ import Button from "./Button";
 export default function ManualUpdatePanel({ latestVersion, installCmd, copied, onCopyAndShutdown, onCancel, countdown, isDisconnected }) {
   const isCountingDown = countdown > 0;
   return (
-    <div className="w-full max-w-lg rounded-xl bg-neutral-900/95 border border-white/10 p-6 text-white">
+    <div className="w-full max-w-lg rounded-xl bg-surface-2 border border-white/10 p-6 text-white">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center size-11 rounded-full bg-amber-500/20 text-amber-400">
+        <div className="flex items-center justify-center size-11 rounded-full bg-warning-bg text-warning">
           <span className="material-symbols-outlined text-[24px]">content_copy</span>
         </div>
         <div>
@@ -28,13 +28,13 @@ export default function ManualUpdatePanel({ latestVersion, installCmd, copied, o
 
       <p className="text-sm text-white/80 mb-2">Install command:</p>
       <div className="w-full px-3 py-2 rounded bg-white/5 mb-4">
-        <code className="text-xs font-mono text-amber-400 break-all">{installCmd}</code>
+        <code className="text-xs font-mono text-warning break-all">{installCmd}</code>
       </div>
 
       <ol className="text-xs text-white/70 space-y-1 list-decimal list-inside mb-4">
         <li>Click <strong>Copy & Shutdown</strong> below.</li>
         <li>Paste the command into your terminal and press Enter.</li>
-        <li>Run <code className="px-1 rounded bg-white/10 text-green-400">xrouter</code> again after install.</li>
+        <li>Run <code className="px-1 rounded bg-white/10 text-success">xrouter</code> again after install.</li>
       </ol>
 
       {isDisconnected ? (

@@ -71,7 +71,7 @@ export default function ProviderLogoField({ logo, onChange, hint = DEFAULT_HINT 
         className="hidden"
         onChange={handleFile}
       />
-      <p className={`text-xs ${error ? "text-red-500" : "text-text-muted"}`}>
+      <p className={`text-xs ${error ? "text-danger" : "text-text-muted"}`}>
         {error || hint}
       </p>
     </div>

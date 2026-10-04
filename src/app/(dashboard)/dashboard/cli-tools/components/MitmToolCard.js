@@ -185,7 +185,7 @@ export default function MitmToolCard({
             <div className="flex flex-col gap-0.5 text-[11px] text-text-muted px-1">
               <p>Toggle DNS to redirect {tool.name} traffic through X Router via MITM.</p>
               {!dnsActive && (
-                <p className="text-amber-600 text-[10px] mt-1">
+                <p className="text-warning text-[10px] mt-1">
                   <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1" aria-hidden="true">warning</span>Enable DNS to edit model mappings
                 </p>
               )}
@@ -214,7 +214,7 @@ export default function MitmToolCard({
                             handleModelMappingChange(model.alias, "");
                             saveMappings({ ...modelMappings, [model.alias]: "" });
                           }}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-red-500 rounded transition-colors"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-danger rounded transition-colors"
                           title="Clear"
                         >
                           <span className="material-symbols-outlined text-[14px]">close</span>
@@ -243,7 +243,7 @@ export default function MitmToolCard({
                 <button
                   onClick={handleDnsToggle}
                   disabled={!serverRunning || loading}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-danger-border bg-danger-bg px-4 py-2 text-xs font-medium text-danger transition-colors hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px]">stop_circle</span>
                   Stop DNS
@@ -261,7 +261,7 @@ export default function MitmToolCard({
 
               {/* Warning below button */}
               {warning && (
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-amber-500">
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-warning">
                   <span className="material-symbols-outlined text-[14px]">warning</span>
                   <span>{warning}</span>
                 </div>
@@ -276,8 +276,8 @@ export default function MitmToolCard({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55">
           <div className="mx-4 flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-xl sm:p-6">
             <h3 className="font-semibold text-text-main">Sudo Password Required</h3>
-            <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <span className="material-symbols-outlined text-yellow-500 text-[20px]">warning</span>
+            <div className="flex items-start gap-3 p-3 bg-warning-bg border border-warning-border rounded-lg">
+              <span className="material-symbols-outlined text-warning text-[20px]">warning</span>
               <p className="text-xs text-text-muted">Required to modify /etc/hosts and flush DNS cache</p>
             </div>
             <Input
@@ -288,7 +288,7 @@ export default function MitmToolCard({
               onKeyDown={(e) => { if (e.key === "Enter" && !loading) handleConfirmPassword(); }}
             />
             {modalError && (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-danger-bg text-danger">
                 <span className="material-symbols-outlined text-[14px]">error</span>
                 <span>{modalError}</span>
               </div>

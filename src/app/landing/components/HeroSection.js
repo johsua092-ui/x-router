@@ -20,7 +20,7 @@ export default function HeroSection() {
         </h1>
 
         {/* Description */}
-        <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-light">
+        <p className="text-lg md:text-xl text-muted max-w-2xl mx-auto font-light">
           AI endpoint proxy with web dashboard - A JavaScript port of CLIProxyAPI. Works seamlessly with Claude Code, OpenAI Codex, Cline, RooCode, and other CLI tools.
         </p>
 

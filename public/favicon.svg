@@ -1,11 +1,11 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="6" fill="url(#gradient)"/>
-  <text x="16" y="24" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="white" text-anchor="middle">9</text>
-  <defs>
-    <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f97815"/>
-      <stop offset="1" stop-color="#c2590a"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="42" fill="#1a1a1a"/>
+  <!-- Caduceus: winged staff, the X Router mark -->
+  <g stroke="#E56A4A" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M96 44v104"/>
+    <path d="M78 78c-13 7-13 26 0 33s13 26 0 33"/>
+    <path d="M114 78c13 7 13 26 0 33s-13 26 0 33"/>
+  </g>
+  <circle cx="96" cy="38" r="10" fill="#E56A4A"/>
+  <path d="M96 62c-16-6-34-6-46 2 14 4 32 6 46 8zM96 62c16-6 34-6 46 2-14 4-32 6-46 8z" fill="#E56A4A"/>
 </svg>
-

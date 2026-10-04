@@ -17,8 +17,8 @@ const PLUGINS = [
     key: "imageVision",
     title: "Image Vision",
     icon: "visibility",
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10 border-blue-500/20",
+    iconColor: "text-info",
+    iconBg: "bg-info-bg border-info-border",
     description:
       "Enable image understanding for models that don't natively support vision. Images are converted to text descriptions, allowing any model to process visual content in CLI tools and agents.",
   },
@@ -26,8 +26,8 @@ const PLUGINS = [
     key: "thinkDeeper",
     title: "Think Deeper",
     icon: "psychology",
-    iconColor: "text-purple-500",
-    iconBg: "bg-purple-500/10 border-purple-500/20",
+    iconColor: "text-info",
+    iconBg: "bg-info-bg border-info-border",
     description:
       "Enhance reasoning with multi-step chain-of-thought analysis. Forces the model to break problems into steps before answering, producing more thorough and accurate responses.",
   },
@@ -35,8 +35,8 @@ const PLUGINS = [
     key: "speedMode",
     title: "Speed Mode",
     icon: "bolt",
-    iconColor: "text-cyan-500",
-    iconBg: "bg-cyan-500/10 border-cyan-500/20",
+    iconColor: "text-info",
+    iconBg: "bg-info-bg border-info-border",
     description:
       "Skip thinking for faster responses. Disables reasoning mode on the selected models and instructs them to answer directly, ideal for simple tasks where low latency matters more than deep analysis.",
   },
@@ -44,8 +44,8 @@ const PLUGINS = [
     key: "jsonGuard",
     title: "JSON Guard",
     icon: "data_object",
-    iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-500/10 border-emerald-500/20",
+    iconColor: "text-success",
+    iconBg: "bg-success-bg border-success-border",
     description:
       "Keep machine-readable output parseable. Strips prose and markdown fences around JSON, fixes Python-style literals and trailing commas, closes payloads the output limit cut off, and drops tool-call arguments the schema never declared.",
   },
@@ -53,8 +53,8 @@ const PLUGINS = [
     key: "contextSqueezer",
     title: "Context Squeezer",
     icon: "compress",
-    iconColor: "text-amber-500",
-    iconBg: "bg-amber-500/10 border-amber-500/20",
+    iconColor: "text-warning",
+    iconBg: "bg-warning-bg border-warning-border",
     description:
       "Fit long conversations into the model's context window. The oldest turns are replaced with a short recap and oversized tool output is trimmed, so the newest turns always arrive intact instead of the provider rejecting the request.",
   },
@@ -312,7 +312,7 @@ export default function PluginsPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveModel(plugin.key, modelVal)}
-                            className="text-text-muted hover:text-red-500 transition-colors cursor-pointer leading-none ml-0.5"
+                            className="text-text-muted hover:text-danger transition-colors cursor-pointer leading-none ml-0.5"
                             title="Remove model"
                           >
                             <span className="material-symbols-outlined text-[14px]">

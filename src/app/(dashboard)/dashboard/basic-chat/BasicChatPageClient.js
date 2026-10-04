@@ -778,14 +778,14 @@ export default function BasicChatPageClient() {
                               key={model.id}
                               type="button"
                               onClick={() => handleSelectModel(model.id)}
-                              className={`rounded-[14px] border px-3 py-3 text-left transition ${isActive ? "border-blue-400/40 bg-blue-500/15" : "border-white/10 bg-white/5 hover:bg-white/8"}`}
+                              className={`rounded-[14px] border px-3 py-3 text-left transition ${isActive ? "border-info-border bg-info-bg" : "border-white/10 bg-white/5 hover:bg-white/8"}`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium text-white">{model.name}</p>
                                   <p className="truncate text-[11px] text-white/45">{model.requestModel}</p>
                                 </div>
-                                {isActive ? <span className="material-symbols-outlined text-[18px] text-blue-300">check_circle</span> : null}
+                                {isActive ? <span className="material-symbols-outlined text-[18px] text-info">check_circle</span> : null}
                               </div>
                             </button>
                           );
@@ -830,7 +830,7 @@ export default function BasicChatPageClient() {
                     key={session.id}
                     type="button"
                     onClick={() => handleSelectSession(session.id)}
-                    className={`w-full rounded-[16px] border px-3 py-3 text-left transition ${isActive ? "border-blue-400/40 bg-blue-500/15" : "border-white/10 bg-white/5 hover:bg-white/8"}`}
+                    className={`w-full rounded-[16px] border px-3 py-3 text-left transition ${isActive ? "border-info-border bg-info-bg" : "border-white/10 bg-white/5 hover:bg-white/8"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -847,7 +847,7 @@ export default function BasicChatPageClient() {
         ) : null}
 
         {loadError ? (
-          <div className="mt-4 rounded-[18px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-rose-100">
+          <div className="mt-4 rounded-[18px] border border-danger-border bg-danger-bg px-4 py-3 text-danger">
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined text-[20px]">error</span>
               <p className="text-sm leading-6">{loadError}</p>

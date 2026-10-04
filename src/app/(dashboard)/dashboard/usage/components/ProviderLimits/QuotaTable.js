@@ -45,26 +45,26 @@ function formatResetTimeDisplay(resetTime) {
 function getColorClasses(remainingPercentage) {
   if (remainingPercentage > 70) {
     return {
-      text: "text-green-600 dark:text-green-400",
-      bg: "bg-green-500",
-      bgLight: "bg-green-500/10",
+      text: "text-success",
+      bg: "bg-success-solid",
+      bgLight: "bg-success-bg",
       icon: "check_circle",
     };
   }
 
   if (remainingPercentage >= 30) {
     return {
-      text: "text-yellow-600 dark:text-yellow-400",
-      bg: "bg-yellow-500",
-      bgLight: "bg-yellow-500/10",
+      text: "text-warning",
+      bg: "bg-warning-solid",
+      bgLight: "bg-warning-bg",
       icon: "error",
     };
   }
 
   return {
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-500",
-    bgLight: "bg-red-500/10",
+    text: "text-danger",
+    bg: "bg-danger-solid",
+    bgLight: "bg-danger-bg",
     icon: "cancel",
   };
 }
@@ -153,7 +153,7 @@ export default function QuotaTable({
           const isUnlimited = quota.unlimited === true;
           const isCreditBalance = quota.isCreditBalance === true;
           const colors = isCreditBalance
-            ? { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500", bgLight: "bg-blue-500/10", icon: "account_balance_wallet" }
+            ? { text: "text-info", bg: "bg-info-solid", bgLight: "bg-info-bg", icon: "account_balance_wallet" }
             : getColorClasses(quota.remaining);
           const countdown = formatResetTime(quota.resetAt);
           const resetDisplay = formatResetTimeDisplay(quota.resetAt);

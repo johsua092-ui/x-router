@@ -13,25 +13,25 @@ const PROVIDERS = [
   {
     id: "openai",
     name: "OpenAI",
-    color: "bg-emerald-500",
+    color: "bg-success-solid",
     textColor: "text-text-main",
   },
   {
     id: "anthropic",
     name: "Anthropic",
-    color: "bg-orange-400",
+    color: "bg-warning-solid",
     textColor: "text-text-main",
   },
   {
     id: "gemini",
     name: "Gemini",
-    color: "bg-blue-500",
+    color: "bg-info-solid",
     textColor: "text-text-main",
   },
   {
     id: "github",
     name: "GitHub Copilot",
-    color: "bg-gray-700",
+    color: "bg-surface-2",
     textColor: "text-text-main",
   },
 ];
@@ -80,7 +80,7 @@ export default function FlowAnimation() {
 
       {/* SVG Lines from CLI to X Router */}
       <svg
-        className="absolute inset-0 w-full h-full z-10 pointer-events-none stroke-yellow-700"
+        className="absolute inset-0 w-full h-full z-10 pointer-events-none stroke-warning"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -165,7 +165,7 @@ export default function FlowAnimation() {
 
       {/* Mobile fallback */}
       <div className="md:hidden mt-8 w-full p-4 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)]">
-        <p className="text-sm text-center text-gray-400">
+        <p className="text-sm text-center text-muted">
           Interactive diagram visible on desktop
         </p>
       </div>
