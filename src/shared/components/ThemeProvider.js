@@ -6,7 +6,6 @@ const ThemeCtx = createContext({ theme: "dark", setTheme: () => {} });
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState("dark");
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let t = null;
@@ -16,7 +15,6 @@ export function ThemeProvider({ children }) {
       t = m ? decodeURIComponent(m[1]) : "dark";
     }
     apply(t || "dark");
-    setReady(true);
   }, []);
 
   function apply(t) {
@@ -41,8 +39,8 @@ export function ThemeProvider({ children }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [theme]);
 
-  if (!ready) return null;
-
+  // catatan: JANGAN return null — SSR harus tetap render children,
+  // kalau di-null-in layar jadi item kosong (bug pertama kali launch)
   return (
     <ThemeCtx.Provider value={{ theme, setTheme: apply }}>
       {children}
