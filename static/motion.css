@@ -1,0 +1,98 @@
+/* X Router — animasi ikon (SVG sprite) */
+svg.ic {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: inline-block;
+  vertical-align: -3px;
+}
+
+/* denyut halus buat status aktif */
+.pulse {
+  transform-origin: center;
+  animation: xr-pulse 1.8s ease-in-out infinite;
+}
+@keyframes xr-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .35; transform: scale(.7); }
+}
+
+/* garis ECG berjalan di ikon logs */
+.trace {
+  stroke-dasharray: 44;
+  stroke-dashoffset: 44;
+  animation: xr-trace 2.6s linear infinite;
+}
+@keyframes xr-trace {
+  to { stroke-dashoffset: -44; }
+}
+
+/* centang yang menggambar sendiri */
+.draw {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  animation: xr-draw 3.2s ease-in-out infinite;
+}
+@keyframes xr-draw {
+  0%, 15% { stroke-dashoffset: 14; }
+  45%, 80% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 14; }
+}
+
+/* LED chip */
+.blink { animation: xr-blink 1.4s steps(1) infinite; }
+@keyframes xr-blink { 50% { opacity: .15; } }
+
+/* sapuan diagonal di empty state */
+.sweep {
+  stroke-dasharray: 60;
+  animation: xr-sweep 3s ease-in-out infinite;
+}
+@keyframes xr-sweep {
+  0%, 100% { stroke-dashoffset: 60; opacity: 0; }
+  50% { stroke-dashoffset: 0; opacity: .4; }
+}
+
+/* masuknya kartu stat */
+.stat { animation: xr-rise .35s cubic-bezier(.2, .8, .3, 1) both; }
+.stat:nth-child(2) { animation-delay: .05s; }
+.stat:nth-child(3) { animation-delay: .1s; }
+.stat:nth-child(4) { animation-delay: .15s; }
+@keyframes xr-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* panel masuk */
+.panel { animation: xr-rise .4s cubic-bezier(.2, .8, .3, 1) both; }
+
+/* tombol: kilat tipis pas hover */
+.btn.primary { position: relative; overflow: hidden; }
+.btn.primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, #ffffff55 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.btn.primary:hover::after { animation: xr-gloss .55s ease; }
+@keyframes xr-gloss { to { transform: translateX(120%); } }
+
+/* progress strip di panel header pas loading */
+.loading::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  height: 2px;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: xr-load 1s linear infinite;
+}
+@keyframes xr-load {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(350%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

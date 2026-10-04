@@ -317,3 +317,29 @@ code, .inline-code {
   .brand { border-bottom: none; margin-bottom: 0; padding-bottom: 6px; }
   .main { padding: 18px 16px 50px; }
 }
+
+/* form grid (providers) */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.form-grid .field { margin-bottom: 0; }
+
+/* ikon kosong gede */
+.empty-ic { width: 46px; height: 46px; opacity: .4; margin-bottom: 12px; }
+
+/* sidebar nav ikon */
+.nav-item svg { width: 15px; height: 15px; }
+
+/* select */
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}

@@ -1,205 +1,226 @@
 #!/usr/bin/env python3
 """
-X Router — foundation server.
-OpenAI-compatible LLM router with session login.
+X Router — OpenAI + Anthropic compatible gateway, stdlib only.
 
-Stdlib only (no pip deps) per api-router-proxy-cloning skill:
-  python3 server.py            # default :20130
-  XR_PORT=20140 python3 server.py
+Port default 8080.  Jalankan:  python3 server.py   (atau XR_PORT=xxxx)
+
+Endpoint:
+  GET  /health
+  GET  /v1/models                      (OpenAI; auth Bearer)
+  POST /v1/chat/completions            (OpenAI; stream diteruskan)
+  POST /v1/completions                 (OpenAI)
+  POST /v1/embeddings                  (OpenAI)
+  GET  /v1/models                      (Anthropic; auth x-api-key)
+  POST /v1/messages                    (Anthropic; stream diteruskan)
+  POST /v1/messages/count_tokens
+  Dashboard: /login /logout / /providers /keys /logs
 """
 
-import hashlib
-import hmac
 import json
 import os
-import secrets
-import sqlite3
+import socket
+import ssl
 import threading
 import time
 from http import cookies as http_cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-# ---------------------------------------------------------------- config
+import db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-DB_PATH = os.path.join(DATA_DIR, "xrouter.db")
-CONF_PATH = os.path.join(DATA_DIR, "config.json")
 
-PORT = int(os.environ.get("XR_PORT", "20130"))
+PORT = int(os.environ.get("XR_PORT", "8080"))
 HOST = os.environ.get("XR_HOST", "0.0.0.0")
-SESSION_TTL = 60 * 60 * 12  # 12h
-
-DEFAULT_CONF = {
-    "site_name": "X Router",
-    "default_provider": None,
-    "providers": [],  # filled by LO later: {name, base_url, key_env, models: []}
-}
+UPSTREAM_TIMEOUT = 120
 
 MIME = {
     ".css": "text/css; charset=utf-8",
     ".js": "application/javascript; charset=utf-8",
     ".svg": "image/svg+xml",
     ".png": "image/png",
-    ".ico": "image/x-icon",
     ".json": "application/json; charset=utf-8",
 }
 
-_db_lock = threading.Lock()
+# cache registry
+_registry = None
+_reg_lock = threading.Lock()
 
 
-# ---------------------------------------------------------------- storage
-
-def db():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    os.makedirs(DATA_DIR, exist_ok=True)
-    c = db()
-    c.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            pass_hash TEXT NOT NULL,
-            salt TEXT NOT NULL,
-            created_at INTEGER NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS sessions (
-            token TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            expires_at INTEGER NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS api_keys (
-            key TEXT PRIMARY KEY,
-            label TEXT NOT NULL,
-            created_at INTEGER NOT NULL,
-            last_used INTEGER
-        );
-        """
-    )
-    c.commit()
-    c.close()
+def registry():
+    global _registry
+    with _reg_lock:
+        if _registry is None:
+            _registry = db.load_registry()
+        return _registry
 
 
-def load_conf():
-    if not os.path.exists(CONF_PATH):
-        with open(CONF_PATH, "w") as f:
-            json.dump(DEFAULT_CONF, f, indent=2)
-        return dict(DEFAULT_CONF)
-    with open(CONF_PATH) as f:
-        return json.load(f)
+def invalidate_registry():
+    global _registry
+    with _reg_lock:
+        _registry = None
 
 
-def save_conf(conf):
-    with open(CONF_PATH, "w") as f:
-        json.dump(conf, f, indent=2)
+# ---------------------------------------------------------------- routing
+
+def resolve_model(model: str):
+    """model id -> (provider_dict, upstream_model_id).
+
+    Aturan:
+      1. "alias-modelid"  -> prefix sebelum '-' pertama cocok dgn alias provider
+      2. id persis ada di model list provider -> pakai itu
+      3. prefix longgar TIDAK dipakai (wajib delimiter), sesuai skill
+    """
+    if not model:
+        return None, None
+    m = model.strip()
+    ml = m.lower()
+    provs = registry()
+
+    # 1) namespace prefix: <provider>-<rest>
+    head = ml.split("-", 1)[0] if "-" in ml else ml
+    for p in provs:
+        aliases = {p["id"].lower(), p["alias"].lower(), *[a.lower() for a in p.get("aliases") or []]}
+        if head in aliases and "-" in ml:
+            # utamakan id persis ("deepseek-v4-flash" ada di catalog)
+            exact = _pick_upstream(p, m)
+            if exact:
+                return p, exact
+            rest = m.split("-", 1)[1]
+            up = _pick_upstream(p, rest) or rest
+            return p, up
+
+    # 2) exact model id di catalog manapun
+    for p in provs:
+        up = _pick_upstream(p, m)
+        if up:
+            return p, up
+
+    return None, None
 
 
-# ---------------------------------------------------------------- password / session
-
-def hash_pw(pw: str, salt: str) -> str:
-    return hashlib.pbkdf2_hmac("sha256", pw.encode(), salt.encode(), 200_000).hex()
-
-
-def ensure_admin():
-    c = db()
-    row = c.execute("SELECT 1 FROM users LIMIT 1").fetchone()
-    if row:
-        c.close()
-        return
-    pw = os.environ.get("XR_ADMIN_PW")
-    generated = None
-    if not pw:
-        generated = secrets.token_urlsafe(9)
-        pw = generated
-    salt = secrets.token_hex(16)
-    c.execute(
-        "INSERT INTO users (username, pass_hash, salt, created_at) VALUES (?,?,?,?)",
-        ("admin", hash_pw(pw, salt), salt, int(time.time())),
-    )
-    c.commit()
-    c.close()
-    if generated:
-        print(f"[x-router] admin password (simpan ini): {generated}")
+def _pick_upstream(p, model_id):
+    for mm in p.get("models") or []:
+        if mm["id"].lower() == model_id.lower():
+            return mm.get("upstream") or mm["id"]
+    return None
 
 
-def verify_pw(username: str, pw: str) -> bool:
-    c = db()
-    row = c.execute(
-        "SELECT pass_hash, salt FROM users WHERE username = ?", (username,)
-    ).fetchone()
-    c.close()
-    if not row:
-        return False
-    return hmac.compare_digest(hash_pw(pw, row["salt"]), row["pass_hash"])
+def pick_connection(provider_id: str):
+    conns = db.list_connections(provider_id, active_only=True)
+    if conns:
+        conns.sort(key=lambda c: (c.get("priority") or 100, c.get("createdAt") or ""))
+        return conns[0]
+    return None
 
 
-def create_session(user_id: int) -> str:
-    tok = secrets.token_urlsafe(32)
-    c = db()
-    c.execute(
-        "INSERT INTO sessions (token, user_id, expires_at) VALUES (?,?,?)",
-        (tok, user_id, int(time.time()) + SESSION_TTL),
-    )
-    c.commit()
-    c.close()
-    return tok
+def upstream_url(p, kind, client_format):
+    """kind: 'chat' | 'models' | 'count_tokens' | 'embeddings' | 'completions'"""
+    base = (p.get("baseUrl") or "").rstrip("/")
+    suffix = p.get("urlSuffix") or ""
+    fmt = p.get("format") or "openai"
+    if fmt == "claude":
+        if kind == "chat":
+            return base + ("/messages" if not _endswith(base, "/messages") else "")
+        if kind == "count_tokens":
+            return base.replace("/messages", "") + "/messages/count_tokens"
+        if kind == "models":
+            return base.replace("/messages", "") + "/models"
+        return base
+    # openai family
+    if _endswith(base, "/chat/completions"):
+        root = base[: -len("/chat/completions")]
+    elif _endswith(base, "/v1"):
+        root = base
+    else:
+        root = base + "/v1" if "/v1" not in base else base
+    if kind == "chat":
+        return root + "/chat/completions" + suffix
+    if kind == "models":
+        return root + "/models" + suffix
+    if kind == "embeddings":
+        return root + "/embeddings" + suffix
+    if kind == "completions":
+        return root + "/completions" + suffix
+    return root + "/" + kind
 
 
-def session_user(token: str):
-    if not token:
-        return None
-    c = db()
-    row = c.execute(
-        "SELECT u.username FROM sessions s JOIN users u ON u.id = s.user_id "
-        "WHERE s.token = ? AND s.expires_at > ?",
-        (token, int(time.time())),
-    ).fetchone()
-    c.close()
-    return row["username"] if row else None
+def _endswith(s, suf):
+    return s.lower().endswith(suf.lower())
 
 
-def drop_session(token: str):
-    c = db()
-    c.execute("DELETE FROM sessions WHERE token = ?", (token,))
-    c.commit()
-    c.close()
+def build_upstream_headers(p, conn_row, for_anthropic):
+    data = (conn_row or {}).get("data") or {}
+    key = data.get("apiKey") or os.environ.get(data.get("keyEnv") or "", "")
+    scheme = (p.get("authScheme") or "bearer").lower()
+    header = p.get("authHeader") or "Authorization"
+    hdrs = {"Content-Type": "application/json", "Accept": "*/*"}
+    if key:
+        if scheme in ("raw", ""):
+            hdrs[header] = key
+        else:
+            hdrs[header] = f"{scheme.capitalize()} {key}" if scheme != "bearer" else f"Bearer {key}"
+    # custom headers dari connection (mis. anthropic version)
+    for hk, hv in (data.get("headers") or {}).items():
+        hdrs[hk] = hv
+    if for_anthropic:
+        hdrs.setdefault("anthropic-version", "2023-06-01")
+    return hdrs
 
 
-def check_api_key(key: str) -> bool:
-    if not key:
-        return False
-    c = db()
-    row = c.execute("SELECT 1 FROM api_keys WHERE key = ?", (key,)).fetchone()
-    if row:
-        c.execute(
-            "UPDATE api_keys SET last_used = ? WHERE key = ?",
-            (int(time.time()), key),
-        )
-        c.commit()
-    c.close()
-    return bool(row)
+def http_exchange(method, url, headers, body: bytes, client_sock_send):
+    """Forward + streaming. client_sock_send(bytes) buat relay SSE."""
+    import urllib.request
+
+    ctx = ssl.create_default_context()
+    req = urllib.request.Request(url, data=body if method == "POST" else None,
+                                 headers=headers, method=method)
+    try:
+        resp = urllib.request.urlopen(req, timeout=UPSTREAM_TIMEOUT, context=ctx)
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), dict(e.headers)
+    except Exception as e:
+        return 502, json.dumps({"error": {"message": f"upstream error: {e}",
+                                           "type": "upstream_error"}}).encode(), {}
+
+    ctype = resp.headers.get("Content-Type", "")
+    is_stream = "text/event-stream" in ctype
+    if not is_stream:
+        data = resp.read()
+        resp.close()
+        return 200, data, dict(resp.headers)
+
+    # stream: relay chunk-by-chunk
+    try:
+        while True:
+            chunk = resp.read(4096)
+            if not chunk:
+                break
+            client_sock_send(chunk)
+        resp.close()
+    except Exception:
+        pass
+    return 200, None, dict(resp.headers)
 
 
 # ---------------------------------------------------------------- pages
 
-def page(title: str, body: str, active: str = "", user: str = "") -> str:
+def ic(name, cls="ic"):
+    return f'<svg class="{cls}" aria-hidden="true"><use href="/static/icons.svg#i-{name}"></use></svg>'
+
+
+def layout(title, body, active, user):
     nav = [
-        ("dashboard", "Dashboard", "01"),
-        ("providers", "Providers", "02"),
-        ("keys", "API Keys", "03"),
-        ("logs", "Logs", "04"),
+        ("dashboard", "Dashboard", "grid"),
+        ("providers", "Providers", "plug"),
+        ("keys", "API Keys", "key"),
+        ("logs", "Logs", "logs"),
     ]
     items = "".join(
         f'<a class="nav-item {"active" if k == active else ""}" href="/{k}">'
-        f'<span class="dot"></span>{label}</a>'
-        for k, label, _ in nav
+        f'{ic(i)}<span>{label}</span></a>'
+        for k, label, i in nav
     )
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -208,19 +229,20 @@ def page(title: str, body: str, active: str = "", user: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} · X Router</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/motion.css">
 <link rel="icon" href="/static/logo.png" type="image/png">
 </head>
 <body>
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <img src="/static/logo.png" alt="X Router">
+      <img src="/static/logo.png" alt="">
       <div class="name">X<b>Router</b></div>
     </div>
     <div class="nav-label">Menu</div>
     {items}
     <div class="foot">
-      <a class="nav-item" href="/logout"><span class="dot"></span>Logout ({user})</a>
+      <a class="nav-item" href="/logout">{ic("logout")}<span>Logout · {user}</span></a>
     </div>
   </aside>
   <main class="main">{body}</main>
@@ -229,7 +251,7 @@ def page(title: str, body: str, active: str = "", user: str = "") -> str:
 </html>"""
 
 
-def login_page(msg: str = "") -> str:
+def login_page(msg=""):
     alert = f'<div class="alert err">{msg}</div>' if msg else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -238,26 +260,23 @@ def login_page(msg: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login · X Router</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/motion.css">
 <link rel="icon" href="/static/logo.png" type="image/png">
 </head>
 <body>
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-brand">
-      <img src="/static/logo.png" alt="X Router">
+      <img src="/static/logo.png" alt="">
       <div class="name">X<b>Router</b></div>
       <div class="tag">llm gateway</div>
     </div>
     {alert}
     <form method="post" action="/login">
-      <div class="field">
-        <label>Username</label>
-        <input type="text" name="username" autocomplete="username" autofocus>
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" name="password" autocomplete="current-password">
-      </div>
+      <div class="field"><label>Username</label>
+        <input type="text" name="username" autocomplete="username" autofocus></div>
+      <div class="field"><label>Password</label>
+        <input type="password" name="password" autocomplete="current-password"></div>
       <button class="btn primary" style="width:100%;justify-content:center" type="submit">Sign in</button>
     </form>
     <div class="hint">session 12 jam · pbkdf2-sha256</div>
@@ -267,179 +286,189 @@ def login_page(msg: str = "") -> str:
 </html>"""
 
 
-def render_dashboard(conf, user):
-    provs = conf.get("providers") or []
-    rows = "".join(
-        f'<tr><td class="lead">{p.get("name")}</td><td>{p.get("base_url")}</td>'
-        f'<td><span class="pill off">belum aktif</span></td></tr>'
-        for p in provs
-    )
-    if not rows:
-        rows = (
-            '<tr><td colspan="3"><div class="empty">'
-            '<img src="/static/logo.png" alt="">'
-            '<div>Belum ada provider.<br>Tambahin nanti lewat config — bagian lo. 🙂</div>'
-            "</div></td></tr>"
+def page_dashboard(user):
+    s = db.stats()
+    provs = registry()
+    with_conn = s["connections"]
+    recent = s["recent"]
+    if recent:
+        rows = "".join(
+            f'<tr><td class="lead">{r["model"] or "-"}</td><td>{r["provider"] or "-"}</td>'
+            f'<td>{r["endpoint"] or "-"}</td>'
+            f'<td><span class="pill {"on" if r["status"] == "ok" else "off"}">{r["status"]}</span></td>'
+            f'<td>{r["latencyMs"]} ms</td><td>{r["timestamp"][11:19]}</td></tr>'
+            for r in recent
         )
-    c = db()
-    nkeys = c.execute("SELECT COUNT(*) n FROM api_keys").fetchone()["n"]
-    c.close()
+    else:
+        rows = ('<tr><td colspan="6"><div class="empty">'
+                f'{ic("empty", "ic empty-ic")}<div>Belum ada request masuk.</div>'
+                "</div></td></tr>")
     body = f"""
 <div class="topbar">
   <h1>Dashboard <span>//</span></h1>
-  <div class="sub">x-router v0.1.0 · foundation</div>
+  <div class="sub">x-router v0.1 · port {PORT}</div>
 </div>
 <div class="stats">
-  <div class="stat"><div class="k">Providers</div><div class="v hot">{len(provs)}</div><div class="m">terkonfigurasi</div></div>
-  <div class="stat"><div class="k">API Keys</div><div class="v">{nkeys}</div><div class="m">aktif</div></div>
-  <div class="stat"><div class="k">Uptime</div><div class="v ok">ok</div><div class="m">gateway hidup</div></div>
-  <div class="stat"><div class="k">Port</div><div class="v">{PORT}</div><div class="m">listening</div></div>
+  <div class="stat"><div class="k">Providers</div><div class="v hot">{len(provs)}</div><div class="m">di catalog</div></div>
+  <div class="stat"><div class="k">Koneksi</div><div class="v ok">{with_conn}</div><div class="m">aktif</div></div>
+  <div class="stat"><div class="k">Requests</div><div class="v">{s["requests"]}</div><div class="m">{s['ok']} sukses</div></div>
+  <div class="stat"><div class="k">Tokens</div><div class="v">{s["tokens"]:,}</div><div class="m">total</div></div>
 </div>
 <div class="panel">
-  <div class="panel-h"><span class="t">Providers</span><a class="btn ghost" href="/providers">Kelola</a></div>
+  <div class="panel-h"><span class="t">Recent requests</span>
+    <a class="btn ghost" href="/logs">Semua</a></div>
   <table>
-    <thead><tr><th>Nama</th><th>Base URL</th><th>Status</th></tr></thead>
+    <thead><tr><th>Model</th><th>Provider</th><th>Endpoint</th><th>Status</th><th>Latency</th><th>Jam</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
 </div>
 <div class="panel">
   <div class="panel-h"><span class="t">Endpoint</span></div>
-  <div class="panel-b">
-    <div class="log"><span class="t">POST</span> <span class="hot">/v1/chat/completions</span>
-<span class="t">GET </span> <span class="hot">/v1/models</span>
-<span class="t">GET </span> <span class="hot">/health</span></div>
-  </div>
+  <div class="panel-b"><div class="log"><span class="t">openai     </span> POST /v1/chat/completions  GET /v1/models
+<span class="t">anthropic  </span> POST /v1/messages          GET /v1/models
+<span class="t">auth       </span> Bearer xr-...  |  x-api-key: xr-...</div></div>
 </div>"""
-    return page("Dashboard", body, "dashboard", user)
+    return layout("Dashboard", body, "dashboard", user)
 
 
-def render_providers(conf, user):
-    provs = conf.get("providers") or []
-    if provs:
-        rows = "".join(
-            f'<tr><td class="lead">{p.get("name")}</td><td>{p.get("base_url")}</td>'
-            f'<td>{len(p.get("models") or [])}</td>'
-            f'<td><span class="pill on">siap</span></td></tr>'
-            for p in provs
-        )
-    else:
-        rows = (
-            '<tr><td colspan="4"><div class="empty">'
-            '<img src="/static/logo.png" alt="">'
-            "<div>Providers kosong — routing engine nunggu diisi.</div>"
-            "</div></td></tr>"
-        )
+def page_providers(user):
+    provs = registry()
+    conns = db.list_connections(active_only=False)
+    by_provider = {}
+    for c in conns:
+        by_provider.setdefault(c["provider"], []).append(c)
+
+    enabled = {p["id"]: p for p in provs if p["id"] in by_provider}
+    # daftar semua provider di catalog, yang punya koneksi ditandai
+    active_rows = "".join(
+        f'<tr><td class="lead">{p["name"]}</td><td>{p["baseUrl"] or "-"}</td>'
+        f'<td>{len(p["models"])}</td>'
+        f'<td><span class="pill on">aktif</span></td></tr>'
+        for p in provs if p["id"] in by_provider
+    )
+    if not active_rows:
+        active_rows = ('<tr><td colspan="4"><div class="empty">'
+                       f'{ic("empty", "ic empty-ic")}<div>Belum ada koneksi provider aktif.</div>'
+                       "</div></td></tr>")
+
+    # catalog buat dipilih
+    opts = "".join(
+        f'<option value="{p["id"]}">{p["name"]} ({len(p["models"])} model)</option>'
+        for p in provs if p["category"] in ("apikey", "freeTier") and not p["noAuth"]
+    )
     body = f"""
 <div class="topbar">
   <h1>Providers <span>//</span></h1>
-  <div class="sub">multi-upstream · auto-route by model id</div>
+  <div class="sub">{len(provs)} di catalog · {sum(len(p['models']) for p in provs)} model</div>
 </div>
 <div class="panel">
-  <div class="panel-h"><span class="t">Upstream</span></div>
+  <div class="panel-h"><span class="t">Aktif</span></div>
   <table>
-    <thead><tr><th>Nama</th><th>Base URL</th><th>Models</th><th>Status</th></tr></thead>
-    <tbody>{rows}</tbody>
+    <thead><tr><th>Provider</th><th>Base URL</th><th>Models</th><th>Status</th></tr></thead>
+    <tbody>{active_rows}</tbody>
   </table>
 </div>
 <div class="panel">
-  <div class="panel-h"><span class="t">Cara kerja (rencana)</span></div>
+  <div class="panel-h"><span class="t">Tambah koneksi</span></div>
   <div class="panel-b">
-    <div class="log"><span class="t">client</span> → model id <span class="hot">"&lt;provider&gt;-&lt;model&gt;"</span>
-<span class="t">      ↓</span> namespace match (pakai delimiter "-", bukan prefix longgar)
-<span class="t">      ↓</span> upstream dipilih SEBELUM resource acquisition
-<span class="t">      ↓</span> request diteruskan apa adanya (field jangan di-strip)</div>
+    <form method="post" action="/providers/add" class="form-grid">
+      <div class="field"><label>Provider</label>
+        <select name="provider">{opts}</select></div>
+      <div class="field"><label>API Key</label>
+        <input type="password" name="apiKey" placeholder="sk-..." autocomplete="off"></div>
+      <div class="field"><label>Base URL (opsional)</label>
+        <input type="text" name="baseUrl" placeholder="https://..."></div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn primary" type="submit">{ic("plus")}Simpan</button></div>
+    </form>
   </div>
 </div>"""
-    return page("Providers", body, "providers", user)
+    return layout("Providers", body, "providers", user)
 
 
-def render_keys(user):
-    c = db()
-    ks = c.execute(
-        "SELECT key, label, created_at, last_used FROM api_keys ORDER BY created_at DESC"
-    ).fetchall()
-    c.close()
-    if ks:
+def page_keys(user):
+    keys = db.list_api_keys()
+    if keys:
         rows = "".join(
-            f'<tr><td class="lead">xr-{k["key"][:6]}…{k["key"][-4:]}</td>'
-            f'<td>{k["label"]}</td><td>{"never" if not k["last_used"] else "yes"}</td></tr>'
-            for k in ks
+            f'<tr><td class="lead">{k["key"][:10]}...{k["key"][-4:]}</td><td>{k["name"]}</td>'
+            f'<td>{k["usedTokens"]:,}</td><td>{k["lastUsedAt"] or "never"}</td>'
+            f'<td><span class="pill {"on" if k["isActive"] else "off"}">'
+            f'{"aktif" if k["isActive"] else "mati"}</span></td></tr>'
+            for k in keys
         )
     else:
-        rows = (
-            '<tr><td colspan="3"><div class="empty">'
-            '<img src="/static/logo.png" alt="">'
-            "<div>Belum ada API key.</div></div></td></tr>"
-        )
+        rows = ('<tr><td colspan="5"><div class="empty">'
+                f'{ic("empty", "ic empty-ic")}<div>Belum ada API key.</div>'
+                "</div></td></tr>")
     body = f"""
 <div class="topbar">
   <h1>API Keys <span>//</span></h1>
-  <div class="sub">bearer token buat /v1/*</div>
+  <div class="sub">bearer buat /v1</div>
 </div>
 <div class="panel">
   <div class="panel-h"><span class="t">Keys</span>
-    <form method="post" action="/keys/new"><button class="btn primary">+ Generate</button></form>
+    <form method="post" action="/keys/new">
+      <button class="btn primary">{ic("plus")}Generate</button></form>
   </div>
   <table>
-    <thead><tr><th>Key</th><th>Label</th><th>Dipakai</th></tr></thead>
+    <thead><tr><th>Key</th><th>Nama</th><th>Tokens</th><th>Terakhir</th><th>Status</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
 </div>"""
-    return page("API Keys", body, "keys", user)
+    return layout("API Keys", body, "keys", user)
 
 
-def render_logs(user):
-    body = """
+def page_logs(user):
+    s = db.stats()
+    recent = s["recent"]
+    if recent:
+        rows = "".join(
+            f'<tr><td class="lead">{r["model"] or "-"}</td><td>{r["provider"] or "-"}</td>'
+            f'<td>{r["endpoint"] or "-"}</td>'
+            f'<td><span class="pill {"on" if r["status"] == "ok" else "off"}">{r["status"]}</span></td>'
+            f'<td>{r["latencyMs"]} ms</td><td>{r["timestamp"]}</td></tr>'
+            for r in recent
+        )
+    else:
+        rows = ('<tr><td colspan="6"><div class="empty">'
+                f'{ic("empty", "ic empty-ic")}<div>Log kosong.</div></div></td></tr>')
+    body = f"""
 <div class="topbar">
   <h1>Logs <span>//</span></h1>
-  <div class="sub">request log — menyusul</div>
+  <div class="sub">{s['requests']} request</div>
 </div>
 <div class="panel">
-  <div class="panel-h"><span class="t">Recent</span></div>
-  <div class="panel-b">
-    <div class="log"><span class="t">—</span> belum ada request masuk.</div>
-  </div>
+  <div class="panel-h"><span class="t">Usage history</span></div>
+  <table>
+    <thead><tr><th>Model</th><th>Provider</th><th>Endpoint</th><th>Status</th><th>Latency</th><th>Waktu</th></tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
 </div>"""
-    return page("Logs", body, "logs", user)
-
-
-# ---------------------------------------------------------------- router (stub)
-
-def route_model(model: str):
-    """Namespace match with explicit delimiter. Returns provider dict or None."""
-    provs = load_conf().get("providers") or []
-    if not model:
-        return None
-    m = model.lower()
-    for p in provs:
-        prefix = str(p.get("name", "")).lower() + "-"
-        if prefix and m.startswith(prefix):
-            return p
-    return None
+    return layout("Logs", body, "logs", user)
 
 
 # ---------------------------------------------------------------- handler
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "x-router/0.1"
+    server_version = "xrouter/0.1"
+    protocol_version = "HTTP/1.1"
 
     # ---- plumbing
     def log_message(self, fmt, *args):
         print(f"[{self.log_date_time_string()}] {fmt % args}")
 
     def _cookies(self):
-        raw = self.headers.get("Cookie", "")
         jar = http_cookies.SimpleCookie()
         try:
-            jar.load(raw)
+            jar.load(self.headers.get("Cookie", ""))
         except http_cookies.CookieError:
             return {}
         return {k: v.value for k, v in jar.items()}
 
     def _sess(self):
-        return session_user(self._cookies().get("xr_session", ""))
+        return db.session_user(self._cookies().get("xr_session", ""))
 
-    def _send(self, code: int, body: bytes, ctype: str = "text/html; charset=utf-8", extra=None):
+    def _send(self, code, body: bytes, ctype="text/html; charset=utf-8", extra=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -447,195 +476,330 @@ class Handler(BaseHTTPRequestHandler):
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
-    def _html(self, code: int, html: str):
+    def _html(self, code, html):
         self._send(code, html.encode())
 
-    def _json(self, code: int, obj):
-        self._send(code, json.dumps(obj).encode(), "application/json; charset=utf-8")
+    def _json(self, code, obj):
+        self._send(code, json.dumps(obj).encode(),
+                   "application/json; charset=utf-8")
 
-    def _redirect(self, loc: str, extra=None):
+    def _redirect(self, loc, extra=None):
         self.send_response(302)
         self.send_header("Location", loc)
         for k, v in (extra or {}).items():
             self.send_header(k, v)
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def _body(self):
         n = int(self.headers.get("Content-Length") or 0)
         return self.rfile.read(n) if n else b""
 
-    def _authed(self) -> bool:
+    def _authed(self):
         return self._sess() is not None
 
-    def _require_auth(self) -> bool:
+    def _require(self):
         if self._authed():
             return True
         self._redirect("/login")
         return False
 
-    # ---- static
-    def _static(self, path: str):
+    def _api_key(self):
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[7:].strip()
+        x = self.headers.get("x-api-key", "")
+        return x.strip()
+
+    def _static(self, path):
         name = os.path.basename(path)
         fpath = os.path.join(STATIC_DIR, name)
         if not os.path.isfile(fpath):
-            self._html(404, "not found")
+            self._html(404, "<h1>404</h1>")
             return
-        ext = os.path.splitext(name)[1]
         with open(fpath, "rb") as f:
-            self._send(200, f.read(), MIME.get(ext, "application/octet-stream"))
+            self._send(200, f.read(),
+                       MIME.get(os.path.splitext(name)[1], "application/octet-stream"))
 
     # ---- GET
     def do_GET(self):
-        u = urlparse(self.path)
-        path = u.path
+        path = urlparse(self.path).path
 
         if path.startswith("/static/"):
             return self._static(path)
-
         if path == "/health":
             return self._json(200, {"ok": True, "service": "x-router", "version": "0.1.0"})
-
         if path == "/login":
             if self._authed():
                 return self._redirect("/dashboard")
             return self._html(200, login_page())
-
         if path == "/logout":
             tok = self._cookies().get("xr_session", "")
             if tok:
-                drop_session(tok)
+                db.drop_session(tok)
             return self._redirect(
-                "/login", {"Set-Cookie": "xr_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"}
-            )
+                "/login",
+                {"Set-Cookie": "xr_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
 
-        # ---- OpenAI-compatible (API key auth)
+        # ---- API
         if path == "/v1/models":
-            auth = self.headers.get("Authorization", "")
-            key = auth[7:] if auth.startswith("Bearer ") else ""
-            if not check_api_key(key):
-                return self._json(401, {"error": {"message": "invalid api key", "type": "auth_error"}})
-            conf = load_conf()
-            data = [
-                {"id": m, "object": "model", "owned_by": p.get("name")}
-                for p in (conf.get("providers") or [])
-                for m in (p.get("models") or [])
-            ]
-            return self._json(200, {"object": "list", "data": data})
+            return self._handle_models()
 
         if path.startswith("/v1/"):
-            auth = self.headers.get("Authorization", "")
-            key = auth[7:] if auth.startswith("Bearer ") else ""
-            if not check_api_key(key):
-                return self._json(401, {"error": {"message": "invalid api key", "type": "auth_error"}})
-            return self._json(
-                501,
-                {"error": {"message": "routing engine belum diisi — providers menyusul", "type": "not_implemented"}},
-            )
+            return self._json(405, {"error": {
+                "message": f"GET tidak didukung untuk {path}", "type": "method_not_allowed"}})
 
-        # ---- dashboard pages
+        # ---- dashboard
         if path in ("/", "/dashboard"):
-            if not self._require_auth():
+            if not self._require():
                 return
-            return self._html(200, render_dashboard(load_conf(), self._sess()))
-
+            return self._html(200, page_dashboard(self._sess()))
         if path == "/providers":
-            if not self._require_auth():
+            if not self._require():
                 return
-            return self._html(200, render_providers(load_conf(), self._sess()))
-
+            return self._html(200, page_providers(self._sess()))
         if path == "/keys":
-            if not self._require_auth():
+            if not self._require():
                 return
-            return self._html(200, render_keys(self._sess()))
-
+            return self._html(200, page_keys(self._sess()))
         if path == "/logs":
-            if not self._require_auth():
+            if not self._require():
                 return
-            return self._html(200, render_logs(self._sess()))
-
+            return self._html(200, page_logs(self._sess()))
         self._html(404, "<h1>404</h1>")
+
+    def _handle_models(self):
+        key = self._api_key()
+        if not db.check_api_key(key):
+            return self._json(401, {"error": {"message": "invalid api key",
+                                               "type": "authentication_error"}})
+        provs = registry()
+        active = {c["provider"] for c in db.list_connections()}
+        data = [
+            {"id": m["id"], "object": "model", "owned_by": p["alias"]}
+            for p in provs if p["id"] in active
+            for m in p["models"]
+        ]
+        # format anthropic kalau x-api-key dipakai
+        if self.headers.get("x-api-key") and not self.headers.get("Authorization"):
+            return self._json(200, {
+                "data": [{"id": m["id"], "display_name": m.get("name") or m["id"],
+                          "created_at": "2026-01-01T00:00:00Z"}
+                         for m in
+                         [{"id": d["id"]} for d in data]],
+                "has_more": False, "first_id": data[0]["id"] if data else None,
+                "last_id": data[-1]["id"] if data else None})
+        return self._json(200, {"object": "list", "data": data})
 
     # ---- POST
     def do_POST(self):
-        u = urlparse(self.path)
-        path = u.path
+        path = urlparse(self.path).path
         raw = self._body()
 
         if path == "/login":
             form = parse_qs(raw.decode("utf-8", "replace"))
-            username = (form.get("username") or [""])[0].strip()
-            password = (form.get("password") or [""])[0]
-            if verify_pw(username, password):
-                c = db()
-                row = c.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+            u = (form.get("username") or [""])[0].strip()
+            p = (form.get("password") or [""])[0]
+            if db.verify_pw(u, p):
+                import sqlite3
+                c = db.conn()
+                row = c.execute("SELECT id FROM users WHERE username=?", (u,)).fetchone()
                 c.close()
-                tok = create_session(row["id"])
-                return self._redirect(
-                    "/dashboard",
-                    {
-                        "Set-Cookie": (
-                            f"xr_session={tok}; Path=/; HttpOnly; SameSite=Lax; "
-                            f"Max-Age={SESSION_TTL}"
-                        )
-                    },
-                )
+                tok = db.create_session(row["id"])
+                return self._redirect("/dashboard", {"Set-Cookie":
+                    f"xr_session={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age={db.SESSION_TTL}"})
             return self._html(401, login_page("Username / password salah."))
 
-        if path == "/keys/new":
-            if not self._require_auth():
+        if path == "/logout":
+            return self._redirect("/login")
+
+        # dashboard POSTs (hanya path dashboard; /v1 jangan di-gate session)
+        if path.startswith("/keys/") or path.startswith("/providers/"):
+            if not self._require():
                 return
-            tok = secrets.token_hex(24)
-            c = db()
-            c.execute(
-                "INSERT INTO api_keys (key, label, created_at) VALUES (?,?,?)",
-                (tok, "default", int(time.time())),
-            )
-            c.commit()
-            c.close()
-            return self._redirect("/keys")
+            if path == "/keys/new":
+                db.new_api_key()
+                return self._redirect("/keys")
+            if path == "/providers/add":
+                form = parse_qs(raw.decode("utf-8", "replace"))
+                pid = (form.get("provider") or [""])[0]
+                key = (form.get("apiKey") or [""])[0].strip()
+                bu = (form.get("baseUrl") or [""])[0].strip()
+                if pid and key:
+                    import secrets as _s
+                    data = {"apiKey": key}
+                    if bu:
+                        data["baseUrl"] = bu
+                    db.upsert_connection("conn-" + _s.token_hex(6), pid, data)
+                return self._redirect("/providers")
+            if path == "/providers/delete":
+                form = parse_qs(raw.decode("utf-8", "replace"))
+                cid = (form.get("id") or [""])[0]
+                if cid:
+                    db.delete_connection(cid)
+                return self._redirect("/providers")
 
-        # ---- OpenAI-compatible writes
+        # ---- API
+        if path == "/v1/chat/completions":
+            return self._handle_chat(raw, "openai")
+        if path == "/v1/completions":
+            return self._handle_chat(raw, "openai", kind="completions")
+        if path == "/v1/embeddings":
+            return self._handle_chat(raw, "openai", kind="embeddings")
+        if path == "/v1/messages":
+            return self._handle_chat(raw, "anthropic")
+        if path == "/v1/messages/count_tokens":
+            return self._handle_count_tokens(raw)
         if path.startswith("/v1/"):
-            auth = self.headers.get("Authorization", "")
-            key = auth[7:] if auth.startswith("Bearer ") else ""
-            if not check_api_key(key):
-                return self._json(401, {"error": {"message": "invalid api key", "type": "auth_error"}})
-            try:
-                payload = json.loads(raw.decode("utf-8") or "{}")
-            except json.JSONDecodeError:
-                return self._json(400, {"error": {"message": "invalid json body", "type": "invalid_request_error"}})
-            model = payload.get("model")
-            prov = route_model(model)
-            if prov is None:
-                return self._json(
-                    404,
-                    {
-                        "error": {
-                            "message": f"no provider configured for model '{model}'",
-                            "type": "not_found",
-                        }
-                    },
-                )
-            # forward ke upstream — menyusul pas provider diisi
-            return self._json(
-                501,
-                {"error": {"message": f"provider '{prov.get('name')}' kepasang, forwarding menyusul", "type": "not_implemented"}},
-            )
-
+            return self._json(404, {"error": {
+                "message": f"endpoint {path} belum ada", "type": "not_found"}})
         self._html(404, "<h1>404</h1>")
+
+    def _handle_chat(self, raw, client_format, kind="chat"):
+        t0 = time.time()
+        key = self._api_key()
+        if not db.check_api_key(key):
+            return self._json(401, {"error": {
+                "message": "invalid api key", "type": "authentication_error"}})
+        try:
+            payload = json.loads(raw.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return self._json(400, {"error": {
+                "message": "invalid json body", "type": "invalid_request_error"}})
+
+        model = payload.get("model")
+        p, up_model = resolve_model(model)
+        if p is None:
+            return self._json(404, {"error": {
+                "message": f"model '{model}' tidak dikenal / provider belum aktif",
+                "type": "not_found"}})
+
+        conn_row = pick_connection(p["id"])
+        if conn_row is None:
+            return self._json(503, {"error": {
+                "message": f"provider '{p['name']}' belum punya koneksi aktif",
+                "type": "unavailable"}})
+
+        # rewrite model id ke upstream
+        if up_model and up_model != model:
+            payload = dict(payload)
+            payload["model"] = up_model
+
+        url = upstream_url(p, "chat" if kind == "chat" else kind, client_format)
+        # custom baseUrl dari connection menang
+        cbu = (conn_row.get("data") or {}).get("baseUrl")
+        if cbu:
+            base = cbu.rstrip("/")
+            if kind == "chat":
+                url = (base if _endswith(base, "/messages") or _endswith(base, "/chat/completions")
+                       else base + ("/messages" if p.get("format") == "claude" else "/chat/completions"))
+
+        hdrs = build_upstream_headers(p, conn_row, for_anthropic=(client_format == "anthropic"))
+        body = json.dumps(payload).encode()
+
+        # auth check upstream pertama kali? tidak — langsung relay (biar hemat roundtrip)
+        use_stream = bool(payload.get("stream"))
+        is_anthropic = client_format == "anthropic"
+
+        if use_stream:
+            self.send_response(200)
+            self.send_header("Content-Type",
+                             "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "close")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            self.close_connection = True
+
+            def send(chunk: bytes):
+                try:
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                except Exception:
+                    raise BrokenPipeError
+
+            try:
+                code, data, rhdrs = http_exchange("POST", url, hdrs, body, send)
+            except BrokenPipeError:
+                db.log_usage(p["id"], model, "chat", "client_gone",
+                             int((time.time() - t0) * 1000))
+                return
+            if data is not None:  # upstream nggak stream beneran
+                try:
+                    self.wfile.write(data)
+                    self.wfile.flush()
+                except Exception:
+                    pass
+                code = 200
+            db.log_usage(p["id"], model, "chat", "ok",
+                         int((time.time() - t0) * 1000),
+                         completion_tokens=_count_tokens(data))
+            return
+
+        code, data, rhdrs = http_exchange("POST", url, hdrs, body, None)
+        status = "ok" if code < 400 else f"http_{code}"
+        pt, ct = _usage_from(data)
+        db.log_usage(p["id"], model, "chat", status,
+                     int((time.time() - t0) * 1000), pt, ct)
+        if data is None:
+            data = b""
+        ctype = rhdrs.get("Content-Type", "application/json; charset=utf-8")
+        self._send(code if code < 600 else 502, data, ctype)
+
+    def _handle_count_tokens(self, raw):
+        key = self._api_key()
+        if not db.check_api_key(key):
+            return self._json(401, {"error": {
+                "message": "invalid api key", "type": "authentication_error"}})
+        try:
+            payload = json.loads(raw.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return self._json(400, {"error": {
+                "message": "invalid json body", "type": "invalid_request_error"}})
+        # estimasi kasar: ~4 char/token
+        msgs = payload.get("messages") or []
+        text = " ".join(
+            (m.get("content") if isinstance(m.get("content"), str)
+             else json.dumps(m.get("content")))
+            for m in msgs if isinstance(m, dict))
+        est = max(1, len(text) // 4)
+        return self._json(200, {"input_tokens": est})
+
+
+def _usage_from(data: bytes):
+    try:
+        obj = json.loads(data)
+        u = obj.get("usage") or {}
+        return int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
+    except Exception:
+        return 0, 0
+
+
+def _count_tokens(data):
+    if not data:
+        return 0
+    _, ct = _usage_from(data)
+    return ct
 
 
 # ---------------------------------------------------------------- main
 
 def main():
-    init_db()
-    ensure_admin()
-    conf = load_conf()
-    save_conf(conf)
+    db.init()
+    gen = db.ensure_admin()
+    if gen:
+        print(f"[x-router] password admin awal: {gen}")
+    reg = db.load_registry()
+    print(f"[x-router] registry: {len(reg)} provider, "
+          f"{sum(len(p.get('models') or []) for p in reg)} model")
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"[x-router] listening on {HOST}:{PORT}  (dashboard: / , api: /v1)")
+    srv.daemon_threads = True
+    print(f"[x-router] listening on {HOST}:{PORT}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
