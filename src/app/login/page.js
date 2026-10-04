@@ -204,7 +204,8 @@ export default function LoginPage() {
           </h1>
             <p className="text-text-muted">This API key is signed in but holds no dashboard permission</p>
           </div>
-          <Card>
+          <Card className="relative">
+          <div className="absolute -top-px left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full" />
             <div className="flex flex-col gap-4">
               <p className="text-sm text-text-muted text-center">
                 Ask the owner of this instance to grant a permission on the key, or sign in with the dashboard password instead.
@@ -249,7 +250,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="relative">
+          <div className="absolute -top-px left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full" />
           {mustChange ? (
             <form onSubmit={handleSetNewPassword} className="flex flex-col gap-4">
               <p className="text-sm text-amber-600 dark:text-amber-400 text-center">

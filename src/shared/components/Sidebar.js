@@ -140,10 +140,10 @@ export default function Sidebar({ onClose }) {
 
   return (
     <>
-      <aside className="flex w-72 flex-col border-r border-border-subtle bg-vibrancy backdrop-blur-xl transition-colors duration-300 min-h-full">
+      <aside className="flex w-72 flex-col border-r border-border-subtle bg-vibrancy transition-colors duration-300 min-h-full">
 
         {/* Logo */}
-        <div className="px-6 py-4 flex flex-col gap-2">
+        <div className="px-6 py-4 flex flex-col gap-2 border-b border-border-subtle bg-gradient-to-b from-primary/[0.07] to-transparent">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="flex items-center justify-center size-9 rounded-[10px] overflow-hidden shadow-[var(--shadow-warm)]">
               <img src="/logo.png" alt="X Router" className="size-9 object-cover" />

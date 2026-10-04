@@ -48,7 +48,7 @@ export function CenterLoading({ message, progress = null, fixed = true, classNam
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center justify-center bg-black/55 backdrop-blur-[3px]",
+        "flex items-center justify-center bg-black/55",
         fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[10px]",
         className
       )}
@@ -89,7 +89,7 @@ export function ProgressCard({ title, message, section, progress = null, fixed =
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center justify-center bg-black/55 backdrop-blur-[3px]",
+        "flex items-center justify-center bg-black/55",
         fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[10px]",
         className
       )}

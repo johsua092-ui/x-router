@@ -4,30 +4,30 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "@/shared/constants/config";
 
-// Two modes, both dark-based: glass is the default (a glassmorphism variant
-// that keeps the exact same palette while surfaces turn translucent), and solid
-// dark stays as the fallback.
-export const THEME_IDS = ["glass", "dark"];
+// Both modes are fully solid — frosted/translucent panels are gone in X Router.
+// "ember" = warm charcoal panels with a faint brand-orange tint (default),
+// "dark" = neutral solid dark panels.
+export const THEME_IDS = ["ember", "dark"];
 
 const useThemeStore = create(
   persist(
     (set, get) => ({
-      theme: "glass",
+      theme: "ember",
 
       setTheme: (theme) => {
-        const id = THEME_IDS.includes(theme) ? theme : "glass";
+        const id = THEME_IDS.includes(theme) ? theme : "ember";
         set({ theme: id });
         applyTheme(id);
       },
 
       toggleTheme: () => {
-        const next = get().theme === "glass" ? "dark" : "glass";
+        const next = get().theme === "ember" ? "dark" : "ember";
         set({ theme: next });
         applyTheme(next);
       },
 
       initTheme: () => {
-        applyTheme(get().theme || "glass");
+        applyTheme(get().theme || "ember");
       },
     }),
     {
@@ -37,13 +37,13 @@ const useThemeStore = create(
 );
 
 // Apply theme to document. "dark" always stays on (both modes are dark);
-// "glass" adds the frosted-token overrides in globals.css.
+// "ember" adds the warm brand-tinted overrides in globals.css.
 function applyTheme(theme) {
   if (typeof window === "undefined") return;
 
   const root = document.documentElement;
   root.classList.add("dark");
-  root.classList.toggle("glass", theme === "glass");
+  root.classList.toggle("ember", theme === "ember");
 }
 
 export default useThemeStore;

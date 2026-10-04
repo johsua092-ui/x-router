@@ -16,11 +16,11 @@ const MODES = [
     swatches: ["#1a1a1a", "#262626", "#303030", "#333333"],
   },
   {
-    id: "glass",
-    icon: "blur_on",
-    label: "Glass",
-    desc: "Frosted translucent panels over a soft aurora backdrop",
-    swatches: ["#0b0e14", "#171b24", "#2a2118", "#1b2030"],
+    id: "ember",
+    icon: "local_fire_department",
+    label: "Ember",
+    desc: "Warm charcoal panels with a brand-orange tint",
+    swatches: ["#171310", "#201914", "#2b211a", "#33261d"],
   },
 ];
 
@@ -57,7 +57,7 @@ export default function ThemeModal({ isOpen, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
       <div
         ref={modalRef}
         role="dialog"

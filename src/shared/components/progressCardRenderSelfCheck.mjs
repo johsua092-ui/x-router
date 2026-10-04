@@ -128,7 +128,7 @@ run("the card shows title, message, percent and section", () => {
 run("the backdrop blocks the page: dark, blurred, fullscreen, high z", () => {
   const tree = render({ title: "Working" });
   assert.ok(tree.includes("bg-black/55"), "dark backdrop");
-  assert.ok(tree.includes("backdrop-blur"), "blurred backdrop");
+  assert.ok(!tree.includes("backdrop-blur"), "no frosted backdrop (solid panels only)");
   assert.ok(tree.includes("fixed") && tree.includes("inset-0"), "fullscreen when fixed");
   assert.ok(tree.includes("z-[70]"), "above modals");
   assert.no(tree.includes("pointer-events-none"), "blocking, not click-through");

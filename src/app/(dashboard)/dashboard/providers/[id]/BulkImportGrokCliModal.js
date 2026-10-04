@@ -251,7 +251,7 @@ export default function BulkImportGrokCliModal({ isOpen, onClose, onSuccess }) {
           />
 
           {isDragging && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-sidebar/90 rounded pointer-events-none backdrop-blur-xs">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-sidebar/95 rounded pointer-events-none">
               <span className="material-symbols-outlined text-3xl text-primary mb-1">upload_file</span>
               <span className="text-sm font-medium text-primary">
                 {translate("Drop .json files here")}
