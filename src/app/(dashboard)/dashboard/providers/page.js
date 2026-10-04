@@ -471,25 +471,28 @@ export default function ProvidersPage() {
             type="button"
             onClick={() => setCategoryTab("all")}
             className={cn(
-              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors shrink-0",
+              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer",
               categoryTab === "all"
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-brand-500 text-white border-brand-500 font-semibold shadow-xs"
                 : "bg-surface-2 border-border text-text-muted hover:text-text-main hover:bg-surface-3"
             )}
           >
-            All Providers ({totalCount})
+            <span className="material-symbols-outlined text-[14px]">dns</span>
+            <span>All Providers</span>
+            <span className="text-[10px] font-mono opacity-80">({totalCount})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setCategoryTab("custom")}
             className={cn(
-              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0",
+              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer",
               categoryTab === "custom"
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-brand-500 text-white border-brand-500 font-semibold shadow-xs"
                 : "bg-surface-2 border-border text-text-muted hover:text-text-main hover:bg-surface-3"
             )}
           >
+            <span className="material-symbols-outlined text-[14px]">terminal</span>
             <span>Custom</span>
             <span className="text-[10px] font-mono opacity-80">({customCount})</span>
           </button>
@@ -498,12 +501,13 @@ export default function ProvidersPage() {
             type="button"
             onClick={() => setCategoryTab("oauth")}
             className={cn(
-              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0",
+              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer",
               categoryTab === "oauth"
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-brand-500 text-white border-brand-500 font-semibold shadow-xs"
                 : "bg-surface-2 border-border text-text-muted hover:text-text-main hover:bg-surface-3"
             )}
           >
+            <span className="material-symbols-outlined text-[14px]">verified_user</span>
             <span>OAuth</span>
             <span className="text-[10px] font-mono opacity-80">({oauthCount})</span>
           </button>
@@ -512,12 +516,13 @@ export default function ProvidersPage() {
             type="button"
             onClick={() => setCategoryTab("apikey")}
             className={cn(
-              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0",
+              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer",
               categoryTab === "apikey"
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-brand-500 text-white border-brand-500 font-semibold shadow-xs"
                 : "bg-surface-2 border-border text-text-muted hover:text-text-main hover:bg-surface-3"
             )}
           >
+            <span className="material-symbols-outlined text-[14px]">key</span>
             <span>API Keys</span>
             <span className="text-[10px] font-mono opacity-80">({apikeyCount})</span>
           </button>
@@ -526,12 +531,13 @@ export default function ProvidersPage() {
             type="button"
             onClick={() => setCategoryTab("free")}
             className={cn(
-              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0",
+              "px-3 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer",
               categoryTab === "free"
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-brand-500 text-white border-brand-500 font-semibold shadow-xs"
                 : "bg-surface-2 border-border text-text-muted hover:text-text-main hover:bg-surface-3"
             )}
           >
+            <span className="material-symbols-outlined text-[14px]">public</span>
             <span>Free Tier</span>
             <span className="text-[10px] font-mono opacity-80">({freeCount})</span>
           </button>
