@@ -273,10 +273,8 @@ def login_page(msg=""):
     </div>
     {alert}
     <form method="post" action="/login">
-      <div class="field"><label>Username</label>
-        <input type="text" name="username" autocomplete="username" autofocus></div>
       <div class="field"><label>Password</label>
-        <input type="password" name="password" autocomplete="current-password"></div>
+        <input type="password" name="password" autocomplete="current-password" autofocus></div>
       <button class="btn primary" style="width:100%;justify-content:center" type="submit">Sign in</button>
     </form>
     <div class="hint">session 12 jam · pbkdf2-sha256</div>
@@ -603,17 +601,16 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/login":
             form = parse_qs(raw.decode("utf-8", "replace"))
-            u = (form.get("username") or [""])[0].strip()
             p = (form.get("password") or [""])[0]
-            if db.verify_pw(u, p):
-                import sqlite3
+            # login password-only: cek ke akun admin tunggal
+            if p and db.verify_pw("admin", p):
                 c = db.conn()
-                row = c.execute("SELECT id FROM users WHERE username=?", (u,)).fetchone()
+                row = c.execute("SELECT id FROM users WHERE username='admin'").fetchone()
                 c.close()
                 tok = db.create_session(row["id"])
                 return self._redirect("/dashboard", {"Set-Cookie":
                     f"xr_session={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age={db.SESSION_TTL}"})
-            return self._html(401, login_page("Username / password salah."))
+            return self._html(401, login_page("Password salah."))
 
         if path == "/logout":
             return self._redirect("/login")
