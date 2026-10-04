@@ -251,6 +251,35 @@ def add_tokens(key: str, n: int):
         c.close()
 
 
+def revoke_api_key(key: str):
+    with _lock:
+        c = conn()
+        c.execute("UPDATE apiKeys SET isActive=0 WHERE key=?", (key,))
+        c.commit()
+        c.close()
+
+
+def rename_api_key(key: str, name: str, token_limit: int | None = None):
+    with _lock:
+        c = conn()
+        if token_limit is None:
+            c.execute("UPDATE apiKeys SET name=? WHERE key=?", (name, key))
+        else:
+            c.execute("UPDATE apiKeys SET name=?, tokenLimit=? WHERE key=?",
+                      (name, token_limit, key))
+        c.commit()
+        c.close()
+
+
+def first_key() -> str | None:
+    c = conn()
+    row = c.execute(
+        "SELECT key FROM apiKeys WHERE isActive=1 ORDER BY createdAt ASC LIMIT 1"
+    ).fetchone()
+    c.close()
+    return row["key"] if row else None
+
+
 # --------------------------------------------------------------- providers
 
 def list_connections(provider: str | None = None, active_only=True):
@@ -335,8 +364,8 @@ def stats():
         "SELECT COALESCE(SUM(promptTokens+completionTokens),0) n FROM usageHistory"
     ).fetchone()["n"]
     recent = c.execute(
-        "SELECT timestamp,provider,model,endpoint,status,latencyMs "
-        "FROM usageHistory ORDER BY id DESC LIMIT 12"
+        "SELECT timestamp,provider,model,endpoint,status,latencyMs,promptTokens,"
+        "completionTokens FROM usageHistory ORDER BY id DESC LIMIT 40"
     ).fetchall()
     c.close()
     return {
@@ -347,3 +376,70 @@ def stats():
         "tokens": tokens,
         "recent": [dict(r) for r in recent],
     }
+
+
+def usage_daily(days: int = 14):
+    """Token per hari (UTC) — buat bar chart."""
+    c = conn()
+    rows = c.execute(
+        "SELECT substr(timestamp,1,10) AS day, COUNT(*) AS reqs,"
+        " COALESCE(SUM(promptTokens),0) AS pt, COALESCE(SUM(completionTokens),0) AS ct "
+        "FROM usageHistory WHERE timestamp >= datetime('now', ?) "
+        "GROUP BY day ORDER BY day ASC",
+        (f"-{days} days",),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def top_models(limit: int = 10):
+    c = conn()
+    rows = c.execute(
+        "SELECT model, provider, COUNT(*) AS reqs,"
+        " COALESCE(SUM(promptTokens+completionTokens),0) AS tokens, "
+        "COALESCE(ROUND(AVG(latencyMs)),0) AS avg_ms "
+        "FROM usageHistory WHERE model IS NOT NULL "
+        "GROUP BY model, provider ORDER BY reqs DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def provider_breakdown(limit: int = 12):
+    c = conn()
+    rows = c.execute(
+        "SELECT provider, COUNT(*) AS reqs,"
+        " COALESCE(SUM(promptTokens+completionTokens),0) AS tokens, "
+        "COALESCE(SUM(CASE WHEN status='ok' THEN 1 ELSE 0 END),0) AS ok "
+        "FROM usageHistory WHERE provider IS NOT NULL "
+        "GROUP BY provider ORDER BY reqs DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def latency_stats():
+    """p50/p95 dari sampel terakhir 500 request."""
+    c = conn()
+    rows = [r[0] for r in c.execute(
+        "SELECT latencyMs FROM usageHistory ORDER BY id DESC LIMIT 500").fetchall()]
+    c.close()
+    if not rows:
+        return {"p50": 0, "p95": 0, "avg": 0}
+    s = sorted(rows)
+    return {
+        "p50": s[len(s) // 2],
+        "p95": s[min(len(s) - 1, int(len(s) * 0.95))],
+        "avg": round(sum(s) / len(s)),
+    }
+
+
+def last_hour_requests():
+    c = conn()
+    n = c.execute(
+        "SELECT COUNT(*) n FROM usageHistory WHERE timestamp >= datetime('now','-1 hour')"
+    ).fetchone()["n"]
+    c.close()
+    return n

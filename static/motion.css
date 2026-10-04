@@ -1,96 +1,71 @@
-/* X Router — animasi ikon (SVG sprite) */
-svg.ic {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  display: inline-block;
-  vertical-align: -3px;
-}
+/* X Router — motion layer (SVG + micro-interactions, tanpa emoji) */
 
-/* denyut halus buat status aktif */
-.pulse {
-  transform-origin: center;
-  animation: xr-pulse 1.8s ease-in-out infinite;
+@keyframes xr-rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes xr-gloss { to { transform: translateX(120%); } }
+@keyframes xr-spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slide-out-right { to { transform: translateX(100%); opacity: 0; } }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes xr-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .35; transform: scale(.7); }
+  50% { opacity: .35; transform: scale(.72); }
 }
-
-/* garis ECG berjalan di ikon logs */
-.trace {
-  stroke-dasharray: 44;
-  stroke-dashoffset: 44;
-  animation: xr-trace 2.6s linear infinite;
-}
-@keyframes xr-trace {
-  to { stroke-dashoffset: -44; }
-}
-
-/* centang yang menggambar sendiri */
-.draw {
-  stroke-dasharray: 14;
-  stroke-dashoffset: 14;
-  animation: xr-draw 3.2s ease-in-out infinite;
-}
+@keyframes xr-blink { 50% { opacity: .15; } }
+@keyframes xr-trace { to { stroke-dashoffset: -44; } }
 @keyframes xr-draw {
   0%, 15% { stroke-dashoffset: 14; }
   45%, 80% { stroke-dashoffset: 0; }
   100% { stroke-dashoffset: 14; }
 }
+@keyframes xr-bars { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+@keyframes xr-dash { to { stroke-dashoffset: -32; } }
+@keyframes border-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(229,106,74,.3); border-color: rgba(229,106,74,.5); }
+  50% { box-shadow: 0 0 12px rgba(229,106,74,.55); border-color: rgba(229,106,74,.85); }
+}
 
-/* LED chip */
+/* status dot (svg sprite) */
+.pulse { transform-origin: center; animation: xr-pulse 1.8s ease-in-out infinite; }
 .blink { animation: xr-blink 1.4s steps(1) infinite; }
-@keyframes xr-blink { 50% { opacity: .15; } }
 
-/* sapuan diagonal di empty state */
-.sweep {
-  stroke-dasharray: 60;
-  animation: xr-sweep 3s ease-in-out infinite;
-}
-@keyframes xr-sweep {
-  0%, 100% { stroke-dashoffset: 60; opacity: 0; }
-  50% { stroke-dashoffset: 0; opacity: .4; }
-}
+/* ECG line di nav ikon logs */
+.trace { stroke-dasharray: 44; stroke-dashoffset: 44; animation: xr-trace 2.6s linear infinite; }
 
-/* masuknya kartu stat */
-.stat { animation: xr-rise .35s cubic-bezier(.2, .8, .3, 1) both; }
-.stat:nth-child(2) { animation-delay: .05s; }
-.stat:nth-child(3) { animation-delay: .1s; }
-.stat:nth-child(4) { animation-delay: .15s; }
-@keyframes xr-rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
+/* centang menggambar sendiri */
+.draw { stroke-dasharray: 14; stroke-dashoffset: 14; animation: xr-draw 3.2s ease-in-out infinite; }
 
-/* panel masuk */
-.panel { animation: xr-rise .4s cubic-bezier(.2, .8, .3, 1) both; }
+/* sparkline / bar chart */
+.spark path { stroke-dasharray: 400; stroke-dashoffset: 400; animation: xr-draw-line 1.6s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes xr-draw-line { to { stroke-dashoffset: 0; } }
+.spark .area { animation: fadeIn .9s .4s ease-out both; }
+.bar { transform-origin: bottom; animation: xr-bars .6s cubic-bezier(.2,.8,.3,1) both; }
+.flow-dash { stroke-dasharray: 7 7; animation: xr-dash .7s linear infinite; }
 
-/* tombol: kilat tipis pas hover */
-.btn.primary { position: relative; overflow: hidden; }
-.btn.primary::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, #ffffff55 50%, transparent 65%);
-  transform: translateX(-120%);
+/* live indicator */
+.live-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); flex: none; }
+.live-dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid var(--color-success); opacity: .5;
+  animation: xr-ring 1.8s ease-out infinite;
 }
-.btn.primary:hover::after { animation: xr-gloss .55s ease; }
-@keyframes xr-gloss { to { transform: translateX(120%); } }
+@keyframes xr-ring { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.5); opacity: 0; } }
 
-/* progress strip di panel header pas loading */
-.loading::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  height: 2px;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  animation: xr-load 1s linear infinite;
-}
-@keyframes xr-load {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(350%); }
+/* toast masuk/keluar (kelas dipakai dari style.css) */
+.slide-in-right { animation: slide-in-right .25s cubic-bezier(.22,1,.36,1) forwards; }
+.fade-in { animation: fadeIn .2s ease-out forwards; }
+.modal-in, .modal { animation: modalIn .22s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* spine line sidebar footer */
+.sidebar .foot::before {
+  content: ""; display: block; height: 40px; width: 1px; margin: 0 auto 6px;
+  background: linear-gradient(180deg, transparent, rgba(229,106,74,.5));
 }
 
 @media (prefers-reduced-motion: reduce) {

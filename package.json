@@ -1,0 +1,24 @@
+{
+  "name": "x-router",
+  "version": "0.2.0",
+  "private": true,
+  "description": "X Router — OpenAI + Anthropic compatible LLM gateway",
+  "scripts": {
+    "dev": "next dev --port 8080",
+    "build": "next build",
+    "start": "next start --port 8080",
+    "start:railway": "node scripts/start.mjs"
+  },
+  "dependencies": {
+    "material-symbols": "^0.44.6",
+    "next": "14.2.35",
+    "next-themes": "^0.4.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4"
+  }
+}
