@@ -113,6 +113,9 @@ export default function DashboardLayout({ children }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <UpdateBanner />
 
+        {/* Docked mobile top bar */}
+        <MobileNav />
+
         <main className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="ember-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
           {showHeading ? <PageHeading className="shrink-0" /> : null}
@@ -132,9 +135,6 @@ export default function DashboardLayout({ children }) {
         {/* Instrument status strip */}
         <StatusBar />
       </div>
-
-      {/* Floating sheet (mobile) */}
-      <MobileNav />
     </div>
   );
 }
