@@ -87,14 +87,15 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Floating launcher — bottom-left, never a top bar. */}
+      {/* Floating launcher — top-right corner */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="fixed bottom-4 left-4 z-[60] flex size-11 items-center justify-center rounded-full border border-brand-500/30 bg-surface text-primary shadow-[var(--shadow-elev)] transition-colors hover:bg-surface-2 lg:hidden"
+        className="fixed top-3.5 right-3.5 z-[60] flex h-9 items-center gap-1.5 rounded-[6px] border border-brand-500/40 bg-surface/95 px-2.5 text-text-main shadow-md backdrop-blur-md transition-all hover:border-brand-500 hover:bg-surface active:scale-95 lg:hidden cursor-pointer"
       >
-        <span className="material-symbols-outlined text-[21px] leading-none">menu</span>
+        <span className="material-symbols-outlined text-primary text-[19px] leading-none">menu</span>
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-text-main">Menu</span>
       </button>
 
       {open && (
