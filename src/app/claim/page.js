@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function ClaimPage() {
   const [code, setCode] = useState("");
@@ -11,8 +11,13 @@ export default function ClaimPage() {
   const [copiedSnippet, setCopiedSnippet] = useState("");
   const [activeSnippetTab, setActiveSnippetTab] = useState("curl"); // "curl" | "python" | "cursor" | "cline"
 
+  // Anti-Bot: Page load timestamp & Honeypot field
+  const pageLoadTime = useRef(Date.now());
+  const [honeypot, setHoneypot] = useState("");
+
   // Auto-fill from URL query ?code=XXX
   useEffect(() => {
+    pageLoadTime.current = Date.now();
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const c = p.get("code");
@@ -32,7 +37,11 @@ export default function ClaimPage() {
       const res = await fetch("/api/vouchers/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({
+          code: code.trim(),
+          website: honeypot, // Honeypot: must be empty
+          _t: pageLoadTime.current, // Human timing check
+        }),
       });
 
       const data = await res.json();
@@ -101,6 +110,18 @@ export default function ClaimPage() {
               </div>
 
               <form onSubmit={handleClaim} className="space-y-4">
+                {/* Honeypot field for bot traps - hidden from human eyes */}
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  style={{ display: "none" }}
+                  aria-hidden="true"
+                />
+
                 <div>
                   <label className="block text-[11px] font-mono text-[#aaa] uppercase tracking-wider mb-2">
                     VOUCHER PASS CODE
@@ -156,7 +177,7 @@ export default function ClaimPage() {
               </form>
 
               <div className="pt-4 border-t border-[#222] text-center text-xs text-[#666]">
-                Powered by X Router Gateway Infrastructure · Fast, Resilient, Multi-Provider
+                Protected by X Router Anti-Abuse Shield · Rate Limited & Bot Protected
               </div>
             </div>
           ) : (

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { v4 as uuidv4 } from "uuid";
 import { getAdapter } from "../driver.js";
 import { createApiKey } from "./apiKeysRepo.js";
@@ -164,8 +165,11 @@ export async function getVoucherClaims(voucherId = null) {
 }
 
 /**
- * Claim voucher by code.
- * Atomically increments usedCount, generates a scoped API key, and records the claim.
+ * Claim voucher by code with strict anti-abuse protections:
+ * 1. Voucher validity, status, and maxUses check.
+ * 2. Strict 1 claim per voucher per IP address (enforced even if maxUses > 1).
+ * 3. Daily IP claim quota (max 3 total voucher claims per IP per 24 hours).
+ * 4. Atomic transaction with row locking.
  */
 export async function claimVoucher(code, clientIp = "") {
   const db = await getAdapter();
@@ -183,14 +187,33 @@ export async function claimVoucher(code, clientIp = "") {
     return { success: false, error: "VOUCHER_EXHAUSTED", message: "This voucher has reached its maximum claim limit." };
   }
 
-  // Prevent multiple claims of the same voucher from the same IP if maxUses > 1
+  // Anti-Abuse Rule 1: One claim per voucher per IP address
   if (clientIp) {
     const existingFromIp = db.get(
       `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp = ? LIMIT 1`,
       [voucher.id, clientIp]
     );
-    if (existingFromIp && voucher.maxUses > 1) {
-      return { success: false, error: "ALREADY_CLAIMED", message: "You have already claimed this voucher from this IP address." };
+    if (existingFromIp) {
+      return {
+        success: false,
+        error: "ALREADY_CLAIMED",
+        message: "You have already claimed this voucher from this IP address.",
+      };
+    }
+
+    // Anti-Abuse Rule 2: Daily global claim cap per IP (max 3 voucher claims per 24h)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const dailyClaimsRow = db.get(
+      `SELECT COUNT(*) as cnt FROM voucherClaims WHERE clientIp = ? AND claimedAt >= ?`,
+      [clientIp, oneDayAgo]
+    );
+    const dailyClaimsCount = dailyClaimsRow ? dailyClaimsRow.cnt : 0;
+    if (dailyClaimsCount >= 3) {
+      return {
+        success: false,
+        error: "DAILY_LIMIT_EXCEEDED",
+        message: "Daily claim limit reached for this IP address (max 3 claims per 24 hours). Please try again tomorrow.",
+      };
     }
   }
 
@@ -214,7 +237,7 @@ export async function claimVoucher(code, clientIp = "") {
     createdBy: `voucher:${voucher.id}`,
   });
 
-  // Record claim and increment usedCount
+  // Record claim and increment usedCount atomically
   const claimId = uuidv4();
   const now = new Date().toISOString();
 
