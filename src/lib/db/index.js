@@ -650,6 +650,17 @@ export async function importDbProgressive(payload, onProgress) {
   return await exportDb();
 }
 
+export {
+  getVouchers,
+  getVoucherById,
+  getVoucherByCode,
+  createVoucher,
+  updateVoucher,
+  deleteVoucher,
+  getVoucherClaims,
+  claimVoucher,
+} from "./repos/vouchersRepo.js";
+
 // Eager init helper (optional)
 export async function initDb() {
   await getAdapter();

@@ -1,0 +1,520 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { cn } from "@/shared/utils/cn";
+import Badge from "@/shared/components/Badge";
+
+export default function VouchersPage() {
+  const [vouchers, setVouchers] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("vouchers"); // "vouchers" | "claims"
+  const [submitting, setSubmitting] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState("");
+
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    description: "",
+    tokenLimit: "100000",
+    allowedModels: "*",
+    rpmLimit: "60",
+    tpmLimit: "100000",
+    expiresInDays: "30",
+    maxUses: "1",
+  });
+
+  const fetchVouchers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/vouchers?claims=1");
+      if (res.ok) {
+        const data = await res.json();
+        setVouchers(data.vouchers || []);
+        setClaims(data.claims || []);
+      }
+    } catch (err) {
+      console.error("Failed to load vouchers", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      const res = await fetch("/api/vouchers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          tokenLimit: Number(form.tokenLimit) || 0,
+          rpmLimit: Number(form.rpmLimit) || 0,
+          tpmLimit: Number(form.tpmLimit) || 0,
+          expiresInDays: Number(form.expiresInDays) || 30,
+          maxUses: Number(form.maxUses) || 1,
+        }),
+      });
+
+      if (res.ok) {
+        setShowModal(false);
+        setForm({
+          code: "",
+          name: "",
+          description: "",
+          tokenLimit: "100000",
+          allowedModels: "*",
+          rpmLimit: "60",
+          tpmLimit: "100000",
+          expiresInDays: "30",
+          maxUses: "1",
+        });
+        fetchVouchers();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to create voucher");
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggle = async (v) => {
+    try {
+      await fetch(`/api/vouchers/${v.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !v.isActive }),
+      });
+      fetchVouchers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this voucher?")) return;
+    try {
+      await fetch(`/api/vouchers/${id}`, { method: "DELETE" });
+      fetchVouchers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    setCopyFeedback(label);
+    setTimeout(() => setCopyFeedback(""), 2000);
+  };
+
+  const publicClaimUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/claim`
+    : "https://xrouter.consoleapi.qzz.io/claim";
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-[4px] bg-brand-500/10 text-brand-500 border border-brand-500/20">
+              <span className="material-symbols-outlined text-[18px]">card_giftcard</span>
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-main">
+              Vouchers & Marketplace
+            </h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-text-muted">
+            Issue token vouchers, quota passes, and client onboarding links with automated API key provisioning.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="/claim"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-main hover:border-brand-500/50 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+            Open Public Portal
+          </a>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[15px]">add</span>
+            Create Voucher
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-2 text-xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab("vouchers")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors",
+            activeTab === "vouchers"
+              ? "bg-brand-500 text-white shadow-xs"
+              : "text-text-muted hover:text-text-main hover:bg-surface-2"
+          )}
+        >
+          <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
+          Vouchers ({vouchers.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("claims")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors",
+            activeTab === "claims"
+              ? "bg-brand-500 text-white shadow-xs"
+              : "text-text-muted hover:text-text-main hover:bg-surface-2"
+          )}
+        >
+          <span className="material-symbols-outlined text-[14px]">history</span>
+          Claim History ({claims.length})
+        </button>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex h-48 items-center justify-center text-xs text-text-muted">
+          Loading vouchers...
+        </div>
+      ) : activeTab === "vouchers" ? (
+        vouchers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-[8px] border border-dashed border-border p-12 text-center bg-surface-1">
+            <span className="material-symbols-outlined text-4xl text-text-muted/60 mb-2">loyalty</span>
+            <h3 className="text-sm font-semibold text-text-main">No Vouchers Created Yet</h3>
+            <p className="mt-1 text-xs text-text-muted max-w-sm">
+              Generate token voucher codes to distribute scoped API keys to team members, clients, or community members.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[15px]">add</span>
+              Create First Voucher
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {vouchers.map((v) => {
+              const isExhausted = v.maxUses > 0 && v.usedCount >= v.maxUses;
+              const directLink = `${publicClaimUrl}?code=${v.code}`;
+
+              return (
+                <div
+                  key={v.id}
+                  className={cn(
+                    "group relative flex flex-col justify-between rounded-[8px] border bg-surface-1 p-4 transition-all duration-200 hover:border-brand-500/40 hover:shadow-xs",
+                    v.isActive && !isExhausted ? "border-border" : "border-border/50 opacity-80"
+                  )}
+                >
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold tracking-wider text-text-main">
+                            {v.code}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(v.code, `code-${v.id}`)}
+                            title="Copy Code"
+                            className="text-text-muted hover:text-text-main transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              {copyFeedback === `code-${v.id}` ? "check" : "content_copy"}
+                            </span>
+                          </button>
+                        </div>
+                        <h4 className="text-xs font-medium text-text-muted mt-0.5">{v.name}</h4>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {isExhausted ? (
+                          <Badge variant="warning" size="xs">Exhausted</Badge>
+                        ) : v.isActive ? (
+                          <Badge variant="success" size="xs" dot>Active</Badge>
+                        ) : (
+                          <Badge variant="neutral" size="xs">Disabled</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {v.description && (
+                      <p className="mt-2 text-xs text-text-muted line-clamp-2">{v.description}</p>
+                    )}
+
+                    {/* Metadata Chips */}
+                    <div className="mt-3.5 grid grid-cols-2 gap-2 text-[11px] font-mono">
+                      <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
+                        <span className="text-text-muted block text-[10px]">TOKEN QUOTA</span>
+                        <span className="font-semibold text-text-main">
+                          {v.tokenLimit === 0 ? "Unlimited" : `${(v.tokenLimit / 1000).toLocaleString()}K tokens`}
+                        </span>
+                      </div>
+                      <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
+                        <span className="text-text-muted block text-[10px]">USES</span>
+                        <span className="font-semibold text-text-main">
+                          {v.usedCount} / {v.maxUses === 0 ? "∞" : v.maxUses} claimed
+                        </span>
+                      </div>
+                      <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
+                        <span className="text-text-muted block text-[10px]">EXPIRY</span>
+                        <span className="text-text-main">
+                          {v.expiresInDays === 0 ? "No expiry" : `${v.expiresInDays} days`}
+                        </span>
+                      </div>
+                      <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
+                        <span className="text-text-muted block text-[10px]">MODELS</span>
+                        <span className="text-text-main truncate block" title={v.allowedModels}>
+                          {v.allowedModels === "*" ? "All Models (*)" : v.allowedModels}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(directLink, `link-${v.id}`)}
+                      className="inline-flex items-center gap-1 text-text-muted hover:text-brand-500 font-mono text-[11px] transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">link</span>
+                      {copyFeedback === `link-${v.id}` ? "Copied Direct Link!" : "Copy Claim Link"}
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(v)}
+                        className="text-text-muted hover:text-text-main p-1 transition-colors"
+                        title={v.isActive ? "Disable Voucher" : "Enable Voucher"}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {v.isActive ? "pause_circle" : "play_circle"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(v.id)}
+                        className="text-text-muted hover:text-red-500 p-1 transition-colors"
+                        title="Delete Voucher"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        /* Claims History Tab */
+        <div className="overflow-hidden rounded-[8px] border border-border bg-surface-1">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-surface-2 text-text-muted border-b border-border font-mono text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-4 font-medium">TIMESTAMP</th>
+                  <th className="py-2.5 px-4 font-medium">VOUCHER CODE</th>
+                  <th className="py-2.5 px-4 font-medium">GENERATED KEY</th>
+                  <th className="py-2.5 px-4 font-medium">CLIENT IP</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {claims.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-text-muted">
+                      No claims recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  claims.map((c) => (
+                    <tr key={c.id} className="hover:bg-surface-2/40 transition-colors">
+                      <td className="py-2.5 px-4 text-text-muted font-mono whitespace-nowrap">
+                        {new Date(c.claimedAt).toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono font-semibold text-brand-500">
+                        {c.voucherCode}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono text-text-main">
+                        {c.apiKey.slice(0, 10)}...{c.apiKey.slice(-6)}
+                      </td>
+                      <td className="py-2.5 px-4 text-text-muted font-mono">
+                        {c.clientIp || "Local/Unknown"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Create Voucher Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-[8px] border border-border bg-surface-1 p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-brand-500 text-[18px]">add_circle</span>
+                <h3 className="text-sm font-bold text-text-main">Create New Token Voucher</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="text-text-muted hover:text-text-main text-xs p-1"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    VOUCHER CODE
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. BANSOS-100K"
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    CAMPAIGN NAME
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Community Giveaway"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono text-text-muted mb-1">
+                  DESCRIPTION (OPTIONAL)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Notes about this voucher cohort..."
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    TOKEN QUOTA PER KEY
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="100000"
+                    value={form.tokenLimit}
+                    onChange={(e) => setForm({ ...form, tokenLimit: e.target.value })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-text-muted mt-0.5 block">0 = Unlimited</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    MAX CLAIMS (USES)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="1"
+                    value={form.maxUses}
+                    onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-text-muted mt-0.5 block">How many people can redeem</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    EXPIRATION (DAYS)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="30"
+                    value={form.expiresInDays}
+                    onChange={(e) => setForm({ ...form, expiresInDays: e.target.value })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-text-muted mt-0.5 block">Active lifespan after claim</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-text-muted mb-1">
+                    ALLOWED MODELS
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="* or gpt-4o, claude-3-5"
+                    value={form.allowedModels}
+                    onChange={(e) => setForm({ ...form, allowedModels: e.target.value })}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-text-muted mt-0.5 block">* = unrestricted</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="rounded-[6px] border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text-main"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-[6px] bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 disabled:opacity-50"
+                >
+                  {submitting ? "Creating..." : "Save Voucher"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

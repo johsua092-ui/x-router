@@ -157,6 +157,12 @@ export default function MobileNav() {
                     active={isActive(item.href)}
                   />
                 ))}
+                <Row
+                  href="/dashboard/vouchers"
+                  icon="card_giftcard"
+                  label="Vouchers & Market"
+                  active={isActive("/dashboard/vouchers")}
+                />
               </Section>
 
               {workshopItems.length > 0 && (

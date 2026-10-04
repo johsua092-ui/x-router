@@ -3,7 +3,7 @@
 // pre-change safety backup in migrate.js: when the stored version is lower,
 // one lightweight DB backup is taken before applying schema changes. Forgetting
 // to bump only skips that backup — it does NOT break the additive auto-sync.
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export const PRAGMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -164,6 +164,44 @@ export const TABLES = {
       "CREATE INDEX IF NOT EXISTS idx_rd_provider ON requestDetails(provider)",
       "CREATE INDEX IF NOT EXISTS idx_rd_model ON requestDetails(model)",
       "CREATE INDEX IF NOT EXISTS idx_rd_conn ON requestDetails(connectionId)",
+    ],
+  },
+  vouchers: {
+    columns: {
+      id: "TEXT PRIMARY KEY",
+      code: "TEXT UNIQUE NOT NULL",
+      name: "TEXT",
+      description: "TEXT DEFAULT ''",
+      tokenLimit: "INTEGER DEFAULT 100000",
+      allowedModels: "TEXT DEFAULT '*'",
+      rpmLimit: "INTEGER DEFAULT 0",
+      tpmLimit: "INTEGER DEFAULT 0",
+      expiresInDays: "INTEGER DEFAULT 30",
+      maxUses: "INTEGER DEFAULT 1",
+      usedCount: "INTEGER DEFAULT 0",
+      isActive: "INTEGER DEFAULT 1",
+      createdAt: "TEXT NOT NULL",
+      updatedAt: "TEXT NOT NULL",
+    },
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_voucher_code ON vouchers(code)",
+      "CREATE INDEX IF NOT EXISTS idx_voucher_active ON vouchers(isActive)",
+    ],
+  },
+  voucherClaims: {
+    columns: {
+      id: "TEXT PRIMARY KEY",
+      voucherId: "TEXT NOT NULL",
+      voucherCode: "TEXT NOT NULL",
+      apiKeyId: "TEXT NOT NULL",
+      apiKey: "TEXT NOT NULL",
+      clientIp: "TEXT",
+      claimedAt: "TEXT NOT NULL",
+    },
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_vc_voucher ON voucherClaims(voucherId)",
+      "CREATE INDEX IF NOT EXISTS idx_vc_key ON voucherClaims(apiKeyId)",
+      "CREATE INDEX IF NOT EXISTS idx_vc_ip ON voucherClaims(clientIp)",
     ],
   },
 };

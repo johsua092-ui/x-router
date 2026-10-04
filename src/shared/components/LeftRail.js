@@ -323,6 +323,14 @@ export default function LeftRail() {
               onClick={() => setExpandedGroup(null)}
             />
           ))}
+          <RailRow
+            href="/dashboard/vouchers"
+            icon="card_giftcard"
+            label="Vouchers & Market"
+            active={isActive("/dashboard/vouchers")}
+            open={open}
+            onClick={() => setExpandedGroup(null)}
+          />
         </div>
 
         {/* Extensions & System */}
