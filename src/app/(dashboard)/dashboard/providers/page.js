@@ -952,23 +952,23 @@ function ProviderCard({
         <div className="flex items-start justify-between gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="size-10 shrink-0 rounded-[6px] border bg-[#18181b] flex items-center justify-center p-1.5 transition-all duration-200 group-hover:scale-105 shadow-xs"
+              className="size-11 sm:size-12 shrink-0 rounded-[6px] border border-white/10 bg-[#1a1a20] flex items-center justify-center p-1.5 transition-all duration-200 group-hover:scale-105 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
               style={{
-                borderColor: provider.color ? `${provider.color}50` : "var(--color-border)",
-                boxShadow: provider.color ? `0 0 12px ${provider.color}25` : "0 0 8px rgba(255,255,255,0.04)",
+                borderColor: provider.color ? `${provider.color}55` : "rgba(255,255,255,0.12)",
+                boxShadow: provider.color ? `0 0 14px ${provider.color}30` : "0 0 10px rgba(255,255,255,0.05)",
               }}
             >
               <ProviderIcon
                 src={getIconPath()}
                 alt={provider.name}
-                size={26}
-                className="object-contain max-w-[26px] max-h-[26px] drop-shadow-xs"
+                size={32}
+                className="object-contain max-w-[32px] max-h-[32px] drop-shadow-sm"
                 fallbackText={provider.textIcon || provider.id.slice(0, 2).toUpperCase()}
                 fallbackColor={provider.color}
               />
             </div>
             <div className="min-w-0">
-              <h3 className="truncate font-semibold text-sm text-text-main group-hover:text-primary transition-colors">
+              <h3 className="truncate font-semibold text-sm sm:text-[14.5px] text-text-main group-hover:text-primary transition-colors">
                 {provider.name}
               </h3>
               <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted mt-0.5 block">
