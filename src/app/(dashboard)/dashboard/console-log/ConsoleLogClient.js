@@ -22,7 +22,7 @@ function colorLine(line, index) {
   else if (line.includes("✓") || line.includes("done")) levelColor = "text-success";
 
   return (
-    <div className="flex gap-2 hover:bg-white/5 px-1 rounded">
+    <div className="flex gap-2 hover:bg-surface-2 px-1 rounded">
       <span className="text-muted select-none shrink-0 w-8 text-right">{index + 1}</span>
       <span className={levelColor}>{line}</span>
     </div>

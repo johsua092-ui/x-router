@@ -50,7 +50,7 @@ export default function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 fade-in"
+        className="absolute inset-0 bg-black/70 fade-in"
         onClick={closeOnOverlay ? onClose : undefined}
         aria-hidden="true"
       />
@@ -59,7 +59,7 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative w-full flex flex-col bg-surface border border-border rounded-[12px]",
+          "relative w-full flex flex-col bg-surface border border-border rounded-[6px]",
           "shadow-[var(--shadow-elev)] modal-in",
           "max-h-[calc(100vh-2rem)]",
           sizes[size],
@@ -79,7 +79,7 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mt-0.5 -mr-1 shrink-0 p-1.5 rounded-[7px] text-text-subtle hover:bg-surface-2 hover:text-text-main transition-colors"
+              className="-mt-0.5 -mr-1 shrink-0 p-1.5 rounded-[6px] text-text-subtle hover:bg-surface-2 hover:text-text-main transition-colors"
             >
               <span className="material-symbols-outlined text-[18px] leading-none">close</span>
             </button>

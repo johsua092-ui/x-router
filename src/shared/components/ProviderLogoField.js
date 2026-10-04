@@ -34,7 +34,7 @@ export default function ProviderLogoField({ logo, onChange, hint = DEFAULT_HINT 
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-text-main">Logo</label>
       <div className="flex items-center gap-3">
-        <span className="size-10 shrink-0 rounded-[10px] border border-border/50 bg-surface-2 flex items-center justify-center overflow-hidden">
+        <span className="size-10 shrink-0 rounded-[6px] border border-border/50 bg-surface-2 flex items-center justify-center overflow-hidden">
           {preview ? (
             <img src={preview} alt="" className="size-full object-contain" loading="lazy" decoding="async" />
           ) : (

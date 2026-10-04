@@ -127,7 +127,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
     <>
       {visible && (
         <div className="mx-6 lg:mx-10 mb-4 max-w-7xl slide-in-top">
-          <div className="flex flex-col gap-2.5 rounded-xl border border-warning-border bg-warning-bg px-4 py-3 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2.5 rounded-[6px] border border-warning-border bg-warning-bg px-4 py-3 sm:flex-row sm:items-center">
             <span className="material-symbols-outlined shrink-0 text-[20px] text-warning">system_update_alt</span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-warning">
@@ -203,7 +203,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
       />
 
       {(isDisconnected || isUpdating) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 fade-in">
           {isUpdating ? (
             <ManualUpdatePanel
               latestVersion={info.latestVersion}

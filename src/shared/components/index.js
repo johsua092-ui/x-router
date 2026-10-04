@@ -11,6 +11,7 @@ export { default as Toggle } from "./Toggle";
 export { default as ThemeToggle } from "./ThemeToggle";
 export { ThemeProvider } from "./ThemeProvider";
 export { default as Sidebar } from "./Sidebar";
+export { default as LeftRail } from "./LeftRail";
 export { default as RightRail } from "./RightRail";
 export { default as MobileNav } from "./MobileNav";
 export { default as PageHeading } from "./PageHeading";

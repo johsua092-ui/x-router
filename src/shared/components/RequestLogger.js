@@ -50,7 +50,7 @@ export default function RequestLogger() {
                 }`}
             >
               <span
-                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${autoRefresh ? "translate-x-5" : "translate-x-1"
+                className={`inline-block h-3 w-3 transform rounded-full bg-surface transition-transform ${autoRefresh ? "translate-x-5" : "translate-x-1"
                   }`}
               />
             </div>
@@ -58,7 +58,7 @@ export default function RequestLogger() {
         </div>
       </div>
 
-      <Card className="overflow-hidden bg-black/5 dark:bg-black/20">
+      <Card className="overflow-hidden bg-surface-2">
         <div className="p-0 overflow-x-auto max-h-[600px] overflow-y-auto font-mono text-xs">
           {loading && logs.length === 0 ? (
             <div className="p-8 text-center text-text-muted">Loading logs...</div>

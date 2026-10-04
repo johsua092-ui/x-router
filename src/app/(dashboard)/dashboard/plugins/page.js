@@ -252,7 +252,7 @@ export default function PluginsPage() {
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`size-10 rounded-xl flex items-center justify-center border shrink-0 ${plugin.iconBg}`}
+                    className={`size-10 rounded-[6px] flex items-center justify-center border shrink-0 ${plugin.iconBg}`}
                   >
                     <span
                       className={`material-symbols-outlined text-[22px] leading-none ${plugin.iconColor}`}
@@ -291,7 +291,7 @@ export default function PluginsPage() {
                   </div>
 
                   {selectedModels.length === 0 ? (
-                    <div className="p-4 rounded-xl border border-dashed border-border-subtle bg-surface-2/30 text-center">
+                    <div className="p-4 rounded-[6px] border border-dashed border-border-subtle bg-surface-2/30 text-center">
                       <p className="text-xs text-text-muted">
                         Select models to apply this plugin
                       </p>

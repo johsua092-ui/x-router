@@ -231,7 +231,7 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
           <button
             onClick={onMenuClick}
             aria-label="Open navigation"
-            className="flex items-center justify-center size-8 rounded-[7px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+            className="flex items-center justify-center size-8 rounded-[6px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
           >
             <span className="material-symbols-outlined text-[20px] leading-none">menu</span>
           </button>
@@ -318,7 +318,7 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
           href="https://github.com/johsua092-ui/x-router"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-xs font-medium text-text-muted hover:text-text-main hover:bg-surface-2 transition-all border border-border-subtle"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-xs font-medium text-text-muted hover:text-text-main hover:bg-surface-2 transition-all border border-border-subtle"
           title="GitHub Repository"
           aria-label="GitHub Repository"
         >

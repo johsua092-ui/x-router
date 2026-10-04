@@ -251,7 +251,7 @@ id = "${selectedModel || "cc/claude-opus-4-7"}"`;
                   <div className="flex-1">
                     <p className="font-medium text-warning">jcode CLI not detected locally</p>
                     <p className="text-sm text-text-muted mt-1">Install jcode to enable automatic configuration:</p>
-                    <code className="block mt-2 p-2 bg-black/20 rounded text-xs font-mono">
+                    <code className="block mt-2 p-2 bg-surface-2 rounded text-xs font-mono">
                       curl -fsSL https://raw.githubusercontent.com/1jehuang/jcode/master/scripts/install.sh | bash
                     </code>
                     <p className="text-sm text-text-muted mt-2">Manual configuration is still available if xrouter is deployed on a remote server.</p>

@@ -1189,14 +1189,14 @@ export default function ProfilePage() {
               {/* SSO Protocol Switcher Tabs */}
               <div className="flex flex-col gap-2">
                 <label className="font-medium text-sm sm:text-base">SSO Protocol</label>
-                <div className="flex p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-border">
+                <div className="flex p-1 rounded-lg bg-surface-2 border border-border">
                   <button
                     type="button"
                     onClick={() => setSsoTypeTab("saml")}
                     className={cn(
                       "flex-1 py-1.5 px-3 rounded-md font-medium text-xs sm:text-sm transition-all text-center",
                       ssoTypeTab === "saml"
-                        ? "bg-white dark:bg-white/10 text-text-main shadow-sm"
+                        ? "bg-surface dark:bg-surface-3 text-text-main shadow-[var(--shadow-elev)]"
                         : "text-text-muted hover:text-text-main"
                     )}
                   >
@@ -1208,7 +1208,7 @@ export default function ProfilePage() {
                     className={cn(
                       "flex-1 py-1.5 px-3 rounded-md font-medium text-xs sm:text-sm transition-all text-center",
                       ssoTypeTab === "oidc"
-                        ? "bg-white dark:bg-white/10 text-text-main shadow-sm"
+                        ? "bg-surface dark:bg-surface-3 text-text-main shadow-[var(--shadow-elev)]"
                         : "text-text-muted hover:text-text-main"
                     )}
                   >
@@ -1254,7 +1254,7 @@ export default function ProfilePage() {
                           "text-left rounded-lg border p-3 transition-colors",
                           active
                             ? "border-primary bg-primary/5"
-                            : "border-border bg-bg hover:bg-black/5 dark:hover:bg-white/5"
+                            : "border-border bg-bg hover:bg-surface-2 dark:hover:bg-surface-2"
                         )}
                         disabled={loading || oidcLoading || samlLoading}
                       >

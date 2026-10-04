@@ -551,7 +551,7 @@ export function TtsExampleCard({ providerId }) {
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="border border-border rounded-xl shadow-2xl w-full max-w-md mx-4 flex flex-col max-h-[80vh]"
+            className="border border-border rounded-[6px] shadow-[var(--shadow-elev)] w-full max-w-md mx-4 flex flex-col max-h-[80vh]"
             style={{ backgroundColor: "var(--color-bg)", isolation: "isolate" }}
             onClick={(e) => e.stopPropagation()}
           >

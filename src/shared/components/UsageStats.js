@@ -67,7 +67,7 @@ function RecentRequests({ requests = [] }) {
           <span className="text-text-muted text-sm">No requests yet.</span>
           <a
             href="/dashboard/endpoint"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs text-primary transition-colors hover:bg-bg-hover"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs text-primary transition-colors hover:bg-surface-3"
           >
             Get an API key →
           </a>
@@ -574,7 +574,7 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
                 disabled={fetching}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${period === p.value ? "bg-primary text-white shadow-sm" : "text-text-muted hover:bg-bg-hover hover:text-text"}`}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${period === p.value ? "bg-primary text-white shadow-[var(--shadow-elev)]" : "text-text-muted hover:bg-surface-3 hover:text-text"}`}
               >
                 {p.label}
               </button>
@@ -659,13 +659,13 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
           <div className="grid grid-cols-2 items-center gap-1 rounded-lg border border-border bg-bg-subtle p-1 sm:flex">
             <button
               onClick={() => setViewMode("costs")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "costs" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "costs" ? "bg-primary text-white shadow-[var(--shadow-elev)]" : "text-text-muted hover:text-text hover:bg-surface-3"}`}
             >
               Costs
             </button>
             <button
               onClick={() => setViewMode("tokens")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-[var(--shadow-elev)]" : "text-text-muted hover:text-text hover:bg-surface-3"}`}
             >
               Tokens
             </button>

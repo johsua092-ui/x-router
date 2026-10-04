@@ -123,7 +123,7 @@ GroupRow.propTypes = {
 
 function Flyout({ children }) {
   return (
-    <div className="fade-in absolute right-full top-2.5 z-50 mr-2 w-[236px] rounded-[10px] border border-border bg-surface p-1.5 shadow-[var(--shadow-elev)]">
+    <div className="fade-in absolute right-full top-2.5 z-50 mr-2 w-[236px] rounded-[6px] border border-border bg-surface p-1.5 shadow-[var(--shadow-elev)]">
       {children}
     </div>
   );
@@ -241,7 +241,7 @@ export default function RightRail() {
           open ? "px-2" : "justify-center"
         )}
       >
-        <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[7px] ring-1 ring-brand-500/30">
+        <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[6px] ring-1 ring-brand-500/30">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="X Router" className="size-7 object-cover" />
         </span>

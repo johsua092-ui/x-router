@@ -142,7 +142,7 @@ export default function QuotaTable({
           {sortedQuotas.length} quota{sortedQuotas.length > 1 ? "s" : ""}
         </div>
         {showSortLabel && (
-          <div className="rounded-md border border-black/10 bg-black/[0.02] px-2 py-1 text-[10px] text-text-muted dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] text-text-muted dark:border-border bg-surface-2">
             {sortLabel}
           </div>
         )}
@@ -221,7 +221,7 @@ export default function QuotaTable({
                       <button
                         type="button"
                         onClick={() => onHideQuota(quota)}
-                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/5"
+                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-2 hover:text-text-main dark:hover:bg-surface-2"
                         title="Hide this quota row"
                         aria-label={`Hide quota ${quota.name}`}
                       >
@@ -245,7 +245,7 @@ export default function QuotaTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="rounded-lg border border-border-subtle bg-bg/50 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+        <div className="rounded-lg border border-border-subtle bg-bg/50 px-3 py-2 dark:border-border bg-surface-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] text-text-muted">
               Showing {pageStart}-{pageEnd} of {sortedQuotas.length}
@@ -259,7 +259,7 @@ export default function QuotaTable({
               type="button"
               onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
               disabled={page === 1}
-              className="flex h-6 items-center rounded-md border border-black/10 px-2 text-[10px] text-text-primary transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:hover:bg-white/5"
+              className="flex h-6 items-center rounded-md border border-border px-2 text-[10px] text-text-main transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:hover:bg-surface-2"
             >
               Prev
             </button>
@@ -267,7 +267,7 @@ export default function QuotaTable({
               type="button"
               onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
               disabled={page === totalPages}
-              className="flex h-6 items-center rounded-md border border-black/10 px-2 text-[10px] text-text-primary transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:hover:bg-white/5"
+              className="flex h-6 items-center rounded-md border border-border px-2 text-[10px] text-text-main transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:hover:bg-surface-2"
             >
               Next
             </button>

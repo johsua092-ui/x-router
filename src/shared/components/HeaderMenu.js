@@ -71,14 +71,14 @@ export default function HeaderMenu({ onLogout }) {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen((v) => !v)}
-          className="flex items-center justify-center p-2 rounded-[10px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-all"
+          className="flex items-center justify-center p-2 rounded-[6px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-all"
           title="Menu"
         >
           <span className="material-symbols-outlined">grid_view</span>
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-60 bg-surface border border-border-subtle rounded-xl shadow-[var(--shadow-elev)] z-50 slide-in-top overflow-hidden py-1">
+          <div className="absolute right-0 top-full mt-2 w-60 bg-surface border border-border-subtle rounded-[6px] shadow-[var(--shadow-elev)] z-50 slide-in-top overflow-hidden py-1">
             <MenuItem
               icon="history"
               label="Change Log"

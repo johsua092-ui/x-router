@@ -243,18 +243,18 @@ export default function ChangelogModal({ isOpen, onClose }) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/45"
+        className="absolute inset-0 bg-black/70"
         onClick={onClose}
       />
       <div
         ref={modalRef}
-        className="relative w-full bg-surface border border-black/10 dark:border-white/10 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-w-3xl flex flex-col max-h-[85vh]"
+        className="relative w-full bg-surface border border-border rounded-[6px] shadow-[var(--shadow-elev)] animate-in fade-in zoom-in-95 duration-200 max-w-3xl flex flex-col max-h-[85vh]"
       >
-        <div className="flex items-center justify-between gap-3 p-3 border-b border-black/5 dark:border-white/5">
+        <div className="flex items-center justify-between gap-3 p-3 border-b border-border-subtle">
           <h2 className="text-lg font-semibold text-text-main">Change Log</h2>
           <div className="flex items-center gap-2">
             {available.length > 1 && (
-              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-black/5 dark:bg-white/5">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-2">
                 {available.map((source) => (
                   <button
                     key={source.id}
@@ -263,7 +263,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
                     aria-pressed={shown === source.id}
                     className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                       shown === source.id
-                        ? "bg-surface text-text-main shadow-sm"
+                        ? "bg-surface text-text-main shadow-[var(--shadow-elev)]"
                         : "text-text-muted hover:text-text-main"
                     }`}
                   >
@@ -274,7 +274,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
             )}
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+              className="p-1 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-2 dark:hover:bg-surface-2 transition-all"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>

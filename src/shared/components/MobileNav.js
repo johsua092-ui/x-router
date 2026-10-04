@@ -103,11 +103,11 @@ export default function MobileNav() {
             type="button"
             aria-label="Close navigation"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/70"
           />
           <div className="slide-in-right absolute right-0 top-0 flex h-full w-[min(86vw,330px)] flex-col border-l border-border bg-surface">
             <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border-subtle px-3">
-              <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[7px] ring-1 ring-brand-500/30">
+              <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[6px] ring-1 ring-brand-500/30">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/logo.png" alt="X Router" className="size-7 object-cover" />
               </span>

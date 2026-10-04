@@ -340,7 +340,7 @@ export default function CoworkToolCard({
                         <span className="text-xs text-text-muted">No models selected</span>
                       ) : (
                         selectedModels.map((m) => (
-                          <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/5 dark:bg-white/5 text-text-muted border border-transparent hover:border-border">
+                          <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-2 text-text-muted border border-transparent hover:border-border">
                             {m}
                             <button onClick={() => handleRemoveModel(m)} className="ml-0.5 hover:text-danger">
                               <span className="material-symbols-outlined text-[12px]">close</span>
@@ -364,10 +364,10 @@ export default function CoworkToolCard({
                         {p.oauth && <span className="text-[8px] text-warning shrink-0">OAuth</span>}
                         <div className="flex-1 flex flex-wrap gap-1 overflow-hidden" style={{ maxHeight: "1.125rem" /* one chip row: a wrapped second row clips whole, never mid-glyph */ }}>
                           {Array.isArray(p.toolNames) && p.toolNames.slice(0, 6).map((t) => (
-                            <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-black/5 dark:bg-white/5 text-text-muted whitespace-nowrap">{t}</span>
+                            <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-surface-2 text-text-muted whitespace-nowrap">{t}</span>
                           ))}
                           {Array.isArray(p.toolNames) && p.toolNames.length > 6 && (
-                            <span className="text-[9px] px-1 py-0.5 rounded bg-black/5 dark:bg-white/5 text-text-muted whitespace-nowrap">+{p.toolNames.length - 6}</span>
+                            <span className="text-[9px] px-1 py-0.5 rounded bg-surface-2 text-text-muted whitespace-nowrap">+{p.toolNames.length - 6}</span>
                           )}
                         </div>
                         <button onClick={() => removePlugin(p.name)} className="shrink-0 hover:text-danger ml-auto">
@@ -483,7 +483,7 @@ export default function CoworkToolCard({
                         })}
                       </div>
                       <p className="text-[10px] text-text-muted leading-snug">
-                        <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1" aria-hidden="true">warning</span>Local plugins run as subprocess via <code className="px-1 py-0.5 rounded bg-black/5 dark:bg-white/5">npx</code>. Requires Node.js installed.
+                        <span className="material-symbols-outlined text-[13px] align-[-2px] mr-1" aria-hidden="true">warning</span>Local plugins run as subprocess via <code className="px-1 py-0.5 rounded bg-surface-2">npx</code>. Requires Node.js installed.
                       </p>
                     </div>
                   </div>
@@ -555,8 +555,8 @@ export default function CoworkToolCard({
 
       {/* Add Custom MCP modal */}
       {addMcpOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAddMcpOpen(false)}>
-          <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setAddMcpOpen(false)}>
+          <div className="bg-surface border border-border rounded-[6px] shadow-[var(--shadow-elev)] w-full max-w-sm mx-4 p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">Add Custom MCP</h3>
               <button onClick={() => setAddMcpOpen(false)} className="text-text-muted hover:text-text-main">

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/store/notificationStore";
-import RightRail from "../RightRail";
+import LeftRail from "../LeftRail";
 import MobileNav from "../MobileNav";
 import PageHeading from "../PageHeading";
 import StatusBar from "../StatusBar";
@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }) {
             <div
               key={n.id}
               role="status"
-              className={`slide-in-right rounded-[10px] border px-3.5 py-2.5 shadow-[var(--shadow-elev)] ${style.wrapper}`}
+              className={`slide-in-right rounded-[6px] border px-3.5 py-2.5 shadow-[var(--shadow-elev)] ${style.wrapper}`}
             >
               <div className="flex items-start gap-2">
                 <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] leading-5">{style.icon}</span>
@@ -106,8 +106,10 @@ export default function DashboardLayout({ children }) {
       </div>
       <WelcomeModal />
 
-      {/* Content column. Navigation lives in the right rail, so nothing is
-          docked to the top edge — pages start at the very top of the viewport. */}
+      {/* Left-docked navigation (desktop) */}
+      <LeftRail />
+
+      {/* Content column */}
       <div className="flex min-w-0 flex-1 flex-col">
         <UpdateBanner />
 
@@ -131,8 +133,7 @@ export default function DashboardLayout({ children }) {
         <StatusBar />
       </div>
 
-      {/* Right-docked navigation (desktop) + floating sheet (mobile) */}
-      <RightRail />
+      {/* Floating sheet (mobile) */}
       <MobileNav />
     </div>
   );

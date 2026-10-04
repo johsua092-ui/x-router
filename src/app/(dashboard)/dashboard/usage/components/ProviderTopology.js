@@ -100,10 +100,10 @@ function RouterNode({ data }) {
   const powering = (data.activeCount || 0) > 0;
   return (
     <div
-      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] ${
+      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-[6px] border-2 min-w-[130px] ${
         powering
           ? "topology-router-core border-warning-border bg-gradient-to-br from-primary/30 via-brand-500 to-brand-500"
-          : "border-primary bg-primary/5 shadow-md"
+          : "border-primary bg-primary/5 shadow-[var(--shadow-elev)]"
       }`}
     >
       <Handle type="source" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />

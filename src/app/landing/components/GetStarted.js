@@ -48,7 +48,7 @@ export default function GetStarted() {
 
           {/* Right: Code block */}
           <div className="flex-1 w-full">
-            <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-[#3a2f27] shadow-2xl">
+            <div className="rounded-[6px] overflow-hidden bg-[#1e1e1e] border border-[#3a2f27] shadow-[var(--shadow-elev)]">
               {/* Terminal header */}
               <div className="flex items-center gap-2 px-4 py-3 bg-[#252526] border-b border-border">
                 <div className="w-3 h-3 rounded-full bg-danger-solid"></div>

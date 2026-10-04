@@ -291,7 +291,7 @@ export default function GrokBuildToolCard({
                 <span className="material-symbols-outlined text-warning">warning</span>
                 <div className="flex-1">
                   <p className="font-medium text-warning">Grok Build not detected locally</p>
-                  <code className="block mt-2 p-2 bg-black/20 rounded text-xs font-mono">curl -fsSL https://x.ai/cli/install.sh | bash</code>
+                  <code className="block mt-2 p-2 bg-surface-2 rounded text-xs font-mono">curl -fsSL https://x.ai/cli/install.sh | bash</code>
                 </div>
               </div>
               <Button variant="secondary" size="sm" onClick={() => setShowManualConfigModal(true)} className="w-full sm:w-auto"><span className="material-symbols-outlined text-[18px] mr-1">content_copy</span>Manual Config</Button>

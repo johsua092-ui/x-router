@@ -42,7 +42,7 @@ export default function WelcomeModal() {
       footer={null}
     >
       <div className="space-y-5 text-text-main text-sm">
-        <div className="relative flex flex-col items-center justify-center text-center px-6 pt-7 pb-6 gap-5 rounded-2xl border border-border-subtle overflow-hidden">
+        <div className="relative flex flex-col items-center justify-center text-center px-6 pt-7 pb-6 gap-5 rounded-[6px] border border-border-subtle overflow-hidden">
           {/* Identity motif: the ember veil, rising behind the mark. */}
           <div
             aria-hidden
@@ -55,7 +55,7 @@ export default function WelcomeModal() {
           <img
             src="/logo.png"
             alt="X Router"
-            className="relative h-16 w-16 rounded-2xl border border-border-subtle object-cover"
+            className="relative h-16 w-16 rounded-[6px] border border-border-subtle object-cover"
           />
 
           <div className="relative space-y-2 max-w-sm">

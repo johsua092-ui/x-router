@@ -27,7 +27,7 @@ export default function ModelLeaderboardTab({ period }) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-surface-2 p-4">
+    <div className="rounded-[6px] border border-border bg-surface-2 p-4">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

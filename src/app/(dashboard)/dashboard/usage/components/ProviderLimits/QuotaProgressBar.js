@@ -84,7 +84,7 @@ export default function QuotaProgressBar({
   const remaining = percentage;
 
   return (
-    <div className="rounded-[12px] border border-border-subtle bg-bg/40 p-3 transition-colors hover:border-brand-500/20">
+    <div className="rounded-[6px] border border-border-subtle bg-bg/40 p-3 transition-colors hover:border-brand-500/20">
       {/* Label and percentage */}
       <div className="flex items-center justify-between gap-3">
         <span className="truncate text-sm font-semibold tracking-tight text-text-main">

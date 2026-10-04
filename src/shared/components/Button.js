@@ -29,7 +29,7 @@ const variants = {
 /* Tighter than the upstream scale (7/9/11 -> 7/9/10). Controls sit on a
    8px radius so cards (12px) read as a different layer. */
 const sizes = {
-  sm: "h-7 px-2.5 text-xs rounded-[7px] gap-1.5",
+  sm: "h-7 px-2.5 text-xs rounded-[6px] gap-1.5",
   md: "h-9 px-3.5 text-[13px] rounded-[8px] gap-1.5",
   lg: "h-10 px-5 text-sm rounded-[8px] gap-2",
 };

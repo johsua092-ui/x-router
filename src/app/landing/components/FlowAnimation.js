@@ -65,12 +65,12 @@ export default function FlowAnimation() {
             key={tool.id}
             className="flex items-center gap-3 opacity-70 hover:opacity-100 transition-opacity group"
           >
-            <div className="w-16 h-16 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] flex items-center justify-center overflow-hidden p-2 hover:border-[var(--color-brand-500)]/50 transition-all hover:scale-105">
+            <div className="w-16 h-16 rounded-[6px] bg-[var(--color-surface-2)] border border-[var(--color-border)] flex items-center justify-center overflow-hidden p-2 hover:border-[var(--color-brand-500)]/50 transition-all hover:scale-105">
               <ProviderIcon
                 src={tool.image}
                 alt={tool.name}
                 size={48}
-                className="object-contain rounded-xl max-w-[48px] max-h-[48px]"
+                className="object-contain rounded-[6px] max-w-[48px] max-h-[48px]"
                 fallbackText={tool.name.slice(0, 2).toUpperCase()}
               />
             </div>
@@ -153,7 +153,7 @@ export default function FlowAnimation() {
         {PROVIDERS.map((provider, idx) => (
           <div
             key={provider.id}
-            className={`px-4 py-2 rounded-lg ${provider.color} ${provider.textColor} flex items-center justify-center font-bold text-xs shadow-lg hover:scale-110 transition-all cursor-help min-w-[140px] ${
+            className={`px-4 py-2 rounded-lg ${provider.color} ${provider.textColor} flex items-center justify-center font-bold text-xs shadow-[var(--shadow-elev)] hover:scale-110 transition-all cursor-help min-w-[140px] ${
               activeFlow === idx ? "ring-4 ring-[var(--color-brand-500)]/50 scale-110" : ""
             }`}
             title={provider.name}

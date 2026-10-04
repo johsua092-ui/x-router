@@ -65,24 +65,24 @@ export default function TokenSavingsTab({ period }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-surface-2 p-4">
+        <div className="rounded-[6px] border border-border bg-surface-2 p-4">
           <div className="text-xs text-muted">Tokens saved</div>
           <div className="mt-1 text-2xl font-semibold text-success">{fmt(data.totals.savedTokens)}</div>
           <div className="text-xs text-muted">across {fmt(data.totals.requests)} requests</div>
         </div>
-        <div className="rounded-xl border border-border bg-surface-2 p-4">
+        <div className="rounded-[6px] border border-border bg-surface-2 p-4">
           <div className="text-xs text-muted">Est. cost avoided</div>
           <div className="mt-1 text-2xl font-semibold text-success">{money(data.totals.savedCost)}</div>
           <div className="text-xs text-muted">at live model rates</div>
         </div>
-        <div className="rounded-xl border border-border bg-surface-2 p-4">
+        <div className="rounded-[6px] border border-border bg-surface-2 p-4">
           <div className="text-xs text-muted">Coverage</div>
           <div className="mt-1 text-2xl font-semibold text-main">{(data.models || []).length} models</div>
           <div className="text-xs text-muted">with recorded savings</div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface-2 p-4">
+      <div className="rounded-[6px] border border-border bg-surface-2 p-4">
         <div className="mb-2 text-sm font-medium text-muted">Daily savings</div>
         {data.daily && data.daily.length > 0 ? (
           <Bars daily={data.daily} />
@@ -97,7 +97,7 @@ export default function TokenSavingsTab({ period }) {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface-2 p-4">
+      <div className="rounded-[6px] border border-border bg-surface-2 p-4">
         <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm font-medium text-muted">Per model</div>
           <input

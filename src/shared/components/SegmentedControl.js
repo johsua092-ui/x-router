@@ -31,7 +31,7 @@ export default function SegmentedControl({ options = [], value, onChange, size =
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              "shrink-0 inline-flex items-center gap-1.5 rounded-[7px] font-medium transition-colors",
+              "shrink-0 inline-flex items-center gap-1.5 rounded-[6px] font-medium transition-colors",
               sizes[size],
               active
                 ? "bg-surface text-text-main border border-brand-500/40"

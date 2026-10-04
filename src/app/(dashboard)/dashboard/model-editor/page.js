@@ -169,7 +169,7 @@ function ModelStudioContent() {
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-text-muted font-mono truncate max-w-full">
+                <span className="px-2 py-0.5 rounded-full bg-surface-2 text-text-muted font-mono truncate max-w-full">
                   {model.targetLabel || model.targetModel}
                 </span>
                 {!String(model.targetModel || "").includes("/") && (
@@ -185,7 +185,7 @@ function ModelStudioContent() {
               </div>
 
               {model.systemPrompt && (
-                <div className="rounded-lg bg-black/5 dark:bg-white/5 px-2.5 py-2">
+                <div className="rounded-lg bg-surface-2 px-2.5 py-2">
                   <p className="text-[10px] uppercase tracking-wide text-text-muted/70 mb-0.5">
                     System prompt
                   </p>
@@ -434,7 +434,7 @@ function StudioFormModal({
               onChange={(e) => setSystemPrompt(e.target.value)}
               placeholder="Instructions prepended to every request that uses this model..."
               rows={4}
-              className="w-full rounded-[10px] border border-border/50 bg-surface-2 p-2.5 text-sm text-text-main placeholder-text-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-150 ease-out resize-y"
+              className="w-full rounded-[6px] border border-border/50 bg-surface-2 p-2.5 text-sm text-text-main placeholder-text-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-150 ease-out resize-y"
             />
           </div>
 
@@ -522,7 +522,7 @@ function PrefixCard({ nodes, onSaved }) {
           {compatible.map((node) => (
             <div
               key={node.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 px-2.5 py-2"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-2 px-2.5 py-2"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-text-main truncate">{node.name}</p>

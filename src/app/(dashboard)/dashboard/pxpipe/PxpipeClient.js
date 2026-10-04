@@ -142,8 +142,8 @@ export default function PxpipeClient() {
                 onClick={() => setWindowId(tab.id)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   windowId === tab.id
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-text-muted hover:text-text hover:bg-bg-hover"
+                    ? "bg-primary text-white shadow-[var(--shadow-elev)]"
+                    : "text-text-muted hover:text-text hover:bg-surface-3"
                 }`}
               >
                 {tab.label}
@@ -271,7 +271,7 @@ export default function PxpipeClient() {
       <Card className="p-4" id="logs">
         <h3 className="font-medium mb-3">PXPIPE Logs</h3>
         {logs?.installLog ? (
-          <pre className="rounded bg-black/5 dark:bg-white/5 p-3 text-xs font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap">
+          <pre className="rounded bg-surface-2 p-3 text-xs font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap">
             {logs.installLog}
           </pre>
         ) : (

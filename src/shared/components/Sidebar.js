@@ -186,7 +186,7 @@ export default function Sidebar({ onClose }) {
         </Link>
 
         {isApiKeyUser && (
-          <div className="mt-2.5 flex items-center gap-1.5 px-2 py-1 rounded-[7px] bg-brand-500/12 border border-brand-500/25 text-[11px] text-primary font-medium">
+          <div className="mt-2.5 flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-brand-500/12 border border-brand-500/25 text-[11px] text-primary font-medium">
             <span className="material-symbols-outlined text-[14px] leading-none">key</span>
             <span className="truncate">{authStatus?.displayName || "API Key User"}</span>
           </div>

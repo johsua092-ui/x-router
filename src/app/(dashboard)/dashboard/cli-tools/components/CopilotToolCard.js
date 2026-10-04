@@ -217,7 +217,7 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
               <div className="flex items-start gap-3 p-3 bg-info-bg border border-info-border rounded-lg">
                 <span className="material-symbols-outlined text-info text-lg">info</span>
                 <div className="text-xs text-info">
-                  <p className="font-medium">Writes to <code className="px-1 bg-black/5 dark:bg-white/10 rounded">chatLanguageModels.json</code></p>
+                  <p className="font-medium">Writes to <code className="px-1 bg-surface-3 rounded">chatLanguageModels.json</code></p>
                   <p className="mt-0.5 opacity-80">Reload VS Code after applying for changes to take effect.</p>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
                         <span className="text-xs text-text-muted">No models selected</span>
                       ) : (
                         selectedModels.map((model) => (
-                          <span key={model} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/5 dark:bg-white/5 text-text-muted border border-transparent hover:border-border">
+                          <span key={model} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-2 text-text-muted border border-transparent hover:border-border">
                             {model}
                             <button onClick={(e) => { e.stopPropagation(); removeModel(model); }} className="ml-0.5 hover:text-danger">
                               <span className="material-symbols-outlined text-[12px]">close</span>

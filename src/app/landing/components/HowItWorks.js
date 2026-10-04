@@ -17,7 +17,7 @@ export default function HowItWorks() {
           
           {/* Step 1: CLI & SDKs */}
           <div className="flex flex-col gap-6 relative group">
-            <div className="w-24 h-24 rounded-2xl bg-[#181411] border border-[#3a2f27] flex items-center justify-center shadow-xl group-hover:border-border transition-colors z-10 mx-auto md:mx-0">
+            <div className="w-24 h-24 rounded-[6px] bg-[#181411] border border-[#3a2f27] flex items-center justify-center shadow-[var(--shadow-elev)] group-hover:border-border transition-colors z-10 mx-auto md:mx-0">
               <span className="material-symbols-outlined text-4xl text-muted">terminal</span>
             </div>
             <div>
@@ -30,7 +30,7 @@ export default function HowItWorks() {
 
           {/* Step 2: X Router Hub */}
           <div className="flex flex-col gap-6 relative group md:items-center md:text-center">
-            <div className="w-24 h-24 rounded-2xl bg-[#181411] border-2 border-[var(--color-brand-500)] flex items-center justify-center shadow-[0_0_30px_rgba(249,120,21,0.2)] z-10 mx-auto">
+            <div className="w-24 h-24 rounded-[6px] bg-[#181411] border-2 border-[var(--color-brand-500)] flex items-center justify-center shadow-[0_0_30px_rgba(249,120,21,0.2)] z-10 mx-auto">
               <span className="material-symbols-outlined text-4xl text-[var(--color-brand-500)] animate-pulse">hub</span>
             </div>
             <div>
@@ -43,12 +43,12 @@ export default function HowItWorks() {
 
           {/* Step 3: AI Providers */}
           <div className="flex flex-col gap-6 relative group md:items-end md:text-right">
-            <div className="w-24 h-24 rounded-2xl bg-[#181411] border border-[#3a2f27] flex items-center justify-center shadow-xl group-hover:border-border transition-colors z-10 mx-auto md:mx-0">
+            <div className="w-24 h-24 rounded-[6px] bg-[#181411] border border-[#3a2f27] flex items-center justify-center shadow-[var(--shadow-elev)] group-hover:border-border transition-colors z-10 mx-auto md:mx-0">
               <div className="grid grid-cols-2 gap-2">
-                <div className="w-6 h-6 rounded bg-white/10"></div>
-                <div className="w-6 h-6 rounded bg-white/10"></div>
-                <div className="w-6 h-6 rounded bg-white/10"></div>
-                <div className="w-6 h-6 rounded bg-white/10"></div>
+                <div className="w-6 h-6 rounded bg-surface-3"></div>
+                <div className="w-6 h-6 rounded bg-surface-3"></div>
+                <div className="w-6 h-6 rounded bg-surface-3"></div>
+                <div className="w-6 h-6 rounded bg-surface-3"></div>
               </div>
             </div>
             <div>

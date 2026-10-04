@@ -266,8 +266,8 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
 
       {/* Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55">
-          <div className="mx-4 flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-xl sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="mx-4 flex w-full max-w-sm flex-col gap-4 rounded-[6px] border border-border bg-surface p-5 shadow-[var(--shadow-elev)] sm:p-6">
             <h3 className="font-semibold text-text-main">Sudo Password Required</h3>
             <div className="flex items-start gap-3 p-3 bg-warning-bg border border-warning-border rounded-lg">
               <span className="material-symbols-outlined text-warning text-[20px]">warning</span>
@@ -300,8 +300,8 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
 
       {/* Port 443 Conflict Modal */}
       {port443Conflict && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55">
-          <div className="mx-4 flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-xl sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="mx-4 flex w-full max-w-md flex-col gap-4 rounded-[6px] border border-border bg-surface p-5 shadow-[var(--shadow-elev)] sm:p-6">
             <h3 className="font-semibold text-text-main">Port 443 Already In Use</h3>
             <div className="flex items-start gap-3 p-3 bg-warning-bg border border-warning-border rounded-lg">
               <span className="material-symbols-outlined text-warning text-[20px]">warning</span>

@@ -25,7 +25,7 @@ function BrandPanel() {
           <img
             src="/logo.png"
             alt="X Router"
-            className="h-11 w-11 rounded-[12px] border border-border-subtle object-cover"
+            className="h-11 w-11 rounded-[6px] border border-border-subtle object-cover"
           />
           <div className="leading-tight">
             <p className="text-[15px] font-semibold text-text-main">
@@ -71,7 +71,7 @@ function CompactBrand() {
       <img
         src="/logo.png"
         alt="X Router"
-        className="h-16 w-16 rounded-[18px] border border-border-subtle object-cover mb-4"
+        className="h-16 w-16 rounded-[6px] border border-border-subtle object-cover mb-4"
       />
       <h1 className="text-[26px] leading-tight font-semibold tracking-tight text-text-main">
         X <span className="text-primary">Router</span>
@@ -362,7 +362,7 @@ export default function LoginPage() {
                     )}
 
                     {/* Login method toggle: two real states, password or API key. */}
-                    <div className="flex rounded-[10px] border border-border bg-surface-2 p-1">
+                    <div className="flex rounded-[6px] border border-border bg-surface-2 p-1">
                       {[
                         { id: "password", label: "Password" },
                         { id: "apikey", label: "API Key" },
@@ -372,7 +372,7 @@ export default function LoginPage() {
                           type="button"
                           aria-pressed={loginMethod === m.id}
                           onClick={() => { setLoginMethod(m.id); setError(""); }}
-                          className={`flex-1 py-1.5 text-xs font-medium rounded-[7px] transition-colors ${
+                          className={`flex-1 py-1.5 text-xs font-medium rounded-[6px] transition-colors ${
                             loginMethod === m.id
                               ? "bg-primary text-white"
                               : "text-text-muted hover:text-text-main"
@@ -398,7 +398,7 @@ export default function LoginPage() {
                               onChange={(e) => setPassword(e.target.value)}
                               autoFocus={!oidcAvailable}
                               autoComplete="current-password"
-                              className="w-full py-2.5 pl-3 pr-11 text-sm text-text-main bg-surface-2 rounded-[10px] border border-border/50 placeholder-text-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-surface transition-all duration-150 ease-out text-[16px] sm:text-sm"
+                              className="w-full py-2.5 pl-3 pr-11 text-sm text-text-main bg-surface-2 rounded-[6px] border border-border/50 placeholder-text-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-surface transition-all duration-150 ease-out text-[16px] sm:text-sm"
                             />
                             <button
                               type="button"

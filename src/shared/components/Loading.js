@@ -48,8 +48,8 @@ export function CenterLoading({ message, progress = null, fixed = true, classNam
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center justify-center bg-black/55",
-        fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[10px]",
+        "flex items-center justify-center bg-black/70",
+        fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[6px]",
         className
       )}
     >
@@ -59,9 +59,9 @@ export function CenterLoading({ message, progress = null, fixed = true, classNam
           <p className="mt-4 text-sm font-medium text-white">{message}</p>
         ) : null}
         {pct !== null ? (
-          <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
+          <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-surface-3">
             <div
-              className="h-full rounded-full bg-white transition-all"
+              className="h-full rounded-full bg-surface transition-all"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -89,12 +89,12 @@ export function ProgressCard({ title, message, section, progress = null, fixed =
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center justify-center bg-black/55",
-        fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[10px]",
+        "flex items-center justify-center bg-black/70",
+        fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[6px]",
         className
       )}
     >
-      <div className="w-full max-w-sm rounded-xl border border-white/10 bg-surface p-4 shadow-xl mx-4">
+      <div className="w-full max-w-sm rounded-[6px] border border-border bg-surface p-4 shadow-[var(--shadow-elev)] mx-4">
         <div className="flex items-center gap-3">
           <Spinner size="md" />
           <div className="min-w-0">
@@ -124,7 +124,7 @@ export function Skeleton({ className, ...props }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-[10px] bg-surface-2",
+        "animate-pulse rounded-[6px] bg-surface-2",
         className
       )}
       {...props}
@@ -135,10 +135,10 @@ export function Skeleton({ className, ...props }) {
 // Card skeleton
 export function CardSkeleton() {
   return (
-    <div className="p-6 rounded-[14px] border border-border-subtle bg-surface shadow-[var(--shadow-soft)]">
+    <div className="p-6 rounded-[6px] border border-border-subtle bg-surface shadow-[var(--shadow-[var(--shadow-elev)])]">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-4 w-24" />
-        <Skeleton className="size-10 rounded-[10px]" />
+        <Skeleton className="size-10 rounded-[6px]" />
       </div>
       <Skeleton className="h-8 w-16 mb-2" />
       <Skeleton className="h-3 w-20" />

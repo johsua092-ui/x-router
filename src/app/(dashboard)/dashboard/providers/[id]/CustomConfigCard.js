@@ -156,7 +156,7 @@ export default function CustomConfigCard({ providerId }) {
                 type="button"
                 disabled={saving}
                 onClick={resetToBuiltin}
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-black/[0.03] dark:hover:bg-white/[0.03] disabled:opacity-50"
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-3 disabled:opacity-50"
               >
                 Reset
               </button>

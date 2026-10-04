@@ -36,7 +36,7 @@ export default function Drawer({ isOpen, onClose, title, children, width = "md",
   return (
     <div className="fixed inset-0 z-50">
       <div
-        className="absolute inset-0 bg-black/60 fade-in"
+        className="absolute inset-0 bg-black/70 fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -62,7 +62,7 @@ export default function Drawer({ isOpen, onClose, title, children, width = "md",
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mt-0.5 -mr-1 shrink-0 p-1.5 rounded-[7px] text-text-subtle hover:bg-surface-2 hover:text-text-main transition-colors"
+              className="-mt-0.5 -mr-1 shrink-0 p-1.5 rounded-[6px] text-text-subtle hover:bg-surface-2 hover:text-text-main transition-colors"
             >
               <span className="material-symbols-outlined text-[18px] leading-none">close</span>
             </button>

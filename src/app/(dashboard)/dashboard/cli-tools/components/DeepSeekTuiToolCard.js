@@ -223,7 +223,7 @@ model = "${selectedModel || "provider/model-id"}"
                   <div className="flex-1">
                     <p className="font-medium text-warning">DeepSeek TUI not detected locally</p>
                     <p className="text-sm text-text-muted mt-1">Install via npm:</p>
-                    <code className="block mt-2 p-2 bg-black/20 rounded text-xs font-mono">npm install -g deepseek-tui</code>
+                    <code className="block mt-2 p-2 bg-surface-2 rounded text-xs font-mono">npm install -g deepseek-tui</code>
                     <p className="text-sm text-text-muted mt-2">Manual configuration is still available if xrouter is deployed on a remote server.</p>
                   </div>
                 </div>

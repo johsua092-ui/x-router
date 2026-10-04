@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
 import Modal from "./Modal";
+import { cn } from "@/shared/utils/cn";
 import ProviderIcon from "./ProviderIcon";
 import CapacityBadges from "./CapacityBadges";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
@@ -47,7 +48,10 @@ function ContextTag({ caps }) {
   const ctx = caps?.contextWindow;
   if (!Number.isFinite(ctx) || ctx <= 0) return null;
   return (
-    <span className="text-[9px] opacity-60 font-normal" title={`${Number(ctx).toLocaleString()} tokens`}>
+    <span
+      className="text-[10px] font-mono px-1.5 py-0.5 rounded-[4px] bg-surface-3 border border-border-subtle text-text-muted shrink-0"
+      title={`${Number(ctx).toLocaleString()} tokens`}
+    >
       {formatContextWindow(ctx)}
     </span>
   );
@@ -729,6 +733,27 @@ export default function ModelSelectModal({
     }
   };
 
+  const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setActiveTab("all");
+    }
+  }, [isOpen]);
+
+  const totalModelCount = useMemo(() => {
+    let count = filteredCombos.length + filteredStudioModels.length;
+    Object.values(filteredGroups).forEach((g) => {
+      count += g.models.length;
+    });
+    return count;
+  }, [filteredCombos, filteredStudioModels, filteredGroups]);
+
+  const hasCombos = filteredCombos.length > 0;
+  const hasStudio = filteredStudioModels.length > 0;
+  const providerEntries = Object.entries(filteredGroups);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -737,193 +762,365 @@ export default function ModelSelectModal({
         setSearchQuery("");
       }}
       title={title}
-      size="md"
-      className="p-4!"
+      size="xl"
+      className="max-w-3xl! p-0 overflow-hidden"
       footer={null}
     >
-      {/* Info bar */}
-      <div className="flex items-center gap-2 mb-3 px-2.5 py-2 bg-primary/8 border border-primary/20 rounded-lg text-xs text-text-muted">
-        <span className="material-symbols-outlined text-primary shrink-0" style={{ fontSize: "14px" }}>info</span>
-        <span>Click a model to add it, click again to remove it, and the change is saved automatically.{showStudioTargets ? " Rows marked combo route into a fallback group; rows marked custom call another named model." : ""}</span>
-      </div>
-
-      {/* Search - compact */}
-      <div className="mb-3">
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-[16px]">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-surface border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
-        </div>
-      </div>
-
-      {/* Models grouped by provider - compact */}
-      <div className="max-h-[400px] overflow-y-auto space-y-3">
-        {/* Combos section - always first */}
-        {filteredCombos.length > 0 && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5">
-              <span className="material-symbols-outlined text-primary text-[14px]">layers</span>
-              <span className="text-xs font-medium text-primary">Combos</span>
-              <span className="text-[10px] text-text-muted">({filteredCombos.length})</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {filteredCombos.map((combo) => {
-                const isSelected = selectedModel === combo.name;
-                return (
-                  <button
-                    key={combo.id}
-                    onClick={() => handleSelect({ id: combo.name, name: combo.name, value: combo.name })}
-                    className={`
-                      px-2 py-1 rounded-xl text-xs font-medium transition-all border hover:cursor-pointer flex items-center gap-1
-                      ${isSelected
-                        ? "bg-primary text-white border-primary"
-                        : addedModelValues.includes(combo.name)
-                          ? "bg-primary border-primary text-white hover:bg-primary-hover"
-                          : "bg-surface border-border text-text-main hover:border-primary/50 hover:bg-primary/5"
-                      }
-                    `}
-                  >
-                    {addedModelValues.includes(combo.name) && (
-                      <span className="material-symbols-outlined leading-none" style={{ fontSize: "10px" }}>check</span>
-                    )}
-                    {combo.name}
-                    <span className="text-[9px] opacity-60 font-normal">combo</span>
-                    <ContextTag caps={getComboCaps(combo.name)} />
-                    <CapacityBadges caps={getComboCaps(combo.name)} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Custom model section */}
-        {filteredStudioModels.length > 0 && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5">
-              <span className="material-symbols-outlined size-[14px] text-[14px] leading-none text-primary">auto_awesome</span>
-              <span className="text-xs font-medium leading-none text-primary">Custom Models</span>
-              <span className="text-[10px] text-text-muted">({filteredStudioModels.length})</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {filteredStudioModels.map((studio) => {
-                const isSelected = selectedModel === studio.callName;
-                return (
-                  <button
-                    key={studio.callName}
-                    onClick={() => handleSelect({ id: studio.callName, name: studio.displayName || studio.callName, value: studio.callName })}
-                    title={`Calls ${studio.targetLabel || studio.targetModel}`}
-                    className={`
-                      px-2 py-1 rounded-xl text-xs font-medium transition-all border hover:cursor-pointer flex items-center gap-1
-                      ${isSelected
-                        ? "bg-primary text-white border-primary"
-                        : addedModelValues.includes(studio.callName)
-                          ? "bg-primary border-primary text-white hover:bg-primary-hover"
-                          : "bg-surface border-border text-text-main hover:border-primary/50 hover:bg-primary/5"
-                      }
-                    `}
-                  >
-                    {addedModelValues.includes(studio.callName) && (
-                      <span className="material-symbols-outlined leading-none" style={{ fontSize: "10px" }}>check</span>
-                    )}
-                    {studio.callName}
-                    <span className="text-[9px] opacity-60 font-normal">custom</span>
-                    <ContextTag caps={getCaps(studio.callName)} />
-                    <CapacityBadges caps={getCaps(studio.callName)} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Provider models */}
-        {Object.entries(filteredGroups).map(([providerId, group]) => (
-          <div key={providerId}>
-            {/* Provider header */}
-            <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5">
-              <ProviderIcon
-                src={`/providers/${providerId}.png`}
-                alt={group.name}
-                size={14}
-                fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
-                fallbackColor={group.color}
-              />
-              <span className="text-xs font-medium text-primary">
-                {group.name}
-              </span>
-              <span className="text-[10px] text-text-muted">
-                ({group.models.length})
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {group.models.map((model) => {
-                const isSelected = selectedModel === model.value;
-                const isPlaceholder = model.isPlaceholder;
-                return (
-                  <button
-                    key={model.value}
-                    onClick={() => handleSelect(model)}
-                    title={isPlaceholder ? "Select to pre-fill, then edit model ID in the input" : undefined}
-                    className={`
-                      px-2 py-1 rounded-xl text-xs font-medium transition-all border hover:cursor-pointer
-                      ${isPlaceholder
-                        ? "border-dashed border-border text-text-muted hover:border-primary/50 hover:text-primary bg-surface italic"
-                        : isSelected
-                          ? "bg-primary text-white border-primary"
-                          : addedModelValues.includes(model.value)
-                            ? "bg-primary border-primary text-white hover:bg-primary-hover"
-                            : "bg-surface border-border text-text-main hover:border-primary/50 hover:bg-primary/5"
-                      }
-                    `}
-                  >
-                    <span className="flex items-center gap-1">
-                      {addedModelValues.includes(model.value) && !isPlaceholder && (
-                        <span className="material-symbols-outlined leading-none" style={{ fontSize: "10px" }}>check</span>
-                      )}
-                      {isPlaceholder ? (
-                        <>
-                          <span className="material-symbols-outlined text-[11px]">edit</span>
-                          {model.name}
-                        </>
-                      ) : model.isCustom ? (
-                        <>
-                          {model.name}
-                          <span className="text-[9px] opacity-60 font-normal">custom</span>
-                          <ContextTag caps={getCaps(model.value)} />
-                          <CapacityBadges caps={getCaps(model.value)} />
-                        </>
-                      ) : (
-                        <>
-                          {model.name}
-                          <ContextTag caps={getCaps(model.value)} />
-                          <CapacityBadges caps={getCaps(model.value)} />
-                        </>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        {Object.keys(filteredGroups).length === 0 && filteredCombos.length === 0 && filteredStudioModels.length === 0 && (
-          <div className="text-center py-4 text-text-muted">
-            <span className="material-symbols-outlined text-2xl mb-1 block">
-              search_off
+      <div className="flex flex-col h-full max-h-[80vh]">
+        {/* Top Control Bar: Search + Quick Category / Provider Filter Strip */}
+        <div className="p-3.5 border-b border-border bg-surface-2 shrink-0 space-y-2.5">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[17px]">
+              search
             </span>
-            <p className="text-xs">No models found</p>
+            <input
+              type="text"
+              placeholder="Filter models by name, provider, or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
+              className="w-full pl-9 pr-9 py-2 bg-surface border border-border rounded-[6px] text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/40"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main p-1"
+                aria-label="Clear search"
+              >
+                <span className="material-symbols-outlined text-[15px] block">close</span>
+              </button>
+            )}
           </div>
-        )}
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 custom-scrollbar text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("all")}
+              className={cn(
+                "px-2.5 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors shrink-0",
+                activeTab === "all"
+                  ? "bg-brand-500 text-white border-brand-500"
+                  : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-3"
+              )}
+            >
+              All ({totalModelCount})
+            </button>
+
+            {hasCombos && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("combos")}
+                className={cn(
+                  "px-2.5 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1 shrink-0",
+                  activeTab === "combos"
+                    ? "bg-brand-500 text-white border-brand-500"
+                    : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-3"
+                )}
+              >
+                <span className="material-symbols-outlined text-[13px] text-primary">layers</span>
+                Combos ({filteredCombos.length})
+              </button>
+            )}
+
+            {hasStudio && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("studio")}
+                className={cn(
+                  "px-2.5 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1 shrink-0",
+                  activeTab === "studio"
+                    ? "bg-brand-500 text-white border-brand-500"
+                    : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-3"
+                )}
+              >
+                <span className="material-symbols-outlined text-[13px] text-primary">auto_awesome</span>
+                Custom ({filteredStudioModels.length})
+              </button>
+            )}
+
+            {providerEntries.map(([providerId, group]) => {
+              const isActive = activeTab === providerId;
+              return (
+                <button
+                  key={providerId}
+                  type="button"
+                  onClick={() => setActiveTab(providerId)}
+                  className={cn(
+                    "px-2 py-1 rounded-[4px] font-medium whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0",
+                    isActive
+                      ? "bg-brand-500 text-white border-brand-500"
+                      : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-3"
+                  )}
+                >
+                  <ProviderIcon
+                    src={`/providers/${providerId}.png`}
+                    alt={group.name}
+                    size={13}
+                    fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
+                    fallbackColor={group.color}
+                  />
+                  <span>{group.name}</span>
+                  <span className={cn("text-[10px] font-mono", isActive ? "text-white/80" : "text-text-muted")}>
+                    {group.models.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Models list area in structured high-density grid */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-bg">
+          {/* Combos section */}
+          {hasCombos && (activeTab === "all" || activeTab === "combos") && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted border-b border-border pb-1">
+                <span className="material-symbols-outlined text-primary text-[15px]">layers</span>
+                <span>Model Combos ({filteredCombos.length})</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {filteredCombos.map((combo) => {
+                  const isSelected = selectedModel === combo.name;
+                  const isAdded = addedModelValues.includes(combo.name);
+                  const caps = getComboCaps(combo.name);
+                  return (
+                    <button
+                      key={combo.id}
+                      type="button"
+                      onClick={() => handleSelect({ id: combo.name, name: combo.name, value: combo.name })}
+                      className={cn(
+                        "group relative flex flex-col justify-between p-3 rounded-[6px] border text-left transition-all duration-150 cursor-pointer overflow-hidden",
+                        isSelected
+                          ? "bg-surface-3 border-brand-500 text-text-main shadow-[0_0_0_1px_rgba(229,106,74,0.3)]"
+                          : isAdded
+                            ? "bg-surface-2 border-brand-500/60 text-text-main"
+                            : "bg-surface border-border hover:border-brand-500/40 hover:bg-surface-2 text-text-main"
+                      )}
+                    >
+                      {(isSelected || isAdded) && (
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-brand-500" aria-hidden="true" />
+                      )}
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              "size-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors",
+                              isSelected || isAdded
+                                ? "border-brand-500 bg-brand-500 text-white"
+                                : "border-border bg-surface-2 text-transparent group-hover:border-border-hover"
+                            )}
+                          >
+                            <span className="material-symbols-outlined text-[12px] leading-none font-bold">check</span>
+                          </span>
+                          <span className="text-xs font-semibold text-text-main group-hover:text-primary transition-colors truncate">
+                            {combo.name}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-3 border border-border-subtle text-text-muted shrink-0">
+                          combo
+                        </span>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-border-subtle flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-[10.5px] font-mono text-text-muted truncate">
+                          {combo.models?.length || 0} models pool
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <ContextTag caps={caps} />
+                          <CapacityBadges caps={caps} />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Models section */}
+          {hasStudio && (activeTab === "all" || activeTab === "studio") && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted border-b border-border pb-1">
+                <span className="material-symbols-outlined text-primary text-[15px]">auto_awesome</span>
+                <span>Custom Models ({filteredStudioModels.length})</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {filteredStudioModels.map((studio) => {
+                  const isSelected = selectedModel === studio.callName;
+                  const isAdded = addedModelValues.includes(studio.callName);
+                  const caps = getCaps(studio.callName);
+                  return (
+                    <button
+                      key={studio.callName}
+                      type="button"
+                      onClick={() =>
+                        handleSelect({
+                          id: studio.callName,
+                          name: studio.displayName || studio.callName,
+                          value: studio.callName,
+                        })
+                      }
+                      title={`Calls ${studio.targetLabel || studio.targetModel}`}
+                      className={cn(
+                        "group relative flex flex-col justify-between p-3 rounded-[6px] border text-left transition-all duration-150 cursor-pointer overflow-hidden",
+                        isSelected
+                          ? "bg-surface-3 border-brand-500 text-text-main shadow-[0_0_0_1px_rgba(229,106,74,0.3)]"
+                          : isAdded
+                            ? "bg-surface-2 border-brand-500/60 text-text-main"
+                            : "bg-surface border-border hover:border-brand-500/40 hover:bg-surface-2 text-text-main"
+                      )}
+                    >
+                      {(isSelected || isAdded) && (
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-brand-500" aria-hidden="true" />
+                      )}
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              "size-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors",
+                              isSelected || isAdded
+                                ? "border-brand-500 bg-brand-500 text-white"
+                                : "border-border bg-surface-2 text-transparent group-hover:border-border-hover"
+                            )}
+                          >
+                            <span className="material-symbols-outlined text-[12px] leading-none font-bold">check</span>
+                          </span>
+                          <span className="text-xs font-semibold text-text-main group-hover:text-primary transition-colors truncate">
+                            {studio.displayName || studio.callName}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-3 border border-border-subtle text-text-muted shrink-0">
+                          custom
+                        </span>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-border-subtle flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-[10.5px] font-mono text-text-muted truncate">
+                          &rarr; {studio.targetLabel || studio.targetModel}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <ContextTag caps={caps} />
+                          <CapacityBadges caps={caps} />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Provider Models */}
+          {providerEntries
+            .filter(([providerId]) => activeTab === "all" || activeTab === providerId)
+            .map(([providerId, group]) => (
+              <div key={providerId} className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted border-b border-border pb-1">
+                  <ProviderIcon
+                    src={`/providers/${providerId}.png`}
+                    alt={group.name}
+                    size={15}
+                    fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
+                    fallbackColor={group.color}
+                  />
+                  <span className="text-text-main font-semibold">{group.name}</span>
+                  <span className="text-[10px] font-mono text-text-muted">({group.models.length})</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.models.map((model) => {
+                    const isSelected = selectedModel === model.value;
+                    const isAdded = addedModelValues.includes(model.value);
+                    const isPlaceholder = model.isPlaceholder;
+                    const caps = getCaps(model.value);
+                    return (
+                      <button
+                        key={model.value}
+                        type="button"
+                        onClick={() => handleSelect(model)}
+                        title={isPlaceholder ? "Select to pre-fill, then edit model ID in the input" : model.value}
+                        className={cn(
+                          "group relative flex flex-col justify-between p-3 rounded-[6px] border text-left transition-all duration-150 cursor-pointer overflow-hidden",
+                          isPlaceholder
+                            ? "border-dashed border-border text-text-muted hover:border-primary/50 hover:text-primary bg-surface italic"
+                            : isSelected
+                              ? "bg-surface-3 border-brand-500 text-text-main shadow-[0_0_0_1px_rgba(229,106,74,0.3)]"
+                              : isAdded
+                                ? "bg-surface-2 border-brand-500/60 text-text-main"
+                                : "bg-surface border-border hover:border-brand-500/40 hover:bg-surface-2 text-text-main"
+                        )}
+                      >
+                        {(isSelected || isAdded) && !isPlaceholder && (
+                          <span className="absolute inset-y-0 left-0 w-[3px] bg-brand-500" aria-hidden="true" />
+                        )}
+
+                        <div className="flex items-start justify-between gap-2 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {!isPlaceholder && (
+                              <span
+                                className={cn(
+                                  "size-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors",
+                                  isSelected || isAdded
+                                    ? "border-brand-500 bg-brand-500 text-white"
+                                    : "border-border bg-surface-2 text-transparent group-hover:border-border-hover"
+                                )}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none font-bold">
+                                  check
+                                </span>
+                              </span>
+                            )}
+                            {isPlaceholder && (
+                              <span className="material-symbols-outlined text-[14px] text-text-muted shrink-0">
+                                edit
+                              </span>
+                            )}
+                            <span className="text-xs font-semibold text-text-main group-hover:text-primary transition-colors truncate">
+                              {model.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {model.isCustom && (
+                              <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-surface-3 border border-border-subtle text-text-muted">
+                                custom
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-2 pt-2 border-t border-border-subtle flex items-center justify-between gap-2 min-w-0">
+                          <span className="text-[10.5px] font-mono text-text-muted truncate min-w-0" title={model.value}>
+                            {model.value}
+                          </span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <ContextTag caps={caps} />
+                            <CapacityBadges caps={caps} />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+          {/* Empty state */}
+          {providerEntries.length === 0 && !hasCombos && !hasStudio && (
+            <div className="text-center py-12 text-text-muted">
+              <span className="material-symbols-outlined text-4xl mb-2 block opacity-40">search_off</span>
+              <p className="text-xs font-medium">No models found matching your search</p>
+              <p className="text-[11px] text-text-muted mt-1">Try searching a different keyword or provider name</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer info strip */}
+        <div className="px-4 py-2.5 border-t border-border bg-surface-2 text-[11px] text-text-muted flex items-center justify-between shrink-0">
+          <span>Click to select · Changes save automatically</span>
+          <span className="font-mono">{totalModelCount} models available</span>
+        </div>
       </div>
     </Modal>
   );
