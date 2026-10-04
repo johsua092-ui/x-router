@@ -1219,99 +1219,105 @@ console.log(res.choices[0].message.content);`;
         </div>
       </div>
 
-      {/* 2. Network Routing & Exposure Section */}
+      {/* 2. Network Routing & Exposure Matrix */}
       {!isApiKeyUser && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 border-b border-border pb-1.5">
-            <span className="material-symbols-outlined text-primary text-[18px]">cell_tower</span>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-text-main">
-              Network Routing & Exposure
-            </h3>
+        <div className="rounded-[6px] border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-elev)] space-y-3.5">
+          {/* Section Header */}
+          <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[19px]">cell_tower</span>
+              <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-text-main">
+                Network Routing & Exposure
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-text-muted">3 Interfaces</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Local Host */}
-            <div className="flex flex-col justify-between p-3.5 rounded-[6px] border border-border bg-surface shadow-[var(--shadow-elev)]">
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[17px]">computer</span>
-                    <span className="text-xs font-semibold text-text-main uppercase">Local Host</span>
-                  </div>
-                  <span className="px-1.5 py-0.5 rounded-[3px] bg-success/15 text-success text-[10px] font-mono font-medium">
-                    ACTIVE
-                  </span>
+          {/* Network Interfaces List */}
+          <div className="space-y-2">
+            {/* Route 1: Local Loopback Host */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-[6px] border border-border-subtle bg-surface-2 hover:border-border transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-8 rounded-[5px] border border-border bg-surface flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[17px]">computer</span>
                 </div>
-                <p className="mt-2 text-xs font-mono text-text-muted truncate" title={currentEndpoint}>
-                  {currentEndpoint}
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-text-main">Local Host</span>
+                    <span className="px-1.5 py-0.5 rounded-[3px] bg-success/15 border border-success/30 text-success text-[9.5px] font-mono font-medium">
+                      ACTIVE
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-text-muted truncate mt-0.5" title={currentEndpoint}>
+                    {currentEndpoint}
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-border-subtle flex justify-end">
+              <div className="flex items-center justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => copy(currentEndpoint, "local_url")}
-                  className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] border border-border bg-surface text-text-main text-[11px] font-medium hover:border-brand-500 hover:text-primary transition-colors cursor-pointer shadow-xs"
                 >
-                  <span className="material-symbols-outlined text-[14px]">
+                  <span className="material-symbols-outlined text-primary text-[14px]">
                     {copied === "local_url" ? "check" : "content_copy"}
                   </span>
-                  <span>{copied === "local_url" ? "Copied" : "Copy"}</span>
+                  <span>{copied === "local_url" ? "Copied!" : "Copy URL"}</span>
                 </button>
               </div>
             </div>
 
-            {/* Cloudflare Tunnel */}
-            <div className="flex flex-col justify-between p-3.5 rounded-[6px] border border-border bg-surface shadow-[var(--shadow-elev)]">
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[17px]">cloud_sync</span>
-                    <span className="text-xs font-semibold text-text-main uppercase">Cloudflare Tunnel</span>
-                  </div>
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded-[3px] text-[10px] font-mono font-medium",
-                    tunnelEnabled && tunnelReachable
-                      ? "bg-success/15 text-success"
-                      : tunnelEnabled
-                        ? "bg-warning/15 text-warning animate-pulse"
-                        : "bg-surface-2 text-text-muted"
-                  )}>
-                    {tunnelEnabled && tunnelReachable ? "PUBLIC" : tunnelEnabled ? "CONNECTING" : "OFFLINE"}
-                  </span>
+            {/* Route 2: Cloudflare Tunnel */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-[6px] border border-border-subtle bg-surface-2 hover:border-border transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-8 rounded-[5px] border border-border bg-surface flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[17px]">cloud_sync</span>
                 </div>
-
-                {tunnelEnabled && tunnelReachable ? (
-                  <p className="mt-2 text-xs font-mono text-text-main truncate" title={`${tunnelPublicUrl || tunnelUrl}/v1`}>
-                    {`${tunnelPublicUrl || tunnelUrl}/v1`}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-text-main">Cloudflare Tunnel</span>
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded-[3px] text-[9.5px] font-mono font-medium border",
+                      tunnelEnabled && tunnelReachable
+                        ? "bg-success/15 border-success/30 text-success"
+                        : tunnelEnabled
+                          ? "bg-warning/15 border-warning/30 text-warning animate-pulse"
+                          : "bg-surface border-border text-text-muted"
+                    )}>
+                      {tunnelEnabled && tunnelReachable ? "PUBLIC" : tunnelEnabled ? "CONNECTING" : "OFFLINE"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-text-muted truncate mt-0.5">
+                    {tunnelEnabled && tunnelReachable
+                      ? `${tunnelPublicUrl || tunnelUrl}/v1`
+                      : tunnelLoading
+                        ? (tunnelProgress || "Starting tunnel...")
+                        : "Public internet access without open ports"}
                   </p>
-                ) : (
-                  <p className="mt-2 text-xs text-text-muted">
-                    {tunnelLoading ? (tunnelProgress || "Starting tunnel...") : "Expose your endpoint securely to the public internet."}
-                  </p>
-                )}
+                </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between gap-2">
+              <div className="flex items-center justify-end gap-1.5 shrink-0">
                 {tunnelEnabled && tunnelReachable ? (
                   <>
                     <button
                       type="button"
                       onClick={() => copy(`${tunnelPublicUrl || tunnelUrl}/v1`, "tunnel_url")}
-                      className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] border border-border bg-surface text-text-main text-[11px] font-medium hover:border-brand-500 hover:text-primary transition-colors cursor-pointer shadow-xs"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-primary text-[14px]">
                         {copied === "tunnel_url" ? "check" : "content_copy"}
                       </span>
-                      <span>{copied === "tunnel_url" ? "Copied" : "Copy URL"}</span>
+                      <span>{copied === "tunnel_url" ? "Copied!" : "Copy URL"}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowDisableTunnelModal(true)}
-                      className="p-1 rounded text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                      className="p-1 rounded-[4px] border border-border bg-surface text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                       title="Disable Tunnel"
                     >
-                      <span className="material-symbols-outlined text-[16px]">power_settings_new</span>
+                      <span className="material-symbols-outlined text-[15px]">power_settings_new</span>
                     </button>
                   </>
                 ) : (
@@ -1327,7 +1333,7 @@ console.log(res.choices[0].message.content);`;
                       }
                       setShowEnableTunnelModal(true);
                     }}
-                    className="w-full text-xs"
+                    className="text-[11px] px-2.5 py-1 h-7.5"
                   >
                     Enable Tunnel
                   </Button>
@@ -1335,57 +1341,56 @@ console.log(res.choices[0].message.content);`;
               </div>
             </div>
 
-            {/* Tailscale */}
-            <div className="flex flex-col justify-between p-3.5 rounded-[6px] border border-border bg-surface shadow-[var(--shadow-elev)]">
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[17px]">vpn_lock</span>
-                    <span className="text-xs font-semibold text-text-main uppercase">Tailscale Mesh</span>
-                  </div>
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded-[3px] text-[10px] font-mono font-medium",
-                    tsEnabled && tsReachable
-                      ? "bg-success/15 text-success"
-                      : tsEnabled
-                        ? "bg-warning/15 text-warning animate-pulse"
-                        : "bg-surface-2 text-text-muted"
-                  )}>
-                    {tsEnabled && tsReachable ? "MESH ACTIVE" : tsEnabled ? "CONNECTING" : "OFFLINE"}
-                  </span>
+            {/* Route 3: Tailscale Mesh */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-[6px] border border-border-subtle bg-surface-2 hover:border-border transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-8 rounded-[5px] border border-border bg-surface flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[17px]">vpn_lock</span>
                 </div>
-
-                {tsEnabled && tsReachable ? (
-                  <p className="mt-2 text-xs font-mono text-text-main truncate" title={`${tsUrl}/v1`}>
-                    {`${tsUrl}/v1`}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-text-main">Tailscale Mesh</span>
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded-[3px] text-[9.5px] font-mono font-medium border",
+                      tsEnabled && tsReachable
+                        ? "bg-success/15 border-success/30 text-success"
+                        : tsEnabled
+                          ? "bg-warning/15 border-warning/30 text-warning animate-pulse"
+                          : "bg-surface border-border text-text-muted"
+                    )}>
+                      {tsEnabled && tsReachable ? "MESH ACTIVE" : tsEnabled ? "CONNECTING" : "OFFLINE"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-text-muted truncate mt-0.5">
+                    {tsEnabled && tsReachable
+                      ? `${tsUrl}/v1`
+                      : tsLoading
+                        ? (tsProgress || "Connecting Tailscale...")
+                        : "Private tailnet mesh network access"}
                   </p>
-                ) : (
-                  <p className="mt-2 text-xs text-text-muted">
-                    {tsLoading ? (tsProgress || "Connecting Tailscale...") : "Access router privately over your personal Tailscale mesh."}
-                  </p>
-                )}
+                </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between gap-2">
+              <div className="flex items-center justify-end gap-1.5 shrink-0">
                 {tsEnabled && tsReachable ? (
                   <>
                     <button
                       type="button"
                       onClick={() => copy(`${tsUrl}/v1`, "ts_url")}
-                      className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] border border-border bg-surface text-text-main text-[11px] font-medium hover:border-brand-500 hover:text-primary transition-colors cursor-pointer shadow-xs"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-primary text-[14px]">
                         {copied === "ts_url" ? "check" : "content_copy"}
                       </span>
-                      <span>{copied === "ts_url" ? "Copied" : "Copy URL"}</span>
+                      <span>{copied === "ts_url" ? "Copied!" : "Copy URL"}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowDisableTsModal(true)}
-                      className="p-1 rounded text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                      className="p-1 rounded-[4px] border border-border bg-surface text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                       title="Disable Tailscale"
                     >
-                      <span className="material-symbols-outlined text-[16px]">power_settings_new</span>
+                      <span className="material-symbols-outlined text-[15px]">power_settings_new</span>
                     </button>
                   </>
                 ) : (
@@ -1395,7 +1400,7 @@ console.log(res.choices[0].message.content);`;
                     icon="vpn_lock"
                     loading={tsLoading || tsConnecting}
                     onClick={handleOpenTsModal}
-                    className="w-full text-xs"
+                    className="text-[11px] px-2.5 py-1 h-7.5"
                   >
                     Connect Tailscale
                   </Button>
@@ -1404,8 +1409,8 @@ console.log(res.choices[0].message.content);`;
             </div>
           </div>
 
-          {/* Security & Access Policy Switches */}
-          <div className="p-3 rounded-[6px] border border-border bg-surface-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+          {/* Security & Access Policy Strip */}
+          <div className="mt-3 pt-3 border-t border-border-subtle flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
               <Toggle
                 checked={requireApiKey}
