@@ -932,7 +932,7 @@ function ProviderCard({
         <span
           className={cn(
             "absolute top-0 inset-x-0 h-[2px] transition-colors",
-            connected > 0 ? "bg-brand-500" : "bg-transparent group-hover:bg-border"
+            connected > 0 ? "bg-brand-500 shadow-[0_0_8px_rgba(229,106,74,0.6)]" : "bg-transparent group-hover:bg-border"
           )}
           aria-hidden="true"
         />
@@ -941,16 +941,17 @@ function ProviderCard({
         <div className="flex items-start justify-between gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="size-10 shrink-0 rounded-[6px] border border-border bg-surface-2 flex items-center justify-center p-1.5 transition-transform group-hover:scale-105"
+              className="size-10 shrink-0 rounded-[6px] border bg-surface-2 flex items-center justify-center p-1.5 transition-all duration-200 group-hover:scale-105 shadow-xs"
               style={{
-                borderColor: provider.color ? `${provider.color}40` : undefined,
+                borderColor: provider.color ? `${provider.color}40` : "var(--color-border)",
+                boxShadow: provider.color ? `0 0 10px ${provider.color}18` : undefined,
               }}
             >
               <ProviderIcon
                 src={getIconPath()}
                 alt={provider.name}
                 size={26}
-                className="object-contain max-w-[26px] max-h-[26px]"
+                className="object-contain max-w-[26px] max-h-[26px] drop-shadow-xs"
                 fallbackText={provider.textIcon || provider.id.slice(0, 2).toUpperCase()}
                 fallbackColor={provider.color}
               />
