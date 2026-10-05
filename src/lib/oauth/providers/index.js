@@ -57,6 +57,9 @@ const PROVIDERS = {
   windsurf,
   zed,
   glm,
+  zcode: glm,
+  "zcode-desktop": glm,
+  "zcode-plan": glm,
 };
 
 export { PROVIDERS };
