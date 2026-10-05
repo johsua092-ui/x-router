@@ -359,10 +359,12 @@ export default function ClaimPage() {
     loadSecurityChallenge(queryCode);
   }, []);
 
-  // Initialize Cloudflare Turnstile Widget
+  // Initialize Cloudflare Turnstile Widget (Only on claim form, NEVER on result view!)
   useEffect(() => {
+    if (result) return;
     let timeoutId;
     const renderWidget = () => {
+      if (result) return;
       if (typeof window !== "undefined" && window.turnstile && turnstileContainerRef.current && !turnstileWidgetId.current) {
         try {
           const id = window.turnstile.render(turnstileContainerRef.current, {
@@ -405,7 +407,26 @@ export default function ClaimPage() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []);
+  }, [result]);
+
+  // Clean up Turnstile widget when result view is active so it never overlaps code snippets!
+  useEffect(() => {
+    if (result && typeof window !== "undefined") {
+      if (window.turnstile && turnstileWidgetId.current) {
+        try {
+          window.turnstile.remove(turnstileWidgetId.current);
+        } catch {}
+        turnstileWidgetId.current = null;
+      }
+      // Strip any orphaned iframes or containers left behind by Cloudflare script
+      try {
+        const orphaned = document.querySelectorAll('iframe[src*="cloudflare"], iframe[src*="turnstile"], div[id*="cf-chl"]');
+        orphaned.forEach((el) => {
+          try { el.remove(); } catch {}
+        });
+      } catch {}
+    }
+  }, [result]);
 
   // Client-Side Cryptographically Bound Proof-of-Work Solver (SHA-256)
   const solveProofOfWork = async (challenge) => {
