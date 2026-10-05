@@ -226,6 +226,52 @@ export default function ClaimPage() {
     };
   }, []);
 
+  // Helper to read raw cookie by name
+  const getCookie = (name) => {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(new RegExp("(^|;\\s*)(" + name + ")=([^;]*)"));
+    return match ? decodeURIComponent(match[3]) : null;
+  };
+
+  // Helper to retrieve saved receipt from localStorage, sessionStorage, or document.cookie
+  const getSavedReceipt = (targetKey) => {
+    if (typeof window === "undefined") return null;
+    const key = (targetKey || "BANSOS").toUpperCase();
+    const keysToCheck = [
+      "xr_receipt_" + key,
+      "xr_key_" + key,
+      "xr_latest_receipt",
+      "xr_receipt_BANSOS",
+    ];
+
+    for (const k of keysToCheck) {
+      try {
+        const local = localStorage.getItem(k);
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && parsed.apiKey) return parsed;
+        }
+      } catch {}
+
+      try {
+        const sess = sessionStorage.getItem(k);
+        if (sess) {
+          const parsed = JSON.parse(sess);
+          if (parsed && parsed.apiKey) return parsed;
+        }
+      } catch {}
+
+      try {
+        const cookieVal = getCookie(k);
+        if (cookieVal) {
+          const parsed = JSON.parse(cookieVal);
+          if (parsed && parsed.apiKey) return parsed;
+        }
+      } catch {}
+    }
+    return null;
+  };
+
   // Fetch Faucet status & Mint Security Challenge
   const loadSecurityChallenge = async (customCode) => {
     try {
@@ -233,6 +279,15 @@ export default function ClaimPage() {
       const res = await fetch(`/api/vouchers/claim${q}`);
       if (res.ok) {
         const data = await res.json();
+
+        // 1. If backend detected an existing claim receipt for this device/session, restore it immediately!
+        if (data.savedReceipt && data.savedReceipt.apiKey) {
+          saveClaimReceipt(data.savedReceipt);
+          setResult(data.savedReceipt);
+          setLoadingFaucet(false);
+          return;
+        }
+
         if (data.voucher) {
           setFaucetInfo({
             name: data.voucher.name,
@@ -265,10 +320,16 @@ export default function ClaimPage() {
       if (!data || !data.apiKey) return;
       const receipt = JSON.stringify(data);
       if (typeof window !== "undefined") {
-        const key = data.code ? data.code.toUpperCase() : "BANSOS";
-        localStorage.setItem("xr_receipt_" + key, receipt);
-        sessionStorage.setItem("xr_receipt_" + key, receipt);
-        document.cookie = `xr_v_${key}=1; path=/; max-age=31536000; SameSite=Lax`;
+        const key = (data.code ? data.code.toUpperCase() : "BANSOS");
+        try { localStorage.setItem("xr_receipt_" + key, receipt); } catch {}
+        try { localStorage.setItem("xr_latest_receipt", receipt); } catch {}
+        try { sessionStorage.setItem("xr_receipt_" + key, receipt); } catch {}
+        try { sessionStorage.setItem("xr_latest_receipt", receipt); } catch {}
+
+        // Save persistent cookies (1 year)
+        const encoded = encodeURIComponent(receipt);
+        document.cookie = `xr_receipt_${key}=${encoded}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `xr_latest_receipt=${encoded}; path=/; max-age=31536000; SameSite=Lax`;
       }
     } catch {}
   };
@@ -286,18 +347,13 @@ export default function ClaimPage() {
       }
       const key = queryCode || "BANSOS";
 
-      // Check persistent multi-store vault
-      try {
-        const saved = localStorage.getItem("xr_receipt_" + key) || sessionStorage.getItem("xr_receipt_" + key);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.apiKey) {
-            setResult(parsed);
-            setLoadingFaucet(false);
-            return;
-          }
-        }
-      } catch {}
+      // 1. Immediately check persistent multi-store vault (LocalStorage + SessionStorage + Cookies)
+      const existing = getSavedReceipt(key);
+      if (existing) {
+        setResult(existing);
+        setLoadingFaucet(false);
+        return;
+      }
     }
 
     loadSecurityChallenge(queryCode);
@@ -759,31 +815,37 @@ export default function ClaimPage() {
                   </div>
                 </div>
 
-                {activeSnippetTab === "curl" && (
-                  <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(result.configs.curl, "curl")}
-                      className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white cursor-pointer"
-                    >
-                      {copiedSnippet === "curl" ? "Copied" : "Copy"}
-                    </button>
-                    <pre className="overflow-x-auto text-[#bbb] pr-12">{result.configs.curl}</pre>
-                  </div>
-                )}
+                {activeSnippetTab === "curl" && (() => {
+                  const curlCode = result.configs?.curl || `curl ${result.baseUrl || "http://127.0.0.1:8080/v1"}/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${result.apiKey}" \\\n  -d '{"model": "${result.allowedModels === "*" ? "gpt-4o" : (result.allowedModels || "").split(",")[0].trim() || "gpt-4o"}", "messages": [{"role": "user", "content": "Hello!"}]}'`;
+                  return (
+                    <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(curlCode, "curl")}
+                        className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white cursor-pointer"
+                      >
+                        {copiedSnippet === "curl" ? "Copied" : "Copy"}
+                      </button>
+                      <pre className="overflow-x-auto text-[#bbb] pr-12">{curlCode}</pre>
+                    </div>
+                  );
+                })()}
 
-                {activeSnippetTab === "python" && (
-                  <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(result.configs.python, "python")}
-                      className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white cursor-pointer"
-                    >
-                      {copiedSnippet === "python" ? "Copied" : "Copy"}
-                    </button>
-                    <pre className="overflow-x-auto text-[#bbb] pr-12">{result.configs.python}</pre>
-                  </div>
-                )}
+                {activeSnippetTab === "python" && (() => {
+                  const pythonCode = result.configs?.python || `from openai import OpenAI\n\nclient = OpenAI(\n    base_url="${result.baseUrl || "http://127.0.0.1:8080/v1"}",\n    api_key="${result.apiKey}"\n)\n\nresponse = client.chat.completions.create(\n    model="${result.allowedModels === "*" ? "gpt-4o" : (result.allowedModels || "").split(",")[0].trim() || "gpt-4o"}",\n    messages=[{"role": "user", "content": "Hello X Router!"}]\n)\nprint(response.choices[0].message.content)`;
+                  return (
+                    <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(pythonCode, "python")}
+                        className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white cursor-pointer"
+                      >
+                        {copiedSnippet === "python" ? "Copied" : "Copy"}
+                      </button>
+                      <pre className="overflow-x-auto text-[#bbb] pr-12">{pythonCode}</pre>
+                    </div>
+                  );
+                })()}
 
                 {activeSnippetTab === "cursor" && (
                   <div className="rounded-[5px] border border-[#222] bg-[#08080a] p-3 space-y-2 text-xs font-mono">

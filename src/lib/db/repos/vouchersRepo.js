@@ -236,6 +236,43 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
     return { success: false, error: "VOUCHER_EXHAUSTED", message: "This voucher has reached its maximum claim limit." };
   }
 
+  // Check Prior Claim by same device/hardware:
+  // If the same physical device or browser requests the same voucher again,
+  // seamlessly return their existing provisioned API key instead of throwing a harsh error!
+  let priorClaim = null;
+  if (hardwareFp && hardwareFp.length >= 8) {
+    priorClaim = db.get(
+      `SELECT * FROM voucherClaims WHERE voucherId = ? AND hardwareFp = ? ORDER BY claimedAt DESC LIMIT 1`,
+      [voucher.id, hardwareFp]
+    );
+  }
+  if (!priorClaim && deviceFp && deviceFp.length >= 8) {
+    priorClaim = db.get(
+      `SELECT * FROM voucherClaims WHERE voucherId = ? AND deviceFp = ? ORDER BY claimedAt DESC LIMIT 1`,
+      [voucher.id, deviceFp]
+    );
+  }
+
+  if (priorClaim) {
+    let expiresAt = null;
+    if (voucher.expiresInDays > 0) {
+      const expDate = new Date(new Date(priorClaim.claimedAt).getTime() + voucher.expiresInDays * 24 * 60 * 60 * 1000);
+      expiresAt = expDate.toISOString();
+    }
+    return {
+      success: true,
+      isReclaimed: true,
+      voucherId: voucher.id,
+      voucherName: voucher.name,
+      code: voucher.code,
+      apiKeyId: priorClaim.apiKeyId,
+      apiKey: priorClaim.apiKey,
+      tokenLimit: voucher.tokenLimit,
+      allowedModels: voucher.allowedModels,
+      expiresAt,
+    };
+  }
+
   // Check 45: Per-Voucher Per-IP & Carrier Subnet (/16) Uniqueness check
   if (clientIp) {
     // 1. Direct / Subnet exact match check

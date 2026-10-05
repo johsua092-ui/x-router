@@ -40,6 +40,16 @@ export async function GET(request) {
     // Always mint PoW challenge for the client
     const challengeData = await mintChallenge(ip);
 
+    // Check if client browser carries a persistent claim receipt in cookies
+    let savedReceipt = null;
+    const targetKey = code ? code.toUpperCase() : "BANSOS";
+    const cookieVal = request.cookies.get(`xr_receipt_${targetKey}`)?.value || request.cookies.get("xr_latest_receipt")?.value;
+    if (cookieVal) {
+      try {
+        savedReceipt = JSON.parse(decodeURIComponent(cookieVal));
+      } catch {}
+    }
+
     // If specific code inspection requested
     if (code) {
       const voucher = await getVoucherByCode(code);
@@ -62,6 +72,7 @@ export async function GET(request) {
           isBansos: voucher.isBansos,
           isAvailable,
         },
+        savedReceipt,
         challenge: challengeData,
       });
     }
@@ -80,6 +91,7 @@ export async function GET(request) {
             remainingClaims: bansosVoucher.maxUses === 0 ? "Unlimited" : Math.max(0, bansosVoucher.maxUses - bansosVoucher.usedCount),
           }
         : null,
+      savedReceipt,
       challenge: challengeData,
     });
   } catch (error) {
@@ -105,15 +117,6 @@ export async function POST(request) {
   const ip = normalizeClientIp(rawIp);
   const lockKey = `claim_lock:${ip}`;
   let hwLockKey = null;
-
-  // Server-side HttpOnly cookie check (stops instant multi-claim loops on same browser)
-  const claimedCookie = request.cookies.get("xr_vclaim_status");
-  if (claimedCookie && claimedCookie.value === "claimed") {
-    return NextResponse.json(
-      { error: "Perangkat ini sudah pernah mengklaim voucher (Sesi browser terkunci)." },
-      { status: 400 }
-    );
-  }
 
   // Concurrent Request Mutex Lock (prevents parallel race conditions per IP)
   if (!acquireConcurrencyLock(lockKey)) {
@@ -222,8 +225,7 @@ print(response.choices[0].message.content)`,
       },
     };
 
-    const response = NextResponse.json({
-      success: true,
+    const compactReceipt = {
       apiKey: result.apiKey,
       keyId: result.keyId,
       tokenLimit: result.tokenLimit,
@@ -232,14 +234,30 @@ print(response.choices[0].message.content)`,
       voucherName: result.voucherName,
       code: result.code,
       baseUrl,
+    };
+
+    const response = NextResponse.json({
+      success: true,
+      isReclaimed: result.isReclaimed || false,
+      ...compactReceipt,
       configs,
     });
 
-    // Set 1-year HttpOnly cookie lock
-    response.cookies.set("xr_vclaim_status", "claimed", {
+    // Save lightweight compact cookie so refresh instantly restores the API key!
+    const cookieKey = (result.code || "BANSOS").toUpperCase();
+    const encodedReceipt = encodeURIComponent(JSON.stringify(compactReceipt));
+
+    response.cookies.set(`xr_receipt_${cookieKey}`, encodedReceipt, {
       path: "/",
       maxAge: 31536000,
-      httpOnly: true,
+      httpOnly: false,
+      sameSite: "lax",
+    });
+
+    response.cookies.set("xr_latest_receipt", encodedReceipt, {
+      path: "/",
+      maxAge: 31536000,
+      httpOnly: false,
       sameSite: "lax",
     });
 

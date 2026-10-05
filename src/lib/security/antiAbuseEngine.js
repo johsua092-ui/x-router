@@ -555,7 +555,7 @@ export async function verifySubmissionIntegrity(body, subnet) {
   }
 
   // 8. Human interactive proof requirement & Event Trust
-  if (!body.interactiveProof) {
+  if (!body.interactiveProof && !body.turnstileToken) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Human telemetry interaction proof missing." };
   }
@@ -565,31 +565,8 @@ export async function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 403, error: "Synthetic programmatic event rejected." };
   }
 
-  // 9. Biometric Motion Trajectory Verification
-  const trajectory = body.trajectory;
-  if (Array.isArray(trajectory)) {
-    if (trajectory.length < 2) {
-      recordFailure(subnet);
-      return { valid: false, status: 400, error: "Insufficient pointer motion samples. Real human interaction required." };
-    }
-    let totalDist = 0;
-    for (let i = 1; i < trajectory.length; i++) {
-      const p1 = trajectory[i - 1];
-      const p2 = trajectory[i];
-      if (typeof p1.x === "number" && typeof p2.x === "number") {
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        totalDist += Math.sqrt(dx * dx + dy * dy);
-      }
-    }
-    if (totalDist < 10) {
-      recordFailure(subnet);
-      return { valid: false, status: 400, error: "Zero-entropy pointer coordinates rejected." };
-    }
-  } else {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Pointer trajectory attestation missing." };
-  }
+  // 9. Mobile Touch & Interaction Acceptance
+  // Trajectory is purely optional telemetry to support mobile touch/tap screens seamlessly.
 
   // 10. Voucher code sanitization
   let code = String(body.code || "").trim();
