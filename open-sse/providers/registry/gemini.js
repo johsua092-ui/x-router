@@ -22,8 +22,8 @@ export default {
   transport: {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
     format: "gemini",
-    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || "",
-    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || "",
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT.clientId,
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT.clientSecret,
     auth: {
       apiKey: {
         header: "x-goog-api-key",
