@@ -227,22 +227,30 @@ export default function ClaimPage() {
   }, []);
 
   // Fetch Faucet status & Mint Security Challenge
-  const loadSecurityChallenge = async () => {
+  const loadSecurityChallenge = async (customCode) => {
     try {
-      const res = await fetch("/api/vouchers/claim");
+      const q = customCode ? `?code=${encodeURIComponent(customCode)}` : "";
+      const res = await fetch(`/api/vouchers/claim${q}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.hasActiveBansos && data.bansos) {
+        if (data.voucher) {
+          setFaucetInfo({
+            name: data.voucher.name,
+            description: data.voucher.description,
+            tokenLimit: data.voucher.tokenLimit,
+            allowedModels: data.voucher.allowedModels,
+            expiresInDays: data.voucher.expiresInDays,
+            remainingClaims: data.voucher.maxUses === 0 ? "Unlimited" : Math.max(0, data.voucher.maxUses - data.voucher.usedCount),
+            isCustomCode: true,
+            code: data.voucher.code,
+          });
+        } else if (data.hasActiveBansos && data.bansos) {
           setFaucetInfo(data.bansos);
+        } else {
+          setFaucetInfo(null);
         }
         if (data.challenge) {
           challengeRef.current = data.challenge;
-          if (data.challenge.captchaImage) {
-            setCaptchaImage(data.challenge.captchaImage);
-          }
-          if (data.challenge.captchaToken) {
-            setCaptchaToken(data.challenge.captchaToken);
-          }
         }
       }
     } catch (err) {
@@ -267,12 +275,16 @@ export default function ClaimPage() {
 
   useEffect(() => {
     pageLoadTime.current = Date.now();
+    let queryCode = "";
 
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const c = p.get("code");
-      const key = c ? c.toUpperCase() : "BANSOS";
-      if (c) setCode(c.toUpperCase());
+      if (c) {
+        queryCode = c.toUpperCase();
+        setCode(queryCode);
+      }
+      const key = queryCode || "BANSOS";
 
       // Check persistent multi-store vault
       try {
@@ -288,7 +300,7 @@ export default function ClaimPage() {
       } catch {}
     }
 
-    loadSecurityChallenge();
+    loadSecurityChallenge(queryCode);
   }, []);
 
   // Initialize Cloudflare Turnstile Widget
@@ -380,7 +392,8 @@ export default function ClaimPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          isBansos: true,
+          code: (faucetInfo?.code || code || "").trim(),
+          isBansos: !(faucetInfo?.code || code),
           website: honeypot,
           _t: pageLoadTime.current,
           _dfp: deviceFpRef.current,
@@ -528,7 +541,7 @@ export default function ClaimPage() {
                 <div className="rounded-[6px] border border-[#2a2a2e] bg-[#121215] p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="rounded-[3px] bg-[#1f1f24] px-2 py-0.5 font-mono text-[10px] font-bold text-[#ddd] border border-[#333]">
-                      PUBLIC FAUCET AVAILABLE
+                      {faucetInfo.isCustomCode ? `VOUCHER PASS: ${faucetInfo.code}` : "PUBLIC FAUCET AVAILABLE"}
                     </span>
                     <span className="font-mono text-[11px] text-emerald-400">
                       {faucetInfo.remainingClaims} slots remaining
@@ -572,7 +585,7 @@ export default function ClaimPage() {
                     ) : (
                       <>
                         <span className="material-symbols-outlined text-[16px]">key_vertical</span>
-                        <span>Provision 1-Click Access Key</span>
+                        <span>{faucetInfo.isCustomCode ? `Redeem ${faucetInfo.code} Pass` : "Provision 1-Click Access Key"}</span>
                       </>
                     )}
                   </button>

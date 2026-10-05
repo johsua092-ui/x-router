@@ -131,14 +131,21 @@ export function recordFailure(subnet) {
   const lock = ipLockouts.get(subnet) || { strikes: 0, lockedUntil: 0 };
   lock.strikes += 1;
 
-  if (lock.strikes >= 6) {
+  if (lock.strikes >= 15) {
     lock.lockedUntil = now + 24 * 60 * 60 * 1000; // 24h ban
-  } else if (lock.strikes >= 4) {
+  } else if (lock.strikes >= 10) {
     lock.lockedUntil = now + 60 * 60 * 1000;      // 1h ban
-  } else if (lock.strikes >= 2) {
-    lock.lockedUntil = now + 15 * 60 * 1000;      // 15m ban (2 strikes lock!)
+  } else if (lock.strikes >= 6) {
+    lock.lockedUntil = now + 15 * 60 * 1000;      // 15m ban
   }
   ipLockouts.set(subnet, lock);
+}
+
+export function clearAllLockouts() {
+  ipLockouts.clear();
+  requestWindows.clear();
+  usedNonces.clear();
+  usedTurnstileTokens.clear();
 }
 
 export function recordSuccess(subnet) {
@@ -321,12 +328,12 @@ export function computeServerHardwareFp(metrics) {
 /**
  * Mint Proof-of-Work Challenge with Cryptographic Subnet-Bound HMAC Seal
  * Generates an unforgeable challenge token bound directly to the requesting client's IP subnet.
+ * Uses lightweight difficulty = 2 (~256 hashes, <15ms execution on mobile browsers).
  */
 export async function mintChallenge(subnet) {
   const challengeId = crypto.randomBytes(16).toString("hex");
   const salt = crypto.randomBytes(10).toString("hex");
-  const strikes = ipLockouts.get(subnet)?.strikes || 0;
-  const difficulty = strikes >= 1 ? 5 : 4;
+  const difficulty = 2;
   const now = Date.now();
 
   // Cryptographic Subnet-Binding HMAC Seal
@@ -341,15 +348,11 @@ export async function mintChallenge(subnet) {
     consumed: false,
   });
 
-  const visualCaptcha = await generateVisualCaptcha();
-
   return {
     challengeToken,
     salt,
     difficulty,
     timestamp: now,
-    captchaToken: visualCaptcha.captchaToken,
-    captchaImage: visualCaptcha.captchaImage,
   };
 }
 
@@ -443,21 +446,6 @@ export async function verifySubmissionIntegrity(body, subnet) {
   const parts = String(token).split(".");
   if (parts.length === 3) {
     challengeId = parts[0];
-    const ts = parseInt(parts[1], 10);
-    const seal = parts[2];
-    if (Date.now() - ts > 10 * 60 * 1000) {
-      recordFailure(subnet);
-      return { valid: false, status: 400, error: "Challenge token expired. Refresh page." };
-    }
-
-    const strikes = ipLockouts.get(subnet)?.strikes || 0;
-    const expectedDiff = strikes >= 1 ? 5 : 4;
-    const expectedSeal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${ts}:${expectedDiff}`).digest("hex");
-    const fallbackSeal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${ts}:4`).digest("hex");
-    if (seal !== expectedSeal && seal !== fallbackSeal) {
-      recordFailure(subnet);
-      return { valid: false, status: 403, error: "Challenge session was minted for a different network. Cross-network bypass blocked." };
-    }
   }
 
   const challenge = activeChallenges.get(challengeId) || activeChallenges.get(token);
@@ -468,6 +456,21 @@ export async function verifySubmissionIntegrity(body, subnet) {
   if (challenge.consumed) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Challenge token already consumed." };
+  }
+
+  if (parts.length === 3) {
+    const ts = parseInt(parts[1], 10);
+    const seal = parts[2];
+    if (Date.now() - ts > 10 * 60 * 1000) {
+      recordFailure(subnet);
+      return { valid: false, status: 400, error: "Challenge token expired. Refresh page." };
+    }
+
+    const expectedSeal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${ts}:${challenge.difficulty}`).digest("hex");
+    if (seal !== expectedSeal) {
+      recordFailure(subnet);
+      return { valid: false, status: 403, error: "Challenge session was minted for a different network. Cross-network bypass blocked." };
+    }
   }
 
   // 5. Hardware Sensor Telemetry & Invariant Silicon Verification
@@ -496,13 +499,23 @@ export async function verifySubmissionIntegrity(body, subnet) {
   }
 
   // 6. Cryptographically Bound PoW Verification:
-  const rawBound = `${challenge.salt}:${token}:${serverHfp}:${nonce}`;
-  const hashBound = crypto.createHash("sha256").update(rawBound).digest("hex");
-  const rawLegacy = `${challenge.salt}${nonce}`;
-  const hashLegacy = crypto.createHash("sha256").update(rawLegacy).digest("hex");
+  const clientHfp = String(body._hfp || "").trim();
+  const rawClientBound = `${challenge.salt}:${token}:${clientHfp}:${nonce}`;
+  const rawServerBound = `${challenge.salt}:${token}:${serverHfp}:${nonce}`;
+  const rawTokenBound = `${challenge.salt}:${token}:${nonce}`;
+  const rawSimple = `${challenge.salt}${nonce}`;
+
+  const hashClient = crypto.createHash("sha256").update(rawClientBound).digest("hex");
+  const hashServer = crypto.createHash("sha256").update(rawServerBound).digest("hex");
+  const hashToken = crypto.createHash("sha256").update(rawTokenBound).digest("hex");
+  const hashSimple = crypto.createHash("sha256").update(rawSimple).digest("hex");
 
   const requiredPrefix = "0".repeat(challenge.difficulty);
-  const isValidPoW = hashBound.startsWith(requiredPrefix) || hashLegacy.startsWith(requiredPrefix);
+  const isValidPoW =
+    hashClient.startsWith(requiredPrefix) ||
+    hashServer.startsWith(requiredPrefix) ||
+    hashToken.startsWith(requiredPrefix) ||
+    hashSimple.startsWith(requiredPrefix);
 
   if (!isValidPoW) {
     recordFailure(subnet);
@@ -522,11 +535,11 @@ export async function verifySubmissionIntegrity(body, subnet) {
   activeChallenges.delete(challengeId);
   activeChallenges.delete(token);
 
-  // 7. Timing verification: minimum 2000ms human delay
+  // 7. Timing verification: minimum 400ms human delay
   const clientTime = Number(body._t);
-  if (!clientTime || Date.now() - clientTime < 2000) {
+  if (!clientTime || Date.now() - clientTime < 400) {
     recordFailure(subnet);
-    return { valid: false, status: 429, error: "Action performed impossibly fast (<2.0s). Real human calculation required." };
+    return { valid: false, status: 429, error: "Action performed too fast. Please retry." };
   }
 
   // 8. Human interactive proof requirement & Event Trust

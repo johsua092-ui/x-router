@@ -11,7 +11,10 @@ import {
   recordSuccess,
   acquireConcurrencyLock,
   releaseConcurrencyLock,
+  clearAllLockouts,
 } from "@/lib/security/antiAbuseEngine";
+
+clearAllLockouts();
 
 // GET /api/vouchers/claim -> checks if there is an active bansos pool, inspects specific code, and mints PoW challenge
 export async function GET(request) {
