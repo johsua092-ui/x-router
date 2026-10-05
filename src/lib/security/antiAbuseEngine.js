@@ -406,20 +406,44 @@ export function verifySubmissionIntegrity(body, subnet) {
   challenge.consumed = true;
   activeChallenges.delete(token);
 
-  // 7. Timing verification: minimum 800ms human delay
+  // 7. Timing verification: minimum 1200ms human delay
   const clientTime = Number(body._t);
-  if (!clientTime || Date.now() - clientTime < 800) {
+  if (!clientTime || Date.now() - clientTime < 1200) {
     recordFailure(subnet);
-    return { valid: false, status: 429, error: "Action performed impossibly fast. Verification failed." };
+    return { valid: false, status: 429, error: "Action performed impossibly fast (<1.2s). Verification failed." };
   }
 
-  // 8. Human interactive proof requirement
+  // 8. Human interactive proof requirement & Event Trust
   if (!body.interactiveProof) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Human telemetry interaction proof missing." };
   }
 
-  // 9. Voucher code sanitization
+  if (body._isTrusted === false) {
+    recordFailure(subnet);
+    return { valid: false, status: 403, error: "Synthetic programmatic event rejected." };
+  }
+
+  // 9. Biometric Motion Trajectory Verification
+  const trajectory = body.trajectory;
+  if (Array.isArray(trajectory) && trajectory.length >= 2) {
+    let totalDist = 0;
+    for (let i = 1; i < trajectory.length; i++) {
+      const p1 = trajectory[i - 1];
+      const p2 = trajectory[i];
+      if (typeof p1.x === "number" && typeof p2.x === "number") {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        totalDist += Math.sqrt(dx * dx + dy * dy);
+      }
+    }
+    if (totalDist === 0 && trajectory.length > 5) {
+      recordFailure(subnet);
+      return { valid: false, status: 400, error: "Zero-entropy pointer coordinates rejected." };
+    }
+  }
+
+  // 10. Voucher code sanitization
   let code = String(body.code || "").trim();
   if (code) {
     code = code.replace(/[\u200B-\u200D\uFEFF]/g, "");

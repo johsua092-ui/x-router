@@ -44,7 +44,47 @@ export default function ClaimPage() {
   const [honeypot, setHoneypot] = useState("");
   const deviceFpRef = useRef("");
   const hardwareFpRef = useRef("");
+  const trajectoryRef = useRef([]);
   const [userInteracted, setUserInteracted] = useState(false);
+
+  // Biometric interaction & motion recording
+  useEffect(() => {
+    const recordMotion = (x, y) => {
+      setUserInteracted(true);
+      if (typeof x !== "number" || typeof y !== "number") return;
+      const t = Date.now();
+      const traj = trajectoryRef.current;
+      if (traj.length === 0 || t - traj[traj.length - 1].t > 30) {
+        if (traj.length < 50) {
+          traj.push({ x: Math.round(x), y: Math.round(y), t });
+        }
+      }
+    };
+
+    const onPointerMove = (e) => recordMotion(e.clientX, e.clientY);
+    const onTouchMove = (e) => {
+      if (e.touches && e.touches[0]) recordMotion(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const onAction = () => setUserInteracted(true);
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("pointerdown", onAction);
+    window.addEventListener("mousedown", onAction);
+    window.addEventListener("touchstart", onAction);
+    window.addEventListener("keydown", onAction);
+    window.addEventListener("click", onAction);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("pointerdown", onAction);
+      window.removeEventListener("mousedown", onAction);
+      window.removeEventListener("touchstart", onAction);
+      window.removeEventListener("keydown", onAction);
+      window.removeEventListener("click", onAction);
+    };
+  }, []);
 
   // Generate deep hardware attestation (Canvas 2D + WebGL GPU + AudioContext)
   // This binds directly to physical GPU / sound chip, completely blocking Airplane Mode & VPN loops!
@@ -245,6 +285,8 @@ export default function ClaimPage() {
           _hfp: hardwareFpRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
+          _isTrusted: Boolean(!e || e.isTrusted),
+          trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),
@@ -300,6 +342,8 @@ export default function ClaimPage() {
           _hfp: hardwareFpRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
+          _isTrusted: Boolean(!e || e.isTrusted),
+          trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),

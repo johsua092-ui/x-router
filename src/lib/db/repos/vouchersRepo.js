@@ -268,6 +268,23 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
           message: "Jaringan operator seluler atau subnet ini sudah pernah mengklaim voucher ini. Trik ganti IP / mode pesawat diblokir.",
         };
       }
+    } else if (clientIp.includes(":")) {
+      // IPv6 /48 Subnet Lock
+      const v6Parts = clientIp.split(":");
+      if (v6Parts.length >= 3) {
+        const v6Prefix = `${v6Parts.slice(0, 3).join(":")}:%`;
+        const existingIpv6 = db.get(
+          `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp LIKE ? LIMIT 1`,
+          [voucher.id, v6Prefix]
+        );
+        if (existingIpv6) {
+          return {
+            success: false,
+            error: "ALREADY_CLAIMED_IPV6_CARRIER",
+            message: "Subnet jaringan IPv6 ini sudah pernah mengklaim voucher ini.",
+          };
+        }
+      }
     }
 
     // Check 47: Global 24-Hour IP Limit (max 3 claims per 24 hours per IP)
