@@ -585,9 +585,14 @@ export default function VouchersPage() {
 
                 <div className="max-h-40 overflow-y-auto rounded-[5px] border border-border bg-surface-2/60 p-2 custom-scrollbar">
                   {loadingModels ? (
-                    <div className="text-center py-4 text-text-muted text-xs">Loading model catalog...</div>
+                    <div className="text-center py-4 text-text-muted text-xs font-mono">Scanning installed models...</div>
+                  ) : catalogModels.length === 0 ? (
+                    <div className="text-center py-4 space-y-1">
+                      <p className="text-xs font-mono text-text-muted">No installed provider connections found in X Router.</p>
+                      <p className="text-[11px] text-[#777]">Connect an upstream provider in the Providers page to populate models here, or select Allow All Models (*).</p>
+                    </div>
                   ) : filteredModels.length === 0 ? (
-                    <div className="text-center py-4 text-text-muted text-xs">No matching models found.</div>
+                    <div className="text-center py-4 text-text-muted text-xs font-mono">No matching installed models found.</div>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {filteredModels.map((m) => {
