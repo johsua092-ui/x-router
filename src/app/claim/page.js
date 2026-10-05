@@ -44,6 +44,7 @@ export default function ClaimPage() {
   const [honeypot, setHoneypot] = useState("");
   const deviceFpRef = useRef("");
   const hardwareFpRef = useRef("");
+  const hwMetricsRef = useRef(null);
   const trajectoryRef = useRef([]);
   const [userInteracted, setUserInteracted] = useState(false);
 
@@ -148,6 +149,18 @@ export default function ClaimPage() {
         hwHash |= 0;
       }
       hardwareFpRef.current = "hwp_" + Math.abs(hwHash).toString(16);
+
+      hwMetricsRef.current = {
+        gpuVendor,
+        gpuRenderer,
+        extCount,
+        maxAnisotropy,
+        cores: nav.hardwareConcurrency || 4,
+        memory: nav.deviceMemory || 4,
+        touchPoints: nav.maxTouchPoints || 0,
+        screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+        pixelDepth: screen.pixelDepth || 24,
+      };
     } catch {}
   }, []);
 
@@ -283,6 +296,7 @@ export default function ClaimPage() {
           _t: pageLoadTime.current,
           _dfp: deviceFpRef.current,
           _hfp: hardwareFpRef.current,
+          hwMetrics: hwMetricsRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
           _isTrusted: Boolean(!e || e.isTrusted),
@@ -340,6 +354,7 @@ export default function ClaimPage() {
           _t: pageLoadTime.current,
           _dfp: deviceFpRef.current,
           _hfp: hardwareFpRef.current,
+          hwMetrics: hwMetricsRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
           _isTrusted: Boolean(!e || e.isTrusted),

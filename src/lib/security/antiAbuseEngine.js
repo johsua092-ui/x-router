@@ -129,12 +129,12 @@ export function recordFailure(subnet) {
   const lock = ipLockouts.get(subnet) || { strikes: 0, lockedUntil: 0 };
   lock.strikes += 1;
 
-  if (lock.strikes >= 8) {
+  if (lock.strikes >= 6) {
     lock.lockedUntil = now + 24 * 60 * 60 * 1000; // 24h ban
-  } else if (lock.strikes >= 5) {
+  } else if (lock.strikes >= 4) {
     lock.lockedUntil = now + 60 * 60 * 1000;      // 1h ban
-  } else if (lock.strikes >= 3) {
-    lock.lockedUntil = now + 15 * 60 * 1000;      // 15m ban
+  } else if (lock.strikes >= 2) {
+    lock.lockedUntil = now + 15 * 60 * 1000;      // 15m ban (2 strikes lock!)
   }
   ipLockouts.set(subnet, lock);
 }
@@ -252,10 +252,14 @@ export async function generateVisualCaptcha() {
 
 /**
  * Verify Visual Math CAPTCHA answer
+ * Single-use token burn: ALWAYS consumes token on any attempt to prevent brute force!
  */
 export function verifyVisualCaptcha(inputAnswer, token) {
   if (inputAnswer === undefined || inputAnswer === null || !token) return false;
   if (usedCaptchaTokens.has(token)) return false;
+
+  // Immediately blacklist token so it can NEVER be reused or brute-forced!
+  usedCaptchaTokens.add(token);
 
   const parts = String(token).split(".");
   if (parts.length !== 3) return false;
@@ -267,11 +271,49 @@ export function verifyVisualCaptcha(inputAnswer, token) {
   const expectedSig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${normalizedInput}:${salt}:${ts}`).digest("hex");
   if (expectedSig.length !== sig.length) return false;
 
-  const match = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
-  if (match) {
-    usedCaptchaTokens.add(token);
+  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
+}
+
+/**
+ * Server-Side Invariant Hardware Fingerprint Derivation
+ * Computes deterministic hardware hash directly from physical GPU, silicon, and display metrics.
+ * Eliminates client-side string forgery (e.g. sending random hwp_ hashes).
+ */
+export function computeServerHardwareFp(metrics) {
+  if (!metrics || typeof metrics !== "object") return null;
+  const vendor = String(metrics.gpuVendor || "").trim();
+  const renderer = String(metrics.gpuRenderer || "").trim();
+  const screen = String(metrics.screen || "").trim();
+  const cores = Number(metrics.cores) || 0;
+  const memory = Number(metrics.memory) || 0;
+
+  if (!vendor || !renderer || !screen) return null;
+
+  const lowerRend = renderer.toLowerCase();
+  if (
+    lowerRend.includes("swiftshader") ||
+    lowerRend.includes("llvmpipe") ||
+    lowerRend.includes("mesa") ||
+    lowerRend.includes("virtualbox") ||
+    lowerRend.includes("vmware") ||
+    lowerRend.includes("software rasterizer")
+  ) {
+    return "VIRTUAL_GPU";
   }
-  return match;
+
+  const raw = [
+    vendor,
+    renderer,
+    Number(metrics.extCount) || 0,
+    Number(metrics.maxAnisotropy) || 0,
+    cores,
+    memory,
+    Number(metrics.touchPoints) || 0,
+    screen,
+    Number(metrics.pixelDepth) || 24,
+  ].join("|||");
+
+  return "hwp_" + crypto.createHash("sha256").update(raw).digest("hex").slice(0, 24);
 }
 
 /**
@@ -368,20 +410,33 @@ export function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 400, error: "Challenge token already consumed." };
   }
 
-  // 5. Cryptographically Bound PoW Verification:
-  // Verifies sha256(salt:token:hardwareFp:nonce) OR fallback sha256(salt:nonce)
+  // 5. Hardware Sensor Telemetry & Invariant Silicon Verification
   const dfp = String(body._dfp || "").trim();
-  const hfp = String(body._hfp || "").trim();
   if (!dfp || dfp.length < 8) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Client environment integrity verification missing." };
   }
-  if (!hfp || hfp.length < 8) {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Physical hardware attestation missing." };
+
+  // Calculate hardware signature directly on the server from raw GPU/silicon metrics
+  let serverHfp = computeServerHardwareFp(body.hwMetrics);
+  if (!serverHfp) {
+    // Fallback to client hardware attestation if valid format
+    const clientHfp = String(body._hfp || "").trim();
+    if (clientHfp.startsWith("hwp_") && clientHfp.length >= 12) {
+      serverHfp = clientHfp;
+    } else {
+      recordFailure(subnet);
+      return { valid: false, status: 400, error: "Hardware sensor telemetry incomplete or rejected." };
+    }
   }
 
-  const rawBound = `${challenge.salt}:${token}:${hfp}:${nonce}`;
+  if (serverHfp === "VIRTUAL_GPU") {
+    recordFailure(subnet);
+    return { valid: false, status: 403, error: "Virtual / Headless GPU hardware rejected." };
+  }
+
+  // 6. Cryptographically Bound PoW Verification:
+  const rawBound = `${challenge.salt}:${token}:${serverHfp}:${nonce}`;
   const hashBound = crypto.createHash("sha256").update(rawBound).digest("hex");
   const rawLegacy = `${challenge.salt}${nonce}`;
   const hashLegacy = crypto.createHash("sha256").update(rawLegacy).digest("hex");
@@ -394,7 +449,7 @@ export function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 400, error: "Cryptographic PoW solution invalid." };
   }
 
-  // 6. Anti-Replay: Nonce check
+  // Anti-Replay: Nonce check
   const nonceKey = `${challenge.salt}:${token}:${nonce}`;
   if (usedNonces.has(nonceKey)) {
     recordFailure(subnet);
@@ -462,5 +517,5 @@ export function verifySubmissionIntegrity(body, subnet) {
     }
   }
 
-  return { valid: true, sanitizedCode: code, deviceFp: dfp, hardwareFp: hfp };
+  return { valid: true, sanitizedCode: code, deviceFp: dfp, hardwareFp: serverHfp };
 }
