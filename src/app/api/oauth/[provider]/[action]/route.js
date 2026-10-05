@@ -123,12 +123,16 @@ export async function GET(request, { params }) {
       }
 
       const redirectUri = searchParams.get("redirect_uri") || (() => {
-      const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
- const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : request.url.split(":")[0]);
- const isLocal = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("[::1]");
- if (!isLocal && host) return `${proto}://${host}/callback`;
- return "http://localhost:8080/callback";
- })();
+        const configuredBase = process.env.PUBLIC_BASE_URL || process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL;
+        if (configuredBase && !configuredBase.includes("localhost") && !configuredBase.includes("127.0.0.1")) {
+          return `${configuredBase.replace(/\/$/, "")}/callback`;
+        }
+        const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+        const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : request.url.split(":")[0]);
+        const isLocal = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("[::1]");
+        if (!isLocal && host) return `${proto}://${host}/callback`;
+        return "http://localhost:8080/callback";
+      })();
       // Collect provider-specific meta params (e.g. gitlab passes baseUrl, clientId, clientSecret)
       const reservedParams = new Set(["redirect_uri"]);
       const meta = {};
