@@ -416,6 +416,9 @@ export default function ClaimPage() {
         setError(data.error || "Failed to provision API key");
         // Reload challenge on failure
         loadSecurityChallenge();
+        if (typeof window !== "undefined" && window.turnstile && turnstileWidgetId.current) {
+          try { window.turnstile.reset(turnstileWidgetId.current); } catch {}
+        }
       } else {
         saveClaimReceipt(data);
         setResult(data);
@@ -423,6 +426,9 @@ export default function ClaimPage() {
     } catch (err) {
       setError(err.message || "Network connection failure");
       loadSecurityChallenge();
+      if (typeof window !== "undefined" && window.turnstile && turnstileWidgetId.current) {
+        try { window.turnstile.reset(turnstileWidgetId.current); } catch {}
+      }
     } finally {
       setLoading(false);
     }
@@ -468,6 +474,9 @@ export default function ClaimPage() {
       if (!res.ok) {
         setError(data.error || "Failed to redeem pass code");
         loadSecurityChallenge();
+        if (typeof window !== "undefined" && window.turnstile && turnstileWidgetId.current) {
+          try { window.turnstile.reset(turnstileWidgetId.current); } catch {}
+        }
       } else {
         saveClaimReceipt(data);
         setResult(data);
@@ -475,6 +484,9 @@ export default function ClaimPage() {
     } catch (err) {
       setError(err.message || "Network connection failure");
       loadSecurityChallenge();
+      if (typeof window !== "undefined" && window.turnstile && turnstileWidgetId.current) {
+        try { window.turnstile.reset(turnstileWidgetId.current); } catch {}
+      }
     } finally {
       setLoading(false);
     }
