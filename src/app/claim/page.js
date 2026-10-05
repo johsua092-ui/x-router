@@ -2,6 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 
+function formatTokenLimit(n) {
+  const v = Number(n);
+  if (!v || v <= 0) return "Unlimited";
+  if (v >= 1_000_000_000) {
+    const val = v / 1_000_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}B tokens`;
+  }
+  if (v >= 1_000_000) {
+    const val = v / 1_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}M tokens`;
+  }
+  if (v >= 1_000) {
+    const val = v / 1_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}K tokens`;
+  }
+  return `${v.toLocaleString()} tokens`;
+}
+
 export default function ClaimPage() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -264,7 +282,7 @@ export default function ClaimPage() {
                     <div className="rounded-[4px] bg-[#09090b] p-2 border border-[#1f1f22]">
                       <span className="text-[#666] block text-[9.5px]">ALLOCATION</span>
                       <span className="font-semibold text-white">
-                        {faucetInfo.tokenLimit === 0 ? "Unlimited" : `${(faucetInfo.tokenLimit / 1000).toLocaleString()}K tokens`}
+                        {formatTokenLimit(faucetInfo.tokenLimit)}
                       </span>
                     </div>
                     <div className="rounded-[4px] bg-[#09090b] p-2 border border-[#1f1f22]">
@@ -393,7 +411,7 @@ export default function ClaimPage() {
                 <div className="rounded-[4px] bg-[#121215] p-2 border border-[#1f1f22]">
                   <span className="text-[#666] block text-[9.5px]">TOKEN LIMIT</span>
                   <span className="font-semibold text-white">
-                    {result.tokenLimit === 0 ? "Unlimited" : `${(result.tokenLimit / 1000).toLocaleString()}K tokens`}
+                    {formatTokenLimit(result.tokenLimit)}
                   </span>
                 </div>
                 <div className="rounded-[4px] bg-[#121215] p-2 border border-[#1f1f22]">

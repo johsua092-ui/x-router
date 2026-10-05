@@ -4,6 +4,24 @@ import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/shared/utils/cn";
 import Badge from "@/shared/components/Badge";
 
+function formatTokenLimit(n) {
+  const v = Number(n);
+  if (!v || v <= 0) return "Unlimited";
+  if (v >= 1_000_000_000) {
+    const val = v / 1_000_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}B tokens`;
+  }
+  if (v >= 1_000_000) {
+    const val = v / 1_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}M tokens`;
+  }
+  if (v >= 1_000) {
+    const val = v / 1_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1)}K tokens`;
+  }
+  return `${v.toLocaleString()} tokens`;
+}
+
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState([]);
   const [claims, setClaims] = useState([]);
@@ -323,7 +341,7 @@ export default function VouchersPage() {
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
                         <span className="text-text-muted block text-[10px]">TOKEN QUOTA</span>
                         <span className="font-semibold text-text-main">
-                          {v.tokenLimit === 0 ? "Unlimited" : `${(v.tokenLimit / 1000).toLocaleString()}K tokens`}
+                          {formatTokenLimit(v.tokenLimit)}
                         </span>
                       </div>
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
