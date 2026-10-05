@@ -11,6 +11,14 @@ const ICON_ALIASES = {
   "deepseek-web": "deepseek",
   "gemini-web": "gemini",
   "kimi-web": "kimi",
+  "chatgpt-web": "chatgpt-web",
+  "claude-web": "claude-web",
+  "grok-web": "grok-web",
+  "copilot-web": "copilot-web",
+  "zai-web": "zai-web",
+  "yuanbao-web": "yuanbao-web",
+  "duckduckgo-web": "duckduckgo-web",
+  "notion-web": "notion-web",
 };
 
 const TYPE_PREFIX_ALIASES = {

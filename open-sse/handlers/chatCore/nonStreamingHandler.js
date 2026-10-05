@@ -6,6 +6,7 @@ import { addBufferToUsage, filterUsageForFormat } from "../../utils/usageTrackin
 import { createErrorResult } from "../../utils/error.js";
 import { rescueResponse } from "../../translator/concerns/toolCallRescue.js";
 import { applyJsonGuard } from "../../translator/concerns/jsonGuard.js";
+import { parseToolCallsFromText } from "../../translator/webTools.js";
 import { upstreamResponseHeaders } from "../../utils/upstreamHeaders.js";
 import { HTTP_STATUS } from "../../config/runtimeConfig.js";
 import { parseSSEToOpenAIResponse } from "./sseToJsonHandler.js";
@@ -350,6 +351,17 @@ export async function handleNonStreamingResponse({ providerResponse, provider, m
   if (translatedResponse?.choices?.[0]) {
     const choice = translatedResponse.choices[0];
     const msg = choice.message;
+
+    // Auto-parse text-based tool calls (e.g. <tool>...</tool> or DSML) when msg.tool_calls is empty
+    if ((!msg?.tool_calls || msg.tool_calls.length === 0) && typeof msg?.content === "string") {
+      const parsed = parseToolCallsFromText(msg.content, "call", translatedBody?.tools);
+      if (parsed.toolCalls && parsed.toolCalls.length > 0) {
+        msg.tool_calls = parsed.toolCalls;
+        msg.content = parsed.content || null;
+        choice.finish_reason = "tool_calls";
+      }
+    }
+
     const hasToolCalls = Array.isArray(msg?.tool_calls) && msg.tool_calls.length > 0;
     if (hasToolCalls && choice.finish_reason !== "tool_calls") {
       choice.finish_reason = "tool_calls";

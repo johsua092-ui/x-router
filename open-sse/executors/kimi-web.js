@@ -1,4 +1,10 @@
 import { BaseExecutor } from "./base.js";
+import {
+  prepareToolMessages,
+  parseToolCallReply,
+  emitToolCallChunks,
+  buildToolCallResponse,
+} from "./deepseekWebToolBridge.js";
 
 const BASE_URL = "https://www.kimi.ai";
 const CHAT_URL = `${BASE_URL}/apiv2/kimi.gateway.chat.v1.ChatService/Chat`;
@@ -155,13 +161,21 @@ export function foldMessages(messages) {
   const systemParts = [];
   const conversationParts = [];
   for (const message of messages || []) {
-    if (message.role === "tool" || message.role === "function") {
-      throw new Error("Kimi Web does not support tool result messages");
-    }
-    if (message.tool_calls !== undefined) {
-      throw new Error("Kimi Web does not support assistant tool calls");
-    }
     const text = textFromContent(message.content);
+    if (message.role === "tool" || message.role === "function") {
+      const toolName = message.name || message.tool_call_id || "tool";
+      conversationParts.push(`[Tool Result (${toolName})]:\n${text}`);
+      continue;
+    }
+    if (message.tool_calls && Array.isArray(message.tool_calls)) {
+      if (text) conversationParts.push(`Assistant: ${text}`);
+      for (const tc of message.tool_calls) {
+        conversationParts.push(
+          `Assistant: <tool>${JSON.stringify({ name: tc.function?.name, arguments: tc.function?.arguments })}</tool>`
+        );
+      }
+      continue;
+    }
     if (message.role === "system" || message.role === "developer") {
       if (text) systemParts.push(text);
     } else if (message.role === "user") {
@@ -169,7 +183,7 @@ export function foldMessages(messages) {
     } else if (message.role === "assistant") {
       if (text) conversationParts.push(`Assistant: ${text}`);
     } else {
-      throw new Error(`Kimi Web does not support message role ${message.role}`);
+      if (text) conversationParts.push(`${message.role}: ${text}`);
     }
   }
   return {
@@ -278,15 +292,15 @@ export class KimiWebExecutor extends BaseExecutor {
       return errorResult(400, `Unsupported Kimi Web model: ${modelId}`, body);
     }
 
-    const tools = bodyObj.tools;
-    if (Array.isArray(tools) && tools.length > 0) {
-      return errorResult(400, "Kimi Web does not support OpenAI function tools", body);
-    }
+    const messages = Array.isArray(bodyObj.messages) ? bodyObj.messages : [];
+    const hasTools = Array.isArray(bodyObj.tools) && bodyObj.tools.length > 0;
+
+    // Bridge tools into prompt contract
+    const { effectiveMessages } = prepareToolMessages(bodyObj, messages);
 
     let folded;
     try {
-      const messages = Array.isArray(bodyObj.messages) ? bodyObj.messages : [];
-      folded = foldMessages(messages);
+      folded = foldMessages(effectiveMessages);
       if (!folded.prompt) throw new Error("Kimi Web requires a non-empty user message");
     } catch (err) {
       return errorResult(400, err instanceof Error ? err.message : "Invalid Kimi Web request", body);
@@ -467,6 +481,25 @@ export class KimiWebExecutor extends BaseExecutor {
 
     try {
       const { answer, reasoning } = await collectFrames(sourceStream.getReader());
+
+      if (hasTools) {
+        const toolResult = parseToolCallReply(answer, bodyObj.tools);
+        if (toolResult.calls && toolResult.calls.length > 0) {
+          return {
+            response: buildToolCallResponse({
+              id,
+              model: modelId,
+              messageText: toolResult.content,
+              calls: toolResult.calls,
+              reasoningContent: reasoning,
+            }),
+            url: CHAT_URL,
+            headers: reqHeaders,
+            transformedBody: JSON.parse(reqBody),
+          };
+        }
+      }
+
       const message = { role: "assistant", content: answer };
       if (reasoning) message.reasoning_content = reasoning;
       return {

@@ -1,4 +1,10 @@
 import { BaseExecutor } from "./base.js";
+import {
+  prepareToolMessages,
+  parseToolCallReply,
+  emitToolCallChunks,
+  buildToolCallResponse,
+} from "./deepseekWebToolBridge.js";
 
 const GEMINI_URL = "https://gemini.google.com/app";
 const STREAM_URL = "https://gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate";
@@ -26,28 +32,48 @@ export function normalizeGeminiCookieInput(raw, cookieName = "__Secure-1PSID") {
 }
 
 export function buildGeminiPrompt(messages) {
-  const textMessages = (messages || []).filter(
-    (m) => typeof m.content === "string" && m.content.trim().length > 0
-  );
-  const userMessages = textMessages.filter((m) => m.role === "user");
-  const lastUser = userMessages[userMessages.length - 1];
-  const lastUserContent = lastUser?.content ?? "";
-  const lastUserIdx = lastUser ? textMessages.lastIndexOf(lastUser) : -1;
-  const priorTurns = textMessages.filter(
-    (m, i) => i < lastUserIdx && (m.role === "user" || m.role === "assistant")
-  );
-  const systemText = textMessages
-    .filter((m) => m.role === "system")
-    .map((m) => m.content)
-    .join("\n\n");
-  if (priorTurns.length === 0 && !systemText) return lastUserContent;
-  if (priorTurns.length === 0) return `System:\n${systemText}\n\n${lastUserContent}`;
-  const historyLines = priorTurns.map(
-    (m) => `${m.role === "assistant" ? "Assistant" : "User"}: ${m.content}`
-  );
+  const historyLines = [];
+  const systemParts = [];
+  let lastUserContent = "";
+
+  for (const m of messages || []) {
+    if (!m) continue;
+    if (m.role === "system") {
+      const txt = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      if (txt) systemParts.push(txt);
+    } else if (m.role === "user") {
+      const txt =
+        typeof m.content === "string"
+          ? m.content
+          : Array.isArray(m.content)
+            ? m.content.map((c) => c.text || "").join("\n")
+            : "";
+      lastUserContent = txt;
+      historyLines.push(`User: ${txt}`);
+    } else if (m.role === "assistant") {
+      const txt = typeof m.content === "string" ? m.content : "";
+      if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+        for (const tc of m.tool_calls) {
+          historyLines.push(
+            `Assistant: <tool>${JSON.stringify({ name: tc.function?.name, arguments: tc.function?.arguments })}</tool>`
+          );
+        }
+      } else if (txt) {
+        historyLines.push(`Assistant: ${txt}`);
+      }
+    } else if (m.role === "tool") {
+      historyLines.push(
+        `[Tool Result (${m.name || m.tool_call_id || "tool"})]:\n${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`
+      );
+    }
+  }
+
+  const systemText = systemParts.join("\n\n");
+  const previousConv = historyLines.slice(0, -1).join("\n\n");
+
   const parts = [];
   if (systemText) parts.push(`System:\n${systemText}`);
-  parts.push(`Previous conversation:\n${historyLines.join("\n\n")}`);
+  if (previousConv) parts.push(`Previous conversation:\n${previousConv}`);
   parts.push(`Current user message:\n${lastUserContent}`);
   return parts.join("\n\n");
 }
@@ -58,60 +84,54 @@ export function parseStreamResponse(raw) {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line || line === ")]}'" || /^\d+$/.test(line)) continue;
-    if (!line.includes("wrb.fr")) continue;
     try {
-      const arr = JSON.parse(line);
-      if (!Array.isArray(arr) || !Array.isArray(arr[0]) || arr[0][0] !== "wrb.fr") continue;
-      const payload = arr[0]?.[2];
-      if (typeof payload !== "string") continue;
-      const inner = JSON.parse(payload);
-      const responseArray = inner?.[4]?.[0]?.[1];
-      if (!Array.isArray(responseArray)) continue;
-      const text = responseArray.filter((c) => typeof c === "string").join("");
-      if (text) lastText = text;
+      const parsed = JSON.parse(line);
+      const candidates = parsed?.[0]?.[2];
+      if (typeof candidates === "string") {
+        const nested = JSON.parse(candidates);
+        const text = nested?.[4]?.[0]?.[1]?.[0];
+        if (typeof text === "string" && text.length > 0) {
+          lastText = text;
+        }
+      }
     } catch {}
   }
   return lastText;
 }
 
-function parseCookies(raw) {
-  return String(raw || "")
+export function parseCookies(cookieHeader) {
+  return String(cookieHeader || "")
     .split(";")
-    .map((p) => p.trim())
+    .map((s) => s.trim())
     .filter(Boolean)
-    .map((part) => {
-      const eq = part.indexOf("=");
-      if (eq === -1) return null;
-      const name = part.substring(0, eq).trim();
-      const value = part.substring(eq + 1).trim();
-      if (!name || !value) return null;
-      if (["path", "domain", "expires", "max-age", "secure", "httponly", "samesite"].includes(name.toLowerCase())) {
-        return null;
-      }
-      return { name, value };
-    })
-    .filter(Boolean);
+    .map((s) => {
+      const idx = s.indexOf("=");
+      if (idx === -1) return { name: s, value: "" };
+      return { name: s.slice(0, idx).trim(), value: s.slice(idx + 1).trim() };
+    });
 }
 
-async function fetchSessionParams(cookie) {
+export async function fetchSessionParams(cookie) {
   const res = await fetch(GEMINI_URL, {
     headers: {
       Cookie: cookie,
       "User-Agent": GEMINI_USER_AGENT,
-      Accept: "text/html",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     },
   });
   if (!res.ok) return null;
   const html = await res.text();
-  const m = html.match(/"SNlM0e":"([^"]+)"/) || html.match(/SNlM0e\\?":\\?"([^"\\]+)/);
-  const bl = html.match(/"cfb2h":"([^"]+)"/) || html.match(/cfb2h\\?":\\?"([^"\\]+)/);
-  if (!m) return null;
-  return { at: m[1], bl: bl ? bl[1] : "boq_assistant-bard-web-server_20260315.08_p0" };
+  const atMatch = html.match(/"SNlM0e":"([^"]+)"/);
+  const blMatch = html.match(/"cfb2h":"([^"]+)"/);
+  if (!atMatch || !blMatch) return null;
+  return { at: atMatch[1], bl: blMatch[1] };
 }
 
 function errorResponse(status, message) {
   return new Response(
-    JSON.stringify({ error: { message, type: "upstream_error" } }),
+    JSON.stringify({
+      error: { message, type: "upstream_error", code: `HTTP_${status}` },
+    }),
     { status, headers: { "Content-Type": "application/json" } }
   );
 }
@@ -144,19 +164,18 @@ export class GeminiWebExecutor extends BaseExecutor {
         transformedBody: body,
       };
     }
-    const tools = bodyObj.tools;
-    if (Array.isArray(tools) && tools.length > 0) {
-      return {
-        response: errorResponse(400, "Gemini Web does not support OpenAI function tools"),
-        url: GEMINI_URL,
-        headers: {},
-        transformedBody: body,
-      };
-    }
+
     const messages = Array.isArray(bodyObj.messages) ? bodyObj.messages : [];
-    const prompt = buildGeminiPrompt(messages);
+    const hasTools = Array.isArray(bodyObj.tools) && bodyObj.tools.length > 0;
+
+    // Bridge tools into prompt contract
+    const { effectiveMessages } = prepareToolMessages(bodyObj, messages);
+    const prompt = buildGeminiPrompt(effectiveMessages);
+
     const hasUser = messages.some(
-      (m) => m.role === "user" && typeof m.content === "string" && m.content.trim().length > 0
+      (m) =>
+        (m.role === "user" || m.role === "tool") &&
+        (typeof m.content === "string" ? m.content.trim().length > 0 : true)
     );
     if (!prompt || !hasUser) {
       return {
@@ -246,25 +265,43 @@ export class GeminiWebExecutor extends BaseExecutor {
       };
     }
 
+    // Parse potential tool calls from model output
+    let toolResult = { content: responseText, calls: [] };
+    if (hasTools) {
+      toolResult = parseToolCallReply(responseText, bodyObj.tools);
+    }
+
     if (stream) {
       const encoder = new TextEncoder();
       const id = `chatcmpl-gwe-${Date.now()}`;
       const created = Math.floor(Date.now() / 1000);
-      const chunk = (content, finish) => ({
+      const chunk = (delta, finish) => ({
         id,
         object: "chat.completion.chunk",
         created,
         model: modelId,
-        choices: [{ index: 0, delta: content ? { content } : {}, finish_reason: finish }],
+        choices: [{ index: 0, delta, finish_reason: finish }],
       });
+
       const readable = new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk(responseText, null))}\n\n`));
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk("", "stop"))}\n\n`));
+          if (toolResult.calls.length > 0) {
+            emitToolCallChunks(
+              (delta, finish) => {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk(delta, finish))}\n\n`));
+              },
+              () => {},
+              toolResult.calls
+            );
+          } else {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk({ content: toolResult.content }, null))}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk({}, "stop"))}\n\n`));
+          }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         },
       });
+
       return {
         response: new Response(readable, {
           status: 200,
@@ -280,6 +317,20 @@ export class GeminiWebExecutor extends BaseExecutor {
       };
     }
 
+    if (toolResult.calls.length > 0) {
+      return {
+        response: buildToolCallResponse({
+          id: `chatcmpl-${Date.now()}`,
+          model: modelId,
+          messageText: toolResult.content,
+          calls: toolResult.calls,
+        }),
+        url: GEMINI_URL,
+        headers: {},
+        transformedBody: body,
+      };
+    }
+
     return {
       response: new Response(
         JSON.stringify({
@@ -288,11 +339,18 @@ export class GeminiWebExecutor extends BaseExecutor {
           created: Math.floor(Date.now() / 1000),
           model: modelId,
           choices: [
-            { index: 0, message: { role: "assistant", content: responseText }, finish_reason: "stop" },
+            {
+              index: 0,
+              message: { role: "assistant", content: toolResult.content },
+              finish_reason: "stop",
+            },
           ],
           usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
       ),
       url: GEMINI_URL,
       headers: {},

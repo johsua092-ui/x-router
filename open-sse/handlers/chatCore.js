@@ -8,6 +8,7 @@ import { refreshWithRetry } from "../services/tokenRefresh.js";
 import { createRequestLogger } from "../utils/requestLogger.js";
 import { getModelTargetFormat, getModelSupportedFormats, getModelStrip, getModelUpstreamId, getModelType, PROVIDER_ID_TO_ALIAS } from "../config/providerModels.js";
 import { PROVIDERS } from "../config/providers.js";
+import { prepareToolMessages } from "../translator/webTools.js";
 import { createErrorResult, parseUpstreamError, formatProviderError } from "../utils/error.js";
 import { upstreamResponseHeaders } from "../utils/upstreamHeaders.js";
 import { HTTP_STATUS, TOKEN_SAVER_HEADER } from "../config/runtimeConfig.js";
@@ -338,6 +339,19 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     const rescued = rescueRequest(translatedBody);
     if (rescued.renamed || rescued.recovered || rescued.dropped) {
       log?.debug?.("TOOLRESCUE", `${rescued.renamed} renamed, ${rescued.recovered} recovered, ${rescued.dropped} dropped (history)`);
+    }
+  }
+
+  // Web-Cookie provider tool-call translation bridge:
+  // Web UIs accept plain text prompts and don't support native tools[].
+  // Serialize OpenAI tools[] into system prompt contract, so the web model
+  // can invoke tools via <tool>...</tool> or DSML.
+  const isWebCookieProvider = PROVIDERS[provider]?.authType === "cookie" || PROVIDERS[provider]?.category === "webCookie" || String(provider).endsWith("-web");
+  if (isWebCookieProvider && Array.isArray(translatedBody.tools) && translatedBody.tools.length > 0) {
+    const prep = prepareToolMessages(translatedBody, translatedBody.messages);
+    if (prep.hasTools) {
+      translatedBody.messages = prep.effectiveMessages;
+      log?.debug?.("WEBTOOLS", `Prepared tool contract for ${provider} with ${translatedBody.tools.length} tools`);
     }
   }
 

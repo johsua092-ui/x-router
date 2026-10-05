@@ -25,14 +25,15 @@ function setAuth(headers, spec, token) {
 
 // Resolve auth onto headers from a descriptor.
 function applyAuth(headers, desc, credentials) {
+  const token = credentials.cookie || credentials.apiKey || credentials.accessToken;
   if (desc.combined) {
     // combined providers always set the header (legacy behavior, incl. noAuth → "Bearer undefined")
-    setAuth(headers, desc, credentials.apiKey || credentials.accessToken);
+    setAuth(headers, desc, token);
     if (desc.anthropicVersion && !headers["anthropic-version"]) headers["anthropic-version"] = ANTHROPIC_API_VERSION;
     return;
   }
   // split apiKey/oauth: set only the matching branch (legacy: anthropic-compatible skips when both absent)
-  if (credentials.apiKey) setAuth(headers, desc.apiKey, credentials.apiKey);
+  if (credentials.apiKey || credentials.cookie) setAuth(headers, desc.apiKey, credentials.cookie || credentials.apiKey);
   else if (credentials.accessToken) setAuth(headers, desc.oauth, credentials.accessToken);
   if (desc.anthropicVersion && !headers["anthropic-version"]) headers["anthropic-version"] = ANTHROPIC_API_VERSION;
 }
@@ -141,6 +142,9 @@ export class DefaultExecutor extends BaseExecutor {
 
   // Fallback descriptor for providers without an explicit entry in AUTH_DESCRIPTORS.
   resolveAuthDescriptor() {
+    if (this.config?.authType === "cookie" || this.config?.auth?.header === "Cookie") {
+      return { combined: true, header: "Cookie", scheme: "raw" };
+    }
     if (this.provider?.startsWith?.("anthropic-compatible-")) {
       return { apiKey: { header: "x-api-key", scheme: "raw" }, oauth: { header: "Authorization", scheme: "bearer" }, anthropicVersion: true };
     }
