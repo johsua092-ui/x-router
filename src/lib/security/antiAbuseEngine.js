@@ -406,11 +406,11 @@ export function verifySubmissionIntegrity(body, subnet) {
   challenge.consumed = true;
   activeChallenges.delete(token);
 
-  // 7. Timing verification: minimum 1200ms human delay
+  // 7. Timing verification: minimum 2000ms human delay
   const clientTime = Number(body._t);
-  if (!clientTime || Date.now() - clientTime < 1200) {
+  if (!clientTime || Date.now() - clientTime < 2000) {
     recordFailure(subnet);
-    return { valid: false, status: 429, error: "Action performed impossibly fast (<1.2s). Verification failed." };
+    return { valid: false, status: 429, error: "Action performed impossibly fast (<2.0s). Real human calculation required." };
   }
 
   // 8. Human interactive proof requirement & Event Trust
@@ -426,7 +426,11 @@ export function verifySubmissionIntegrity(body, subnet) {
 
   // 9. Biometric Motion Trajectory Verification
   const trajectory = body.trajectory;
-  if (Array.isArray(trajectory) && trajectory.length >= 2) {
+  if (Array.isArray(trajectory)) {
+    if (trajectory.length < 2) {
+      recordFailure(subnet);
+      return { valid: false, status: 400, error: "Insufficient pointer motion samples. Real human interaction required." };
+    }
     let totalDist = 0;
     for (let i = 1; i < trajectory.length; i++) {
       const p1 = trajectory[i - 1];
@@ -437,10 +441,13 @@ export function verifySubmissionIntegrity(body, subnet) {
         totalDist += Math.sqrt(dx * dx + dy * dy);
       }
     }
-    if (totalDist === 0 && trajectory.length > 5) {
+    if (totalDist < 10) {
       recordFailure(subnet);
       return { valid: false, status: 400, error: "Zero-entropy pointer coordinates rejected." };
     }
+  } else {
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Pointer trajectory attestation missing." };
   }
 
   // 10. Voucher code sanitization

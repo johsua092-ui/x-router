@@ -287,17 +287,17 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       }
     }
 
-    // Check 47: Global 24-Hour IP Limit (max 3 claims per 24 hours per IP)
+    // Check 47: Global 24-Hour IP Limit (max 1 claim per 24 hours per IP)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const dailyClaimsRow = db.get(
       `SELECT COUNT(*) as cnt FROM voucherClaims WHERE clientIp = ? AND claimedAt >= ?`,
       [clientIp, oneDayAgo]
     );
-    if (dailyClaimsRow && dailyClaimsRow.cnt >= 3) {
+    if (dailyClaimsRow && dailyClaimsRow.cnt >= 1) {
       return {
         success: false,
         error: "DAILY_LIMIT_EXCEEDED",
-        message: "Daily allocation limit reached for this IP network (max 3 claims per 24 hours).",
+        message: "Batas harian tercapai untuk jaringan IP ini (maks 1 klaim per 24 jam).",
       };
     }
   }
@@ -312,7 +312,7 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       return {
         success: false,
         error: "ALREADY_CLAIMED_DEVICE",
-        message: "This voucher has already been claimed on this device.",
+        message: "Voucher ini sudah pernah diklaim pada perangkat browser ini.",
       };
     }
 
@@ -321,17 +321,17 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       `SELECT COUNT(*) as cnt FROM voucherClaims WHERE deviceFp = ? AND claimedAt >= ?`,
       [deviceFp, oneDayAgo]
     );
-    if (dailyFpRow && dailyFpRow.cnt >= 3) {
+    if (dailyFpRow && dailyFpRow.cnt >= 1) {
       return {
         success: false,
         error: "DAILY_DEVICE_LIMIT_EXCEEDED",
-        message: "Daily allocation limit reached for this device environment.",
+        message: "Batas harian tercapai untuk perangkat browser ini (maks 1 klaim per 24 jam).",
       };
     }
   }
 
-  // Check 49: HARDWARE GPU / WEBGL / AUDIO FINGERPRINT LOCK
-  // Blocks Airplane Mode (Mode Pesawat), VPN, and Incognito browsing loops!
+  // Check 49: HARDWARE GPU / WEBGL / SILICON ATTESTATION LOCK
+  // Strict: 1 physical device can ONLY claim 1 voucher per 24 hours!
   if (hardwareFp && hardwareFp.length >= 8) {
     const existingFromHw = db.get(
       `SELECT id FROM voucherClaims WHERE voucherId = ? AND hardwareFp = ? LIMIT 1`,
@@ -341,7 +341,7 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       return {
         success: false,
         error: "ALREADY_CLAIMED_HARDWARE",
-        message: "This physical device hardware has already claimed this voucher (Mode pesawat / ganti IP diblokir).",
+        message: "Perangkat keras fisik ini sudah pernah mengklaim voucher ini (Mode pesawat / ganti IP diblokir total).",
       };
     }
 
@@ -350,11 +350,11 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       `SELECT COUNT(*) as cnt FROM voucherClaims WHERE hardwareFp = ? AND claimedAt >= ?`,
       [hardwareFp, oneDayAgo]
     );
-    if (dailyHwRow && dailyHwRow.cnt >= 3) {
+    if (dailyHwRow && dailyHwRow.cnt >= 1) {
       return {
         success: false,
         error: "DAILY_HARDWARE_LIMIT_EXCEEDED",
-        message: "Daily claim limit reached for this physical device.",
+        message: "Batas harian tercapai untuk perangkat keras fisik ini (maks 1 voucher per 24 jam).",
       };
     }
   }
