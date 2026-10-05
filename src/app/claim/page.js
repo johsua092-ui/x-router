@@ -27,20 +27,25 @@ export default function ClaimPage() {
   const [result, setResult] = useState(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState("");
-  const [activeSnippetTab, setActiveSnippetTab] = useState("curl"); // "curl" | "python" | "cursor" | "cline"
+  const [activeSnippetTab, setActiveSnippetTab] = useState("curl");
 
   // Public faucet / community allocation info
   const [faucetInfo, setFaucetInfo] = useState(null);
   const [loadingFaucet, setLoadingFaucet] = useState(true);
 
-  // Anti-Bot & Proof-of-Work Telemetry
+  // CAPTCHA & Security Challenge
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaImage, setCaptchaImage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const challengeRef = useRef(null);
+
+  // Anti-Bot & Telemetry
   const pageLoadTime = useRef(Date.now());
   const [honeypot, setHoneypot] = useState("");
-  const challengeRef = useRef(null);
   const deviceFpRef = useRef("");
   const [userInteracted, setUserInteracted] = useState(false);
 
-  // Generate lightweight client device fingerprint
+  // Generate client device fingerprint
   useEffect(() => {
     try {
       const nav = window.navigator;
@@ -53,7 +58,6 @@ export default function ClaimPage() {
         new Date().getTimezoneOffset(),
       ].join("###");
 
-      // Simple hash in browser
       let hash = 0;
       for (let i = 0; i < raw.length; i++) {
         hash = (hash << 5) - hash + raw.charCodeAt(i);
@@ -63,7 +67,7 @@ export default function ClaimPage() {
     } catch {}
   }, []);
 
-  // Listen for real human interaction (pointer or keyboard or click)
+  // Listen for real human interaction
   useEffect(() => {
     const onInteract = () => setUserInteracted(true);
     window.addEventListener("pointerdown", onInteract);
@@ -80,28 +84,35 @@ export default function ClaimPage() {
     };
   }, []);
 
-  // Fetch Faucet status & Mint PoW challenge
-  useEffect(() => {
-    pageLoadTime.current = Date.now();
-    const fetchFaucet = async () => {
-      try {
-        const res = await fetch("/api/vouchers/claim?challenge=1");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.hasActiveBansos && data.bansos) {
-            setFaucetInfo(data.bansos);
+  // Fetch Faucet status & Mint Security Challenge
+  const loadSecurityChallenge = async () => {
+    try {
+      const res = await fetch("/api/vouchers/claim");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.hasActiveBansos && data.bansos) {
+          setFaucetInfo(data.bansos);
+        }
+        if (data.challenge) {
+          challengeRef.current = data.challenge;
+          if (data.challenge.captchaImage) {
+            setCaptchaImage(data.challenge.captchaImage);
           }
-          if (data.challenge) {
-            challengeRef.current = data.challenge;
+          if (data.challenge.captchaToken) {
+            setCaptchaToken(data.challenge.captchaToken);
           }
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingFaucet(false);
       }
-    };
-    fetchFaucet();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingFaucet(false);
+    }
+  };
+
+  useEffect(() => {
+    pageLoadTime.current = Date.now();
+    loadSecurityChallenge();
 
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
@@ -110,16 +121,16 @@ export default function ClaimPage() {
     }
   }, []);
 
-  // Lightweight Client-Side Proof-of-Work Solver (SHA-256)
+  // Client-Side Proof-of-Work Solver (SHA-256)
   const solveProofOfWork = async (challenge) => {
     if (!challenge) return { token: null, nonce: 0 };
     const salt = challenge.salt;
-    const difficulty = challenge.difficulty || 3;
+    const difficulty = challenge.difficulty || 4;
     const targetPrefix = "0".repeat(difficulty);
 
     const encoder = new TextEncoder();
     let nonce = 0;
-    while (nonce < 200000) {
+    while (nonce < 500000) {
       const data = encoder.encode(salt + String(nonce));
       const hashBuf = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuf));
@@ -132,8 +143,13 @@ export default function ClaimPage() {
     return { token: challenge.challengeToken, nonce: 0 };
   };
 
-  // 1-Click Instant Faucet Provisioning (No password / code required)
+  // 1-Click Instant Faucet Provisioning
   const handleInstantProvision = async () => {
+    if (!captchaInput.trim()) {
+      setError("Please enter the 4-character visual verification code.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -152,6 +168,8 @@ export default function ClaimPage() {
           _dfp: deviceFpRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
+          captchaCode: captchaInput.trim(),
+          captchaToken: captchaToken,
           interactiveProof: true,
         }),
       });
@@ -159,11 +177,15 @@ export default function ClaimPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to provision API key");
+        // Reload challenge on failure
+        loadSecurityChallenge();
+        setCaptchaInput("");
       } else {
         setResult(data);
       }
     } catch (err) {
       setError(err.message || "Network connection failure");
+      loadSecurityChallenge();
     } finally {
       setLoading(false);
     }
@@ -173,6 +195,10 @@ export default function ClaimPage() {
   const handleClaimByCode = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
+    if (!captchaInput.trim()) {
+      setError("Please enter the 4-character visual verification code.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -192,6 +218,8 @@ export default function ClaimPage() {
           _dfp: deviceFpRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
+          captchaCode: captchaInput.trim(),
+          captchaToken: captchaToken,
           interactiveProof: true,
         }),
       });
@@ -199,11 +227,14 @@ export default function ClaimPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to redeem pass code");
+        loadSecurityChallenge();
+        setCaptchaInput("");
       } else {
         setResult(data);
       }
     } catch (err) {
       setError(err.message || "Network connection failure");
+      loadSecurityChallenge();
     } finally {
       setLoading(false);
     }
@@ -303,14 +334,48 @@ export default function ClaimPage() {
                     </div>
                   </div>
 
+                  {/* VISUAL CAPTCHA FIELD */}
+                  <div className="pt-1 space-y-1.5">
+                    <label className="text-[10.5px] font-mono text-[#888] flex items-center justify-between">
+                      <span>HUMAN VERIFICATION CODE</span>
+                      <button
+                        type="button"
+                        onClick={loadSecurityChallenge}
+                        className="text-[#E56A4A] hover:underline text-[10px] cursor-pointer"
+                      >
+                        Refresh Image
+                      </button>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {captchaImage ? (
+                        <div
+                          className="shrink-0"
+                          dangerouslySetInnerHTML={{
+                            __html: `<img src="${captchaImage}" alt="Captcha" class="h-10 rounded border border-[#2a2a2e]" />`,
+                          }}
+                        />
+                      ) : (
+                        <div className="h-10 w-[120px] rounded bg-[#141416] border border-[#2a2a2e] animate-pulse" />
+                      )}
+                      <input
+                        type="text"
+                        maxLength={4}
+                        placeholder="4-digit code"
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
+                        className="flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3.5 py-2 font-mono text-xs tracking-widest text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleInstantProvision}
-                    disabled={loading}
-                    className="w-full rounded-[5px] bg-[#E56A4A] py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#d45838] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={loading || !captchaInput.trim()}
+                    className="w-full rounded-[5px] bg-[#E56A4A] py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#d45838] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
                   >
                     {loading ? (
-                      <span className="font-mono">Solving PoW & Provisioning...</span>
+                      <span className="font-mono">Solving PoW & Verifying...</span>
                     ) : (
                       <>
                         <span className="material-symbols-outlined text-[16px]">key_vertical</span>
@@ -359,7 +424,7 @@ export default function ClaimPage() {
                   />
                   <button
                     type="submit"
-                    disabled={loading || !code.trim()}
+                    disabled={loading || !code.trim() || !captchaInput.trim()}
                     className="rounded-[5px] border border-[#333] bg-[#1a1a1e] px-4 py-2 text-xs font-semibold text-white hover:border-[#E56A4A] hover:bg-[#222] disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
                   >
                     Redeem Code
@@ -375,8 +440,8 @@ export default function ClaimPage() {
               )}
 
               <div className="pt-2 border-t border-[#1c1c1f] flex items-center justify-between text-[10px] font-mono text-[#555]">
-                <span>60-LAYER ANTI-ABUSE SHIELD ACTIVE</span>
-                <span>CRYPTOGRAPHIC POW PROTECTED</span>
+                <span>ZERO-ABUSE FORTRESS ACTIVE</span>
+                <span>HMAC CAPTCHA &amp; SHA-256 POW</span>
               </div>
             </div>
           ) : (
@@ -532,6 +597,8 @@ export default function ClaimPage() {
                   onClick={() => {
                     setResult(null);
                     setCode("");
+                    setCaptchaInput("");
+                    loadSecurityChallenge();
                   }}
                   className="text-xs font-mono text-[#777] hover:text-white transition-colors cursor-pointer"
                 >
