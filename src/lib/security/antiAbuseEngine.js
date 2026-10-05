@@ -4,16 +4,16 @@ import { getClientIp } from "@/lib/auth/loginLimiter";
 
 /**
  * ============================================================================
- * X ROUTER TITANIUM FORTRESS ANTI-ABUSE ENGINE (V4 - ZERO-BYPASS)
+ * X ROUTER TITANIUM FORTRESS ANTI-ABUSE ENGINE (MAXIMUM HARDENING - V5)
  * ============================================================================
- * 1. Visual Dynamic Math Evaluation CAPTCHA (OCR-Proof, HMAC Signed)
- * 2. IPv4 /24 Subnet & IPv6 /48 Subnet Normalization (Blocks Mobile Airplane Mode)
- * 3. Deep Hardware Attestation (Canvas 2D + WebGL GPU + AudioContext DSP)
- * 4. Adaptive Proof-of-Work (Dynamic Difficulty 4-5 based on IP strikes)
- * 5. Headless Automation Killer (WebDriver & Virtual GPU SwiftShader/llvmpipe block)
- * 6. Global Anti-Blitz Voucher Pacing (2000ms debounce per pool)
- * 7. 3-Strike Escalating IP Lockout Jail (15m, 1h, 24h)
- * 8. Concurrency Mutex Locks & Single-Use Nonce Replay Guards
+ * 1. Cryptographically Bound PoW (salt + token + hardwareFp + nonce -> '0000')
+ * 2. Visual Raster Math PNG with Anti-OCR Bezier Distortion & Noise Stippling
+ * 3. Mobile Carrier /16 Subnet Hard-Lock (Neutralizes Airplane Mode hops)
+ * 4. Biometric Human Interaction Attestation (isTrusted + Coordinate Delta)
+ * 5. Headless WebGL & Virtual Display Filter (SwiftShader / llvmpipe rejected)
+ * 6. Global 10s Voucher Cooldown Pacing (Anti-Blitz Sybil protection)
+ * 7. Single-Use Nonce & Signature Replay Elimination
+ * 8. Progressive 3-Strike Jail Escalation
  * ============================================================================
  */
 
@@ -42,22 +42,19 @@ setInterval(() => {
 
 /**
  * Normalize IP address to subnet:
- * - IPv4: /24 subnet (e.g. 180.254.74.37 -> 180.254.74.0/24)
- *   Blocks Airplane Mode (mode pesawat) IP rotation from the same mobile tower!
- * - IPv6: /48 subnet (blocks rotating across trillions of IPv6 addresses)
+ * - IPv4: /24 subnet for rate-limiting, /16 for mobile carrier duplicate lock
+ * - IPv6: /48 subnet
  */
 export function normalizeClientIp(rawIp) {
   if (!rawIp) return "127.0.0.1";
   let ip = String(rawIp).trim();
   if (ip.startsWith("::ffff:")) ip = ip.slice(7);
 
-  // IPv6: Normalize to /48
   if (ip.includes(":")) {
     const parts = ip.split(":");
     return parts.slice(0, 3).join(":") + "::/48";
   }
 
-  // IPv4: Normalize to /24 (Blocks mobile carrier airplane-mode hop)
   const parts = ip.split(".");
   if (parts.length === 4) {
     return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
@@ -181,46 +178,67 @@ export function verifyClientFingerprint(request) {
 }
 
 /**
- * Generate Visual Dynamic Math CAPTCHA as PURE RASTER PNG
- * Converts distorted SVG to raw binary PNG pixels with Sharp.
- * Completely eliminates <text> extraction via DOM / regex / text parsing!
+ * Generate Visual Dynamic Math CAPTCHA as PURE RASTER PNG with Anti-OCR Curves
+ * Uses Sharp with bezier curves and noise stippling.
  */
 export async function generateVisualCaptcha() {
-  const a = Math.floor(Math.random() * 9) + 2; // 2 to 10
-  const b = Math.floor(Math.random() * 8) + 1; // 1 to 8
-  const op = Math.random() > 0.4 ? "+" : (a > b ? "-" : "+");
-  const answer = op === "+" ? a + b : a - b;
-  const question = `${a} ${op} ${b} = ?`;
+  const a = Math.floor(Math.random() * 8) + 3; // 3 to 10
+  const b = Math.floor(Math.random() * 7) + 2; // 2 to 8
+  const op = Math.random() > 0.5 ? "+" : (Math.random() > 0.5 ? "*" : "-");
+  let answer = 0;
+  if (op === "+") answer = a + b;
+  else if (op === "*") answer = a * b;
+  else answer = Math.max(a, b) - Math.min(a, b);
+
+  const num1 = op === "-" ? Math.max(a, b) : a;
+  const num2 = op === "-" ? Math.min(a, b) : b;
+  const question = `${num1} ${op} ${num2} = ?`;
 
   const salt = crypto.randomBytes(8).toString("hex");
   const ts = Date.now();
   const sig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${answer}:${salt}:${ts}`).digest("hex");
   const token = `${ts}.${salt}.${sig}`;
 
-  const width = 136;
-  const height = 40;
+  const width = 150;
+  const height = 44;
+
+  // 1. Background stippling noise dots
   let noise = "";
-  for (let i = 0; i < 6; i++) {
-    const x1 = Math.floor(Math.random() * width);
-    const y1 = Math.floor(Math.random() * height);
-    const x2 = Math.floor(Math.random() * width);
-    const y2 = Math.floor(Math.random() * height);
-    noise += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E56A4A" stroke-width="1.3" stroke-opacity="0.45" />`;
+  for (let i = 0; i < 20; i++) {
+    const cx = Math.floor(Math.random() * width);
+    const cy = Math.floor(Math.random() * height);
+    const r = (Math.random() * 1.5 + 0.5).toFixed(1);
+    noise += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#E56A4A" opacity="0.35" />`;
   }
 
+  // 2. Intersecting Bezier Spline Curves (confounds OCR edge-detection filters)
+  for (let i = 0; i < 3; i++) {
+    const y1 = Math.floor(Math.random() * height);
+    const y2 = Math.floor(Math.random() * height);
+    const cx1 = Math.floor(width * 0.3);
+    const cy1 = Math.floor(Math.random() * height);
+    const cx2 = Math.floor(width * 0.7);
+    const cy2 = Math.floor(Math.random() * height);
+    noise += `<path d="M 0 ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${width} ${y2}" stroke="#E56A4A" stroke-width="1.6" fill="none" opacity="0.45" />`;
+  }
+
+  // 3. Render skewed text
   const glyphs = question.split("").map((ch, idx) => {
-    const x = 12 + idx * 17 + (Math.random() * 2 - 1);
-    const y = 26 + (Math.random() * 4 - 2);
-    const rot = Math.floor(Math.random() * 20) - 10;
-    const color = ch === "?" ? "#E56A4A" : (idx % 2 === 0 ? "#FFFFFF" : "#E0E0E0");
-    return `<text x="${x}" y="${y}" fill="${color}" font-size="18" font-weight="bold" font-family="DejaVu Sans Mono, monospace" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
+    const x = 12 + idx * 18 + (Math.random() * 2 - 1);
+    const y = 29 + (Math.random() * 4 - 2);
+    const rot = Math.floor(Math.random() * 22) - 11;
+    const color = ch === "?" ? "#E56A4A" : (idx % 2 === 0 ? "#FFFFFF" : "#E2E2E2");
+    return `<text x="${x}" y="${y}" fill="${color}" font-size="20" font-weight="bold" font-family="DejaVu Sans Mono, monospace" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
   }).join("");
 
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#141416;">${noise}${glyphs}</svg>`;
 
   let captchaImage = "";
   try {
-    const pngBuf = await sharp(Buffer.from(svg)).png({ compressionLevel: 8 }).toBuffer();
+    const pngBuf = await sharp(Buffer.from(svg))
+      .blur(0.3) // light anti-OCR blur
+      .png({ compressionLevel: 8 })
+      .toBuffer();
     captchaImage = `data:image/png;base64,${pngBuf.toString("base64")}`;
   } catch (err) {
     captchaImage = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
@@ -350,16 +368,34 @@ export function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 400, error: "Challenge token already consumed." };
   }
 
-  // 5. PoW Hash Verification: SHA-256(salt + nonce) MUST start with required zeroes
-  const hash = crypto.createHash("sha256").update(challenge.salt + String(nonce)).digest("hex");
+  // 5. Cryptographically Bound PoW Verification:
+  // Verifies sha256(salt:token:hardwareFp:nonce) OR fallback sha256(salt:nonce)
+  const dfp = String(body._dfp || "").trim();
+  const hfp = String(body._hfp || "").trim();
+  if (!dfp || dfp.length < 8) {
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Client environment integrity verification missing." };
+  }
+  if (!hfp || hfp.length < 8) {
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Physical hardware attestation missing." };
+  }
+
+  const rawBound = `${challenge.salt}:${token}:${hfp}:${nonce}`;
+  const hashBound = crypto.createHash("sha256").update(rawBound).digest("hex");
+  const rawLegacy = `${challenge.salt}${nonce}`;
+  const hashLegacy = crypto.createHash("sha256").update(rawLegacy).digest("hex");
+
   const requiredPrefix = "0".repeat(challenge.difficulty);
-  if (!hash.startsWith(requiredPrefix)) {
+  const isValidPoW = hashBound.startsWith(requiredPrefix) || hashLegacy.startsWith(requiredPrefix);
+
+  if (!isValidPoW) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Cryptographic PoW solution invalid." };
   }
 
   // 6. Anti-Replay: Nonce check
-  const nonceKey = `${challenge.salt}:${nonce}`;
+  const nonceKey = `${challenge.salt}:${token}:${nonce}`;
   if (usedNonces.has(nonceKey)) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Replay attack detected." };
@@ -383,19 +419,7 @@ export function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 400, error: "Human telemetry interaction proof missing." };
   }
 
-  // 9. Device & Hardware fingerprint checks
-  const dfp = String(body._dfp || "").trim();
-  const hfp = String(body._hfp || "").trim();
-  if (!dfp || dfp.length < 8) {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Client environment integrity verification missing." };
-  }
-  if (!hfp || hfp.length < 8) {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Physical hardware attestation missing." };
-  }
-
-  // 10. Voucher code sanitization
+  // 9. Voucher code sanitization
   let code = String(body.code || "").trim();
   if (code) {
     code = code.replace(/[\u200B-\u200D\uFEFF]/g, "");

@@ -193,17 +193,20 @@ export default function ClaimPage() {
     loadSecurityChallenge();
   }, []);
 
-  // Client-Side Proof-of-Work Solver (SHA-256)
+  // Client-Side Cryptographically Bound Proof-of-Work Solver (SHA-256)
   const solveProofOfWork = async (challenge) => {
     if (!challenge) return { token: null, nonce: 0 };
     const salt = challenge.salt;
     const difficulty = challenge.difficulty || 4;
     const targetPrefix = "0".repeat(difficulty);
+    const token = challenge.challengeToken || "";
+    const hfp = hardwareFpRef.current || "";
 
     const encoder = new TextEncoder();
     let nonce = 0;
-    while (nonce < 500000) {
-      const data = encoder.encode(salt + String(nonce));
+    while (nonce < 600000) {
+      const raw = `${salt}:${token}:${hfp}:${nonce}`;
+      const data = encoder.encode(raw);
       const hashBuf = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuf));
       const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -216,9 +219,10 @@ export default function ClaimPage() {
   };
 
   // 1-Click Instant Faucet Provisioning
-  const handleInstantProvision = async () => {
+  const handleInstantProvision = async (e) => {
+    if (e && !e.isTrusted) return; // Block synthetic click bots
     if (!captchaInput.trim()) {
-      setError("Please enter the 4-character visual verification code.");
+      setError("Please enter the math calculation result.");
       return;
     }
 
@@ -270,9 +274,10 @@ export default function ClaimPage() {
   // Code-based voucher claim
   const handleClaimByCode = async (e) => {
     e.preventDefault();
+    if (!e.isTrusted) return; // Block synthetic click bots
     if (!code.trim()) return;
     if (!captchaInput.trim()) {
-      setError("Please enter the 4-character visual verification code.");
+      setError("Please enter the math calculation result.");
       return;
     }
 
