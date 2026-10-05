@@ -363,9 +363,9 @@ export function verifySubmissionIntegrity(body, subnet) {
   }
 
   // 2. Headless automation & Virtual GPU detection
-  if (body._isWebdriver === true) {
+  if (body._isWebdriver === true || body._automationDetected === true) {
     recordFailure(subnet);
-    return { valid: false, status: 403, error: "Automated browser controller (WebDriver) detected." };
+    return { valid: false, status: 403, error: "Automated browser sandbox environment detected." };
   }
 
   const gpuRenderer = String(body._gpuRenderer || "").toLowerCase();

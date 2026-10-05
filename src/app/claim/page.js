@@ -45,6 +45,8 @@ export default function ClaimPage() {
   const deviceFpRef = useRef("");
   const hardwareFpRef = useRef("");
   const hwMetricsRef = useRef(null);
+  const audioHashRef = useRef("");
+  const automationProbeRef = useRef({ isAutomated: false, indicators: [] });
   const trajectoryRef = useRef([]);
   const [userInteracted, setUserInteracted] = useState(false);
 
@@ -128,9 +130,45 @@ export default function ClaimPage() {
         }
       } catch {}
 
-      // 3. Immutable Hardware Invariant Signature:
-      // Even if user changes IP, turns on Airplane Mode, or uses Incognito/Private tabs,
-      // the physical GPU model, core count, RAM, touch sensors, and screen geometry remain IDENTICAL!
+      // 3. AudioContext DSP Acoustic Attestation
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const actx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+          const osc = actx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(10000, actx.currentTime);
+          const comp = actx.createDynamicsCompressor();
+          comp.threshold.setValueAtTime(-50, actx.currentTime);
+          comp.knee.setValueAtTime(40, actx.currentTime);
+          comp.ratio.setValueAtTime(12, actx.currentTime);
+          comp.reduction.setValueAtTime(-20, actx.currentTime);
+          comp.attack.setValueAtTime(0, actx.currentTime);
+          comp.release.setValueAtTime(0.25, actx.currentTime);
+          osc.connect(comp);
+          comp.connect(actx.destination);
+          osc.start(0);
+          actx.startRendering().then((buf) => {
+            const data = buf.getChannelData(0);
+            let aHash = 0;
+            for (let i = 4500; i < 5000; i++) aHash += Math.abs(data[i]);
+            audioHashRef.current = Math.floor(aHash * 1000000).toString(16);
+          }).catch(() => {});
+        }
+      } catch {}
+
+      // 4. Automation & Headless Sandbox Probes
+      const automationIndicators = [];
+      if (Boolean(nav.webdriver)) automationIndicators.push("webdriver");
+      if (window.document?.documentElement?.getAttribute("webdriver")) automationIndicators.push("dom_webdriver");
+      if (window.callPhantom || window._phantom || window.__nightmare) automationIndicators.push("phantom");
+      if (window.outerWidth === 0 && window.outerHeight === 0) automationIndicators.push("zero_dimensions");
+      automationProbeRef.current = {
+        isAutomated: automationIndicators.length > 0,
+        indicators: automationIndicators,
+      };
+
+      // 5. Immutable Hardware Invariant Signature
       const hardwareRaw = [
         gpuVendor,
         gpuRenderer,
@@ -160,6 +198,8 @@ export default function ClaimPage() {
         touchPoints: nav.maxTouchPoints || 0,
         screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
         pixelDepth: screen.pixelDepth || 24,
+        pixelRatio: window.devicePixelRatio || 1,
+        audioSig: audioHashRef.current || "",
       };
     } catch {}
   }, []);
@@ -299,6 +339,7 @@ export default function ClaimPage() {
           hwMetrics: hwMetricsRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
+          _automationDetected: Boolean(automationProbeRef.current?.isAutomated),
           _isTrusted: Boolean(!e || e.isTrusted),
           trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
@@ -357,6 +398,7 @@ export default function ClaimPage() {
           hwMetrics: hwMetricsRef.current,
           _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
           _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
+          _automationDetected: Boolean(automationProbeRef.current?.isAutomated),
           _isTrusted: Boolean(!e || e.isTrusted),
           trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
