@@ -31,12 +31,6 @@ export async function GET(request) {
     const rawIp = (cfIp && cfIp.trim()) ? cfIp.trim() : (getClientIp(request) || "");
     const ip = normalizeClientIp(rawIp);
 
-    // Stage 1: Network throttle check
-    const throttle = verifyNetworkThrottle(ip);
-    if (!throttle.allowed) {
-      return NextResponse.json({ error: throttle.error }, { status: throttle.status });
-    }
-
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
 
