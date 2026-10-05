@@ -109,6 +109,15 @@ export async function POST(request) {
   const lockKey = `claim_lock:${ip}`;
   let hwLockKey = null;
 
+  // Server-side HttpOnly cookie check (stops instant multi-claim loops on same browser)
+  const claimedCookie = request.cookies.get("xr_vclaim_status");
+  if (claimedCookie && claimedCookie.value === "claimed") {
+    return NextResponse.json(
+      { error: "Perangkat ini sudah pernah mengklaim voucher (Sesi browser terkunci)." },
+      { status: 400 }
+    );
+  }
+
   // Concurrent Request Mutex Lock (prevents parallel race conditions per IP)
   if (!acquireConcurrencyLock(lockKey)) {
     return NextResponse.json(
@@ -216,7 +225,7 @@ print(response.choices[0].message.content)`,
       },
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       apiKey: result.apiKey,
       keyId: result.keyId,
@@ -228,6 +237,16 @@ print(response.choices[0].message.content)`,
       baseUrl,
       configs,
     });
+
+    // Set 1-year HttpOnly cookie lock
+    response.cookies.set("xr_vclaim_status", "claimed", {
+      path: "/",
+      maxAge: 31536000,
+      httpOnly: true,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (error) {
     console.error("Error executing bulletproof claim:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

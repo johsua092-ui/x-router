@@ -26,6 +26,7 @@ const inFlightLocks = new Set();      // lock keys for concurrency mutex
 const activeChallenges = new Map();   // token -> { subnet, issuedAt, salt, difficulty, consumed }
 const usedNonces = new Set();         // replay cache of used PoW nonces
 const usedCaptchaTokens = new Set();  // replay cache of solved CAPTCHAs
+const usedTurnstileTokens = new Set();// replay cache of consumed Turnstile tokens
 
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 setInterval(() => {
@@ -38,6 +39,7 @@ setInterval(() => {
   }
   if (usedNonces.size > 50000) usedNonces.clear();
   if (usedCaptchaTokens.size > 50000) usedCaptchaTokens.clear();
+  if (usedTurnstileTokens.size > 50000) usedTurnstileTokens.clear();
 }, CLEANUP_INTERVAL_MS);
 
 /**
@@ -353,9 +355,14 @@ export async function mintChallenge(subnet) {
 
 /**
  * Verify Cloudflare Turnstile token via Cloudflare API
+ * Enforces single-use token burn (anti-replay defense).
  */
 export async function verifyTurnstileToken(token, ip) {
   if (!token) return { success: false, error: "Cloudflare Turnstile token missing." };
+  if (usedTurnstileTokens.has(token)) {
+    return { success: false, error: "Cloudflare Turnstile token has already been consumed (Replay attack blocked)." };
+  }
+
   const secret = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
   try {
     const form = new URLSearchParams();
@@ -369,6 +376,9 @@ export async function verifyTurnstileToken(token, ip) {
       body: form,
     });
     const data = await res.json();
+    if (data && data.success) {
+      usedTurnstileTokens.add(token);
+    }
     return data;
   } catch (err) {
     return { success: false, error: "Turnstile verification failed: " + err.message };
