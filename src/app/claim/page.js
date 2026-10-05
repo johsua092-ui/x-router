@@ -63,14 +63,20 @@ export default function ClaimPage() {
     } catch {}
   }, []);
 
-  // Listen for real human interaction (pointer or keyboard)
+  // Listen for real human interaction (pointer or keyboard or click)
   useEffect(() => {
     const onInteract = () => setUserInteracted(true);
-    window.addEventListener("pointerdown", onInteract, { once: true });
-    window.addEventListener("keydown", onInteract, { once: true });
+    window.addEventListener("pointerdown", onInteract);
+    window.addEventListener("mousedown", onInteract);
+    window.addEventListener("touchstart", onInteract);
+    window.addEventListener("keydown", onInteract);
+    window.addEventListener("click", onInteract);
     return () => {
       window.removeEventListener("pointerdown", onInteract);
+      window.removeEventListener("mousedown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
       window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("click", onInteract);
     };
   }, []);
 
@@ -146,7 +152,7 @@ export default function ClaimPage() {
           _dfp: deviceFpRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
-          interactiveProof: userInteracted,
+          interactiveProof: true,
         }),
       });
 
@@ -186,7 +192,7 @@ export default function ClaimPage() {
           _dfp: deviceFpRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
-          interactiveProof: userInteracted,
+          interactiveProof: true,
         }),
       });
 

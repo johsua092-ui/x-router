@@ -27,10 +27,9 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const wantsChallenge = searchParams.get("challenge") === "1";
 
-    // Mint PoW challenge if requested by client portal
-    const challengeData = wantsChallenge ? mintChallenge(ip) : null;
+    // Always mint PoW challenge for the client
+    const challengeData = mintChallenge(ip);
 
     // If specific code inspection requested
     if (code) {
@@ -79,13 +78,13 @@ export async function GET(request) {
   }
 }
 
-// POST /api/vouchers/claim -> 60-Layer Anti-Abuse Protected Claim Handler
+// POST /api/vouchers/claim -> Bulletproof Anti-Abuse Protected Claim Handler
 export async function POST(request) {
   const rawIp = getClientIp(request) || "";
   const ip = normalizeClientIp(rawIp);
   const lockKey = `claim_lock:${ip}`;
 
-  // Check 6: Concurrent Request Mutex Lock (prevents parallel race conditions)
+  // Concurrent Request Mutex Lock (prevents parallel race conditions)
   if (!acquireConcurrencyLock(lockKey)) {
     return NextResponse.json(
       { error: "Another transaction from your network is currently in progress." },
@@ -94,22 +93,22 @@ export async function POST(request) {
   }
 
   try {
-    // STAGE 1: Network & IP Integrity Checks (Checks 1-10)
+    // 1. Network & IP Integrity Checks
     const throttle = verifyNetworkThrottle(ip);
     if (!throttle.allowed) {
       return NextResponse.json({ error: throttle.error }, { status: throttle.status });
     }
 
-    // STAGE 2: Client & Protocol Fingerprinting (Checks 11-20)
+    // 2. Client & Protocol Fingerprinting
     const clientCheck = verifyClientFingerprint(request);
     if (!clientCheck.valid) {
       recordFailure(ip);
       return NextResponse.json({ error: clientCheck.error }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
 
-    // STAGE 3 & 4: Behavioral & Cryptographic Integrity (Checks 21-40)
+    // 3. Behavioral, Proof-of-Work & Cryptographic Integrity (MANDATORY POW)
     const integrity = verifySubmissionIntegrity(body, ip);
     if (!integrity.valid) {
       return NextResponse.json({ error: integrity.error }, { status: integrity.status });
@@ -117,7 +116,7 @@ export async function POST(request) {
 
     let code = integrity.sanitizedCode;
     const isBansosRequest = body.isBansos === true || !code;
-    const deviceFp = String(body._dfp || "").trim();
+    const deviceFp = integrity.deviceFp;
 
     // Resolve code for 1-Click Faucet
     if (isBansosRequest) {
@@ -131,7 +130,7 @@ export async function POST(request) {
       code = bansosVoucher.code;
     }
 
-    // STAGE 5 & 6: Database & Identity Quota Locking (Checks 41-60)
+    // 4. Database & Identity Quota Locking
     const result = await claimVoucher(code, ip, deviceFp);
     if (!result.success) {
       if (result.error === "VOUCHER_NOT_FOUND") {
@@ -193,7 +192,7 @@ print(response.choices[0].message.content)`,
       configs,
     });
   } catch (error) {
-    console.error("Error executing 60-layer claim:", error);
+    console.error("Error executing bulletproof claim:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   } finally {
     releaseConcurrencyLock(lockKey);
