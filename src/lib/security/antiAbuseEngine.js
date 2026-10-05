@@ -317,16 +317,21 @@ export function computeServerHardwareFp(metrics) {
 }
 
 /**
- * Mint Proof-of-Work Challenge with Adaptive Scaling
+ * Mint Proof-of-Work Challenge with Cryptographic Subnet-Bound HMAC Seal
+ * Generates an unforgeable challenge token bound directly to the requesting client's IP subnet.
  */
 export async function mintChallenge(subnet) {
-  const challengeToken = crypto.randomBytes(24).toString("hex");
+  const challengeId = crypto.randomBytes(16).toString("hex");
   const salt = crypto.randomBytes(10).toString("hex");
   const strikes = ipLockouts.get(subnet)?.strikes || 0;
   const difficulty = strikes >= 1 ? 5 : 4;
   const now = Date.now();
 
-  activeChallenges.set(challengeToken, {
+  // Cryptographic Subnet-Binding HMAC Seal
+  const seal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${now}:${difficulty}`).digest("hex");
+  const challengeToken = `${challengeId}.${now}.${seal}`;
+
+  activeChallenges.set(challengeId, {
     subnet,
     salt,
     difficulty,
@@ -400,7 +405,29 @@ export function verifySubmissionIntegrity(body, subnet) {
     };
   }
 
-  const challenge = activeChallenges.get(token);
+  // Cryptographic Subnet-Binding HMAC Seal Check (Blocks cross-network IP hop & remote solver botnets)
+  let challengeId = token;
+  const parts = String(token).split(".");
+  if (parts.length === 3) {
+    challengeId = parts[0];
+    const ts = parseInt(parts[1], 10);
+    const seal = parts[2];
+    if (Date.now() - ts > 10 * 60 * 1000) {
+      recordFailure(subnet);
+      return { valid: false, status: 400, error: "Challenge token expired. Refresh page." };
+    }
+
+    const strikes = ipLockouts.get(subnet)?.strikes || 0;
+    const expectedDiff = strikes >= 1 ? 5 : 4;
+    const expectedSeal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${ts}:${expectedDiff}`).digest("hex");
+    const fallbackSeal = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${challengeId}:${subnet}:${ts}:4`).digest("hex");
+    if (seal !== expectedSeal && seal !== fallbackSeal) {
+      recordFailure(subnet);
+      return { valid: false, status: 403, error: "Challenge session was minted for a different network. Cross-network bypass blocked." };
+    }
+  }
+
+  const challenge = activeChallenges.get(challengeId) || activeChallenges.get(token);
   if (!challenge) {
     recordFailure(subnet);
     return { valid: false, status: 400, error: "Challenge token invalid or expired. Refresh page." };
@@ -459,6 +486,7 @@ export function verifySubmissionIntegrity(body, subnet) {
 
   // Consume challenge
   challenge.consumed = true;
+  activeChallenges.delete(challengeId);
   activeChallenges.delete(token);
 
   // 7. Timing verification: minimum 2000ms human delay

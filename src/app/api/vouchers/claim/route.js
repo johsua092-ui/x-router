@@ -83,8 +83,9 @@ export async function POST(request) {
   const rawIp = getClientIp(request) || "";
   const ip = normalizeClientIp(rawIp);
   const lockKey = `claim_lock:${ip}`;
+  let hwLockKey = null;
 
-  // Concurrent Request Mutex Lock (prevents parallel race conditions)
+  // Concurrent Request Mutex Lock (prevents parallel race conditions per IP)
   if (!acquireConcurrencyLock(lockKey)) {
     return NextResponse.json(
       { error: "Another transaction from your network is currently in progress." },
@@ -117,7 +118,18 @@ export async function POST(request) {
     let code = integrity.sanitizedCode;
     const isBansosRequest = body.isBansos === true || !code;
     const deviceFp = integrity.deviceFp;
-    const hardwareFp = String(body._hfp || "").trim();
+    const hardwareFp = integrity.hardwareFp;
+
+    // Concurrent Hardware Mutex Lock (prevents race conditions from multiple IPs with same hardware)
+    if (hardwareFp) {
+      hwLockKey = `claim_hw_lock:${hardwareFp}`;
+      if (!acquireConcurrencyLock(hwLockKey)) {
+        return NextResponse.json(
+          { error: "Another transaction on this physical device is currently in progress." },
+          { status: 429 }
+        );
+      }
+    }
 
     // Resolve code for 1-Click Faucet
     if (isBansosRequest) {
@@ -197,5 +209,6 @@ print(response.choices[0].message.content)`,
     return NextResponse.json({ error: error.message }, { status: 500 });
   } finally {
     releaseConcurrencyLock(lockKey);
+    if (hwLockKey) releaseConcurrencyLock(hwLockKey);
   }
 }
