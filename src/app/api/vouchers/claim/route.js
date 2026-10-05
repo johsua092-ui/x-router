@@ -117,6 +117,7 @@ export async function POST(request) {
     let code = integrity.sanitizedCode;
     const isBansosRequest = body.isBansos === true || !code;
     const deviceFp = integrity.deviceFp;
+    const hardwareFp = String(body._hfp || "").trim();
 
     // Resolve code for 1-Click Faucet
     if (isBansosRequest) {
@@ -131,7 +132,7 @@ export async function POST(request) {
     }
 
     // 4. Database & Identity Quota Locking
-    const result = await claimVoucher(code, ip, deviceFp);
+    const result = await claimVoucher(code, ip, deviceFp, hardwareFp);
     if (!result.success) {
       if (result.error === "VOUCHER_NOT_FOUND") {
         recordFailure(ip);

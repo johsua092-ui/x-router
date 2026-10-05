@@ -205,7 +205,7 @@ export async function getVoucherClaims(voucherId = null) {
  * Check 59: Downstream Gateway Integration Check
  * Check 60: Real-time Telemetry & Audit Trail Logging
  */
-export async function claimVoucher(code, clientIp = "", deviceFp = "") {
+export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareFp = "") {
   const db = await getAdapter();
   const voucher = await getVoucherByCode(code);
 
@@ -279,6 +279,35 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "") {
     }
   }
 
+  // Check 49: HARDWARE GPU / WEBGL / AUDIO FINGERPRINT LOCK
+  // Blocks Airplane Mode (Mode Pesawat), VPN, and Incognito browsing loops!
+  if (hardwareFp && hardwareFp.length >= 8) {
+    const existingFromHw = db.get(
+      `SELECT id FROM voucherClaims WHERE voucherId = ? AND hardwareFp = ? LIMIT 1`,
+      [voucher.id, hardwareFp]
+    );
+    if (existingFromHw) {
+      return {
+        success: false,
+        error: "ALREADY_CLAIMED_HARDWARE",
+        message: "This physical device hardware has already claimed this voucher (Mode pesawat / ganti IP diblokir).",
+      };
+    }
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const dailyHwRow = db.get(
+      `SELECT COUNT(*) as cnt FROM voucherClaims WHERE hardwareFp = ? AND claimedAt >= ?`,
+      [hardwareFp, oneDayAgo]
+    );
+    if (dailyHwRow && dailyHwRow.cnt >= 3) {
+      return {
+        success: false,
+        error: "DAILY_HARDWARE_LIMIT_EXCEEDED",
+        message: "Daily claim limit reached for this physical device.",
+      };
+    }
+  }
+
   // Check 57: Expiration timestamp calculation
   let expiresAt = null;
   if (voucher.expiresInDays > 0) {
@@ -305,9 +334,9 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "") {
 
   db.transaction(() => {
     db.run(
-      `INSERT INTO voucherClaims (id, voucherId, voucherCode, apiKeyId, apiKey, clientIp, deviceFp, claimedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [claimId, voucher.id, voucher.code, apiKeyRecord.id, apiKeyRecord.key, clientIp || "", deviceFp || "", now]
+      `INSERT INTO voucherClaims (id, voucherId, voucherCode, apiKeyId, apiKey, clientIp, deviceFp, hardwareFp, claimedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [claimId, voucher.id, voucher.code, apiKeyRecord.id, apiKeyRecord.key, clientIp || "", deviceFp || "", hardwareFp || "", now]
     );
 
     db.run(

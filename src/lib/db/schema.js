@@ -199,6 +199,7 @@ export const TABLES = {
       apiKey: "TEXT NOT NULL",
       clientIp: "TEXT",
       deviceFp: "TEXT DEFAULT ''",
+      hardwareFp: "TEXT DEFAULT ''",
       claimedAt: "TEXT NOT NULL",
     },
     indexes: [
@@ -206,6 +207,7 @@ export const TABLES = {
       "CREATE INDEX IF NOT EXISTS idx_vc_key ON voucherClaims(apiKeyId)",
       "CREATE INDEX IF NOT EXISTS idx_vc_ip ON voucherClaims(clientIp)",
       "CREATE INDEX IF NOT EXISTS idx_vc_fp ON voucherClaims(deviceFp)",
+      "CREATE INDEX IF NOT EXISTS idx_vc_hw ON voucherClaims(hardwareFp)",
     ],
   },
 };
