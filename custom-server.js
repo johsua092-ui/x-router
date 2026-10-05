@@ -229,8 +229,18 @@ http.createServer = (...args) => {
     delete req.headers["x-forwarded-for"];
     delete req.headers["x-9r-via-proxy"];
     delete req.headers["x-9r-peer-token"];
+
+    if (!isLoopbackProxy) {
+      // Strip forged Cloudflare headers sent directly to raw TCP socket
+      delete req.headers["cf-ray"];
+      delete req.headers["cf-ipcountry"];
+      delete req.headers["cf-visitor"];
+      delete req.headers["cf-connecting-ip"];
+    } else {
+      req.headers["cf-connecting-ip"] = ip;
+    }
+
     req.headers["x-9r-real-ip"] = ip;
-    req.headers["cf-connecting-ip"] = ip;
     req.headers["x-9r-peer-token"] = PEER_TOKEN;
     if (viaProxy) req.headers["x-9r-via-proxy"] = "1";
     // Auth gate ahead of Next; runAuthGuard resolves false when the request

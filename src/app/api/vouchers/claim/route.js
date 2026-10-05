@@ -16,6 +16,17 @@ import {
 // GET /api/vouchers/claim -> checks if there is an active bansos pool, inspects specific code, and mints PoW challenge
 export async function GET(request) {
   try {
+    // Edge Proxy Gate: Enforce Cloudflare Edge for all external public traffic
+    const host = request.headers.get("host") || "";
+    const isLocal = host.startsWith("127.0.0.1") || host.startsWith("localhost");
+    const cfRay = request.headers.get("cf-ray");
+    if (!isLocal && !cfRay) {
+      return NextResponse.json(
+        { error: "Direct IP connection prohibited. Requests must route through Cloudflare Edge proxy." },
+        { status: 403 }
+      );
+    }
+
     const cfIp = request.headers.get("cf-connecting-ip");
     const rawIp = (cfIp && cfIp.trim()) ? cfIp.trim() : (getClientIp(request) || "");
     const ip = normalizeClientIp(rawIp);
@@ -81,6 +92,17 @@ export async function GET(request) {
 
 // POST /api/vouchers/claim -> Bulletproof Anti-Abuse Protected Claim Handler
 export async function POST(request) {
+  // Edge Proxy Gate: Enforce Cloudflare Edge for all external public traffic
+  const host = request.headers.get("host") || "";
+  const isLocal = host.startsWith("127.0.0.1") || host.startsWith("localhost");
+  const cfRay = request.headers.get("cf-ray");
+  if (!isLocal && !cfRay) {
+    return NextResponse.json(
+      { error: "Direct IP connection prohibited. Requests must route through Cloudflare Edge proxy." },
+      { status: 403 }
+    );
+  }
+
   const cfIp = request.headers.get("cf-connecting-ip");
   const rawIp = (cfIp && cfIp.trim()) ? cfIp.trim() : (getClientIp(request) || "");
   const ip = normalizeClientIp(rawIp);
@@ -111,8 +133,8 @@ export async function POST(request) {
 
     const body = await request.json().catch(() => ({}));
 
-    // 3. Behavioral, Proof-of-Work & Cryptographic Integrity (MANDATORY POW)
-    const integrity = verifySubmissionIntegrity(body, ip);
+    // 3. Behavioral, Proof-of-Work & Cryptographic Integrity (MANDATORY POW + TURNSTILE)
+    const integrity = await verifySubmissionIntegrity(body, ip);
     if (!integrity.valid) {
       return NextResponse.json({ error: integrity.error }, { status: integrity.status });
     }

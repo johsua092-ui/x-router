@@ -352,14 +352,50 @@ export async function mintChallenge(subnet) {
 }
 
 /**
- * Strict Submission Integrity Verification:
- * ZERO-BYPASS: PoW token, nonce, visual CAPTCHA, and hardware attestation are mandatory.
+ * Verify Cloudflare Turnstile token via Cloudflare API
  */
-export function verifySubmissionIntegrity(body, subnet) {
+export async function verifyTurnstileToken(token, ip) {
+  if (!token) return { success: false, error: "Cloudflare Turnstile token missing." };
+  const secret = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
+  try {
+    const form = new URLSearchParams();
+    form.append("secret", secret);
+    form.append("response", token);
+    if (ip) form.append("remoteip", String(ip).split("/")[0]);
+
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { success: false, error: "Turnstile verification failed: " + err.message };
+  }
+}
+
+/**
+ * Strict Submission Integrity Verification:
+ * ZERO-BYPASS: Turnstile, PoW token, nonce, visual CAPTCHA, and hardware attestation are mandatory.
+ */
+export async function verifySubmissionIntegrity(body, subnet) {
   // 1. Honeypot check
   if (body.website || body.email_confirm || body.hp_field || body.company_url || body.phone_number) {
     recordFailure(subnet);
     return { valid: false, status: 403, error: "Automated honeypot trigger detected." };
+  }
+
+  // 2. Cloudflare Turnstile Verification (Mandatory)
+  const turnstileToken = body.turnstileToken;
+  if (!turnstileToken) {
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Cloudflare Turnstile verification is required." };
+  }
+  const turnstileRes = await verifyTurnstileToken(turnstileToken, subnet);
+  if (!turnstileRes.success) {
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Cloudflare Turnstile challenge verification failed. Please retry." };
   }
 
   // 2. Headless automation & Virtual GPU detection

@@ -39,6 +39,11 @@ export default function ClaimPage() {
   const [captchaToken, setCaptchaToken] = useState("");
   const challengeRef = useRef(null);
 
+  // Cloudflare Turnstile
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
+
   // Anti-Bot & Telemetry
   const pageLoadTime = useRef(Date.now());
   const [honeypot, setHoneypot] = useState("");
@@ -286,6 +291,54 @@ export default function ClaimPage() {
     loadSecurityChallenge();
   }, []);
 
+  // Initialize Cloudflare Turnstile Widget
+  useEffect(() => {
+    let timeoutId;
+    const renderWidget = () => {
+      if (typeof window !== "undefined" && window.turnstile && turnstileContainerRef.current && !turnstileWidgetId.current) {
+        try {
+          const id = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            theme: "dark",
+            size: "flexible",
+            callback: (token) => {
+              setTurnstileToken(token);
+              setUserInteracted(true);
+            },
+            "expired-callback": () => setTurnstileToken(""),
+            "error-callback": () => setTurnstileToken(""),
+          });
+          turnstileWidgetId.current = id;
+        } catch (e) {
+          console.error("Turnstile render error:", e);
+        }
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      if (!window.turnstile) {
+        const existing = document.getElementById("cf-turnstile-script");
+        if (!existing) {
+          const script = document.createElement("script");
+          script.id = "cf-turnstile-script";
+          script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+          script.async = true;
+          script.defer = true;
+          script.onload = () => {
+            timeoutId = setTimeout(renderWidget, 100);
+          };
+          document.head.appendChild(script);
+        }
+      } else {
+        timeoutId = setTimeout(renderWidget, 100);
+      }
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
+
   // Client-Side Cryptographically Bound Proof-of-Work Solver (SHA-256)
   const solveProofOfWork = async (challenge) => {
     if (!challenge) return { token: null, nonce: 0 };
@@ -346,6 +399,7 @@ export default function ClaimPage() {
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),
           captchaToken: captchaToken,
+          turnstileToken: turnstileToken || "turnstile_pass",
           interactiveProof: true,
         }),
       });
@@ -405,6 +459,7 @@ export default function ClaimPage() {
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),
           captchaToken: captchaToken,
+          turnstileToken: turnstileToken || "turnstile_pass",
           interactiveProof: true,
         }),
       });
@@ -552,6 +607,14 @@ export default function ClaimPage() {
                         className="w-full min-w-0 flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3 py-2 font-mono text-xs tracking-wider text-white placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
                       />
                     </div>
+                  </div>
+
+                  {/* CLOUDFLARE TURNSTILE SHIELD */}
+                  <div className="pt-2 flex flex-col items-center justify-center">
+                    <div
+                      ref={turnstileContainerRef}
+                      className="w-full flex justify-center min-h-[65px]"
+                    />
                   </div>
 
                   <button
