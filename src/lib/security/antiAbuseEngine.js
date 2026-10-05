@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import sharp from "sharp";
 import { getClientIp } from "@/lib/auth/loginLimiter";
 
 /**
@@ -180,11 +181,11 @@ export function verifyClientFingerprint(request) {
 }
 
 /**
- * Generate Visual Dynamic Math CAPTCHA
- * Defeats standard OCR bots because the model must read AND evaluate the math.
- * (e.g. 7 + 5 = ? -> user must type 12, not "7+5").
+ * Generate Visual Dynamic Math CAPTCHA as PURE RASTER PNG
+ * Converts distorted SVG to raw binary PNG pixels with Sharp.
+ * Completely eliminates <text> extraction via DOM / regex / text parsing!
  */
-export function generateVisualCaptcha() {
+export async function generateVisualCaptcha() {
   const a = Math.floor(Math.random() * 9) + 2; // 2 to 10
   const b = Math.floor(Math.random() * 8) + 1; // 1 to 8
   const op = Math.random() > 0.4 ? "+" : (a > b ? "-" : "+");
@@ -196,30 +197,38 @@ export function generateVisualCaptcha() {
   const sig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${answer}:${salt}:${ts}`).digest("hex");
   const token = `${ts}.${salt}.${sig}`;
 
-  const width = 130;
+  const width = 136;
   const height = 40;
   let noise = "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const x1 = Math.floor(Math.random() * width);
     const y1 = Math.floor(Math.random() * height);
     const x2 = Math.floor(Math.random() * width);
     const y2 = Math.floor(Math.random() * height);
-    noise += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E56A4A" stroke-width="1.2" stroke-opacity="0.38" />`;
+    noise += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E56A4A" stroke-width="1.3" stroke-opacity="0.45" />`;
   }
 
   const glyphs = question.split("").map((ch, idx) => {
-    const x = 12 + idx * 16 + (Math.random() * 2 - 1);
-    const y = 27 + (Math.random() * 4 - 2);
-    const rot = Math.floor(Math.random() * 18) - 9;
+    const x = 12 + idx * 17 + (Math.random() * 2 - 1);
+    const y = 26 + (Math.random() * 4 - 2);
+    const rot = Math.floor(Math.random() * 20) - 10;
     const color = ch === "?" ? "#E56A4A" : (idx % 2 === 0 ? "#FFFFFF" : "#E0E0E0");
-    return `<text x="${x}" y="${y}" fill="${color}" font-size="19" font-weight="bold" font-family="monospace" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
+    return `<text x="${x}" y="${y}" fill="${color}" font-size="18" font-weight="bold" font-family="DejaVu Sans Mono, monospace" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
   }).join("");
 
-  const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#141416;border-radius:4px;border:1px solid #28282c;user-select:none;">${noise}${glyphs}</svg>`;
+  const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#141416;">${noise}${glyphs}</svg>`;
+
+  let captchaImage = "";
+  try {
+    const pngBuf = await sharp(Buffer.from(svg)).png({ compressionLevel: 8 }).toBuffer();
+    captchaImage = `data:image/png;base64,${pngBuf.toString("base64")}`;
+  } catch (err) {
+    captchaImage = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  }
 
   return {
     captchaToken: token,
-    captchaImage: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
+    captchaImage,
   };
 }
 
@@ -250,7 +259,7 @@ export function verifyVisualCaptcha(inputAnswer, token) {
 /**
  * Mint Proof-of-Work Challenge with Adaptive Scaling
  */
-export function mintChallenge(subnet) {
+export async function mintChallenge(subnet) {
   const challengeToken = crypto.randomBytes(24).toString("hex");
   const salt = crypto.randomBytes(10).toString("hex");
   const strikes = ipLockouts.get(subnet)?.strikes || 0;
@@ -265,7 +274,7 @@ export function mintChallenge(subnet) {
     consumed: false,
   });
 
-  const visualCaptcha = generateVisualCaptcha();
+  const visualCaptcha = await generateVisualCaptcha();
 
   return {
     challengeToken,

@@ -29,7 +29,7 @@ export async function GET(request) {
     const code = searchParams.get("code");
 
     // Always mint PoW challenge for the client
-    const challengeData = mintChallenge(ip);
+    const challengeData = await mintChallenge(ip);
 
     // If specific code inspection requested
     if (code) {
