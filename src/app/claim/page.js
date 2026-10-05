@@ -11,33 +11,32 @@ export default function ClaimPage() {
   const [copiedSnippet, setCopiedSnippet] = useState("");
   const [activeSnippetTab, setActiveSnippetTab] = useState("curl"); // "curl" | "python" | "cursor" | "cline"
 
-  // Bansos pool info
-  const [bansosInfo, setBansosInfo] = useState(null);
-  const [loadingBansos, setLoadingBansos] = useState(true);
+  // Public faucet / community allocation info
+  const [faucetInfo, setFaucetInfo] = useState(null);
+  const [loadingFaucet, setLoadingFaucet] = useState(true);
 
   // Anti-Bot: Page load timestamp & Honeypot field
   const pageLoadTime = useRef(Date.now());
   const [honeypot, setHoneypot] = useState("");
 
-  // Check active Bansos & URL params
   useEffect(() => {
     pageLoadTime.current = Date.now();
-    const fetchBansos = async () => {
+    const fetchFaucet = async () => {
       try {
         const res = await fetch("/api/vouchers/claim");
         if (res.ok) {
           const data = await res.json();
           if (data.hasActiveBansos && data.bansos) {
-            setBansosInfo(data.bansos);
+            setFaucetInfo(data.bansos);
           }
         }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoadingBansos(false);
+        setLoadingFaucet(false);
       }
     };
-    fetchBansos();
+    fetchFaucet();
 
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
@@ -46,8 +45,8 @@ export default function ClaimPage() {
     }
   }, []);
 
-  // 1-Click Bansos Claim (NO PASSWORD / NO KEY NEEDED!)
-  const handleClaimBansos = async () => {
+  // 1-Click Instant Faucet Provisioning (No password / code required)
+  const handleInstantProvision = async () => {
     try {
       setLoading(true);
       setError("");
@@ -65,19 +64,19 @@ export default function ClaimPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Gagal klaim bansos token");
+        setError(data.error || "Failed to provision API key");
       } else {
         setResult(data);
       }
     } catch (err) {
-      setError(err.message || "Network error occurred");
+      setError(err.message || "Network connection failure");
     } finally {
       setLoading(false);
     }
   };
 
-  // Specific Voucher Code Claim
-  const handleClaimCustom = async (e) => {
+  // Code-based voucher claim
+  const handleClaimByCode = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
 
@@ -98,12 +97,12 @@ export default function ClaimPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to redeem voucher code");
+        setError(data.error || "Failed to redeem pass code");
       } else {
         setResult(data);
       }
     } catch (err) {
-      setError(err.message || "Network error occurred");
+      setError(err.message || "Network connection failure");
     } finally {
       setLoading(false);
     }
@@ -121,112 +120,122 @@ export default function ClaimPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col justify-between selection:bg-brand-500/30 selection:text-brand-400">
-      {/* Background ambient lighting */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(229,106,74,0.09),transparent_60%)]" />
+    <div className="min-h-screen bg-[#050505] text-[#e0e0e0] flex flex-col justify-between selection:bg-[#E56A4A]/25 selection:text-white font-sans antialiased">
+      {/* Hairline grid background */}
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
 
-      {/* Top Header */}
-      <header className="relative z-10 flex h-14 w-full items-center justify-between border-b border-[#222] bg-[#0c0c0e]/80 px-4 sm:px-8 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-7 items-center justify-center rounded-[4px] bg-[#E56A4A]/10 text-[#E56A4A] border border-[#E56A4A]/30">
+      {/* Top Console Bar */}
+      <header className="relative z-10 flex h-13 w-full items-center justify-between border-b border-[#222] bg-[#09090b]/90 px-4 sm:px-8 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex size-7 items-center justify-center rounded-[4px] bg-[#141416] border border-[#2a2a2e] text-[#E56A4A]">
             <svg viewBox="0 0 24 24" fill="currentColor" className="size-4">
               <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z" />
             </svg>
-          </span>
-          <span className="font-mono text-sm font-bold tracking-wider text-white">
-            X ROUTER <span className="text-[11px] text-[#888] font-normal">· BANSOS & TOKEN MARKET</span>
-          </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold tracking-wider text-white">X ROUTER</span>
+            <span className="text-[#333]">/</span>
+            <span className="font-mono text-[11px] text-[#888] uppercase tracking-wider">Developer Access Portal</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-[#888]">
-          <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>PORTAL ACTIVE</span>
+
+        <div className="flex items-center gap-2 text-[11px] font-mono text-[#777]">
+          <span className="inline-block size-1.5 rounded-full bg-emerald-500" />
+          <span>GATEWAY ONLINE</span>
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Terminal Frame */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-xl">
           {!result ? (
-            /* Main Claim Container */
-            <div className="rounded-[10px] border border-[#262626] bg-[#101012] p-6 sm:p-8 shadow-2xl space-y-6">
+            /* Intended Claim Container */
+            <div className="rounded-[8px] border border-[#242426] bg-[#0c0c0e] p-6 sm:p-7 shadow-2xl space-y-5">
               
-              {/* Header Title */}
-              <div className="text-center space-y-2">
-                <div className="inline-flex size-12 items-center justify-center rounded-[8px] bg-[#E56A4A]/10 text-[#E56A4A] border border-[#E56A4A]/25 mb-1 shadow-[0_0_15px_rgba(229,106,74,0.15)]">
-                  <span className="material-symbols-outlined text-2xl">volunteer_activism</span>
+              <div className="border-b border-[#1c1c1f] pb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-symbols-outlined text-[#E56A4A] text-[18px]">key</span>
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
+                    API Key Provisioning
+                  </h1>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                  Klaim Bansos AI X Router
-                </h2>
-                <p className="text-xs sm:text-sm text-[#888] max-w-md mx-auto">
-                  Dapatkan API Key siap pakai langsung dalam 1 klik tanpa ribet masukin password atau kunci.
+                <p className="text-xs text-[#888]">
+                  Generate an authenticated X Router API key to connect models directly into Cursor, Cline, or custom SDKs.
                 </p>
               </div>
 
-              {/* SECTION 1: 1-CLICK INSTANT BANSOS CLAIM */}
-              {bansosInfo ? (
-                <div className="rounded-[8px] border border-emerald-500/40 bg-emerald-500/5 p-4 sm:p-5 space-y-3 relative overflow-hidden">
-                  <div className="absolute right-0 top-0 translate-x-3 -translate-y-3 size-24 rounded-full bg-emerald-500/10 blur-xl pointer-events-none" />
-                  
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="inline-flex items-center gap-1 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
-                        ⚡ POOL BANSOS AKTIF
-                      </span>
-                      <h3 className="text-sm font-bold text-white mt-1.5">{bansosInfo.name}</h3>
-                      <p className="text-xs text-[#aaa] mt-0.5">{bansosInfo.description || "Token gratis siap pakai untuk kebutuhan coding dan chat."}</p>
-                    </div>
+              {/* SECTION 1: INSTANT FAUCET ACCESS */}
+              {faucetInfo ? (
+                <div className="rounded-[6px] border border-[#2a2a2e] bg-[#121215] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-[3px] bg-[#1f1f24] px-2 py-0.5 font-mono text-[10px] font-bold text-[#ddd] border border-[#333]">
+                      PUBLIC FAUCET AVAILABLE
+                    </span>
+                    <span className="font-mono text-[11px] text-emerald-400">
+                      {faucetInfo.remainingClaims} slots remaining
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-[11px] font-mono py-1">
-                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
-                      <span className="text-[#777] block text-[9px]">KUOTA</span>
-                      <span className="text-white font-bold">{bansosInfo.tokenLimit === 0 ? "Unlimited" : `${(bansosInfo.tokenLimit / 1000).toLocaleString()}K`}</span>
+                  <div>
+                    <h2 className="text-xs font-semibold text-white">{faucetInfo.name}</h2>
+                    <p className="text-[11px] text-[#777] mt-0.5">
+                      {faucetInfo.description || "Complimentary developer token allocation for community testing."}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-0.5">
+                    <div className="rounded-[4px] bg-[#09090b] p-2 border border-[#1f1f22]">
+                      <span className="text-[#666] block text-[9.5px]">ALLOCATION</span>
+                      <span className="font-semibold text-white">
+                        {faucetInfo.tokenLimit === 0 ? "Unlimited" : `${(faucetInfo.tokenLimit / 1000).toLocaleString()}K tokens`}
+                      </span>
                     </div>
-                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
-                      <span className="text-[#777] block text-[9px]">SISA KUOTA</span>
-                      <span className="text-emerald-400 font-bold">{bansosInfo.remainingClaims}</span>
+                    <div className="rounded-[4px] bg-[#09090b] p-2 border border-[#1f1f22]">
+                      <span className="text-[#666] block text-[9.5px]">MODELS</span>
+                      <span className="font-semibold text-white truncate block">
+                        {faucetInfo.allowedModels === "*" ? "All (*)" : faucetInfo.allowedModels}
+                      </span>
                     </div>
-                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
-                      <span className="text-[#777] block text-[9px]">MASA AKTIF</span>
-                      <span className="text-white font-bold">{bansosInfo.expiresInDays} Hari</span>
+                    <div className="rounded-[4px] bg-[#09090b] p-2 border border-[#1f1f22]">
+                      <span className="text-[#666] block text-[9.5px]">LIFESPAN</span>
+                      <span className="font-semibold text-white">{faucetInfo.expiresInDays} Days</span>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={handleClaimBansos}
+                    onClick={handleInstantProvision}
                     disabled={loading}
-                    className="w-full rounded-[6px] bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full rounded-[5px] bg-[#E56A4A] py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#d45838] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
-                      <>
-                        <span className="inline-block size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        <span>Menerbitkan API Key Bansos...</span>
-                      </>
+                      <span className="font-mono">Provisioning credentials...</span>
                     ) : (
                       <>
-                        <span className="material-symbols-outlined text-[20px]">bolt</span>
-                        <span>⚡ Klaim Bansos 1-Klik (Langsung Dapat Key)</span>
+                        <span className="material-symbols-outlined text-[16px]">key_vertical</span>
+                        <span>Provision 1-Click Access Key</span>
                       </>
                     )}
                   </button>
                 </div>
-              ) : !loadingBansos && (
-                <div className="rounded-[8px] border border-[#2a2a2a] bg-[#141417] p-4 text-center space-y-1">
-                  <span className="text-xs text-[#888]">Saat ini belum ada bansos publik yang dibuka oleh Admin.</span>
+              ) : !loadingFaucet && (
+                <div className="rounded-[6px] border border-[#222] bg-[#121214] p-3 text-center text-xs text-[#777]">
+                  No public faucet slot currently active.
                 </div>
               )}
 
-              {/* DIVIDER */}
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-[#262626]" />
-                <span className="text-[11px] font-mono text-[#666] uppercase">Atau Redeem Kode Khusus</span>
-                <div className="flex-1 h-px bg-[#262626]" />
+              {/* SEPARATOR */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#1c1c1f]" />
+                </div>
+                <div className="relative bg-[#0c0c0e] px-3 text-[10px] font-mono text-[#555] uppercase">
+                  OR REDEEM CUSTOM PASS CODE
+                </div>
               </div>
 
-              {/* SECTION 2: CUSTOM VOUCHER CODE CLAIM */}
-              <form onSubmit={handleClaimCustom} className="space-y-3.5">
+              {/* SECTION 2: PASS CODE CLAIM */}
+              <form onSubmit={handleClaimByCode} className="space-y-3">
                 {/* Honeypot field for bot traps */}
                 <input
                   type="text"
@@ -239,136 +248,122 @@ export default function ClaimPage() {
                   aria-hidden="true"
                 />
 
-                <div>
-                  <label className="block text-[11px] font-mono text-[#aaa] uppercase tracking-wider mb-1.5">
-                    Punya Voucher / VIP Pass Code?
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. VIP-PRO-100K"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.toUpperCase())}
-                      className="flex-1 rounded-[6px] border border-[#333] bg-[#16161a] px-3.5 py-2 font-mono text-sm tracking-wider text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading || !code.trim()}
-                      className="rounded-[6px] bg-[#E56A4A] px-4 py-2 text-xs font-semibold text-white hover:bg-[#d0593b] disabled:opacity-50 transition-colors shrink-0"
-                    >
-                      Redeem
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter voucher pass code (e.g. XR-VIP-100K)..."
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    className="flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3.5 py-2 font-mono text-xs tracking-wider text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !code.trim()}
+                    className="rounded-[5px] border border-[#333] bg-[#1a1a1e] px-4 py-2 text-xs font-semibold text-white hover:border-[#E56A4A] hover:bg-[#222] disabled:opacity-50 transition-colors shrink-0"
+                  >
+                    Redeem Code
+                  </button>
                 </div>
               </form>
 
               {error && (
-                <div className="rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
+                <div className="rounded-[5px] border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-400 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[15px] shrink-0 mt-0.5">error</span>
                   <span>{error}</span>
                 </div>
               )}
 
-              <div className="pt-2 border-t border-[#222] text-center text-xs text-[#666]">
-                Dilindungi 10-Lapis Anti-Abuse Shield · 1 Klaim per IP/Hari · Bot Protected
+              <div className="pt-2 border-t border-[#1c1c1f] flex items-center justify-between text-[10px] font-mono text-[#555]">
+                <span>10-LAYER ANTI-ABUSE SHIELD ACTIVE</span>
+                <span>RATE LIMITED BY HOST IP</span>
               </div>
             </div>
           ) : (
-            /* Claim Success & Quickstart Exporter */
-            <div className="rounded-[10px] border border-[#262626] bg-[#101012] p-6 sm:p-8 shadow-2xl space-y-6">
-              {/* Success Badge */}
-              <div className="text-center space-y-1.5">
-                <div className="inline-flex size-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 mb-1">
-                  <span className="material-symbols-outlined text-2xl">check_circle</span>
+            /* Result Panel */
+            <div className="rounded-[8px] border border-[#242426] bg-[#0c0c0e] p-6 sm:p-7 shadow-2xl space-y-5">
+              <div className="border-b border-[#1c1c1f] pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-white">Credential Provisioned</h2>
+                  <p className="text-xs text-[#888] mt-0.5">Copy this API key now. It is permanently active for your allocated quota.</p>
                 </div>
-                <h2 className="text-xl font-bold tracking-tight text-white">
-                  API Key Berhasil Diterbitkan!
-                </h2>
-                <p className="text-xs text-[#888]">
-                  Simpan API Key di bawah sekarang. Kunci langsung aktif dan siap dipasang ke tool coding lo.
-                </p>
+                <span className="rounded-[3px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-mono text-emerald-400 font-bold">
+                  ACTIVE
+                </span>
               </div>
 
-              {/* API Key Plate */}
-              <div className="rounded-[8px] border border-[#E56A4A]/40 bg-[#16161a] p-4 space-y-3">
-                <div className="flex items-center justify-between text-[11px] font-mono text-[#aaa]">
-                  <span>YOUR X ROUTER API KEY</span>
-                  <span className="text-emerald-400 font-bold">● ACTIVE & READY</span>
-                </div>
-
-                <div className="flex items-center gap-2 rounded-[6px] border border-[#333] bg-[#0c0c0e] p-2.5">
+              {/* API Key Display */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono text-[#777] uppercase">API KEY</span>
+                <div className="flex items-center gap-2 rounded-[5px] border border-[#2c2c30] bg-[#141416] p-2">
                   <input
                     type="text"
                     readOnly
                     value={result.apiKey}
-                    className="flex-1 bg-transparent font-mono text-sm text-white select-all focus:outline-none"
+                    className="flex-1 bg-transparent font-mono text-xs text-white select-all focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => copyToClipboard(result.apiKey, "key")}
-                    className="inline-flex items-center gap-1 rounded-[4px] bg-[#E56A4A] px-3 py-1 text-xs font-semibold text-white hover:bg-[#d0593b] transition-colors"
+                    className="rounded-[4px] bg-[#E56A4A] px-3 py-1 text-xs font-semibold text-white hover:bg-[#d45838] transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[14px]">
-                      {copiedKey ? "check" : "content_copy"}
-                    </span>
-                    <span>{copiedKey ? "Copied!" : "Copy"}</span>
+                    {copiedKey ? "Copied" : "Copy Key"}
                   </button>
-                </div>
-
-                {/* Quota Chips */}
-                <div className="grid grid-cols-3 gap-2 text-[11px] font-mono pt-1 text-center">
-                  <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">KUOTA TOKEN</span>
-                    <span className="font-semibold text-white">
-                      {result.tokenLimit === 0 ? "Unlimited" : `${(result.tokenLimit / 1000).toLocaleString()}K`}
-                    </span>
-                  </div>
-                  <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">MODEL ACCESS</span>
-                    <span className="font-semibold text-white truncate block" title={result.allowedModels}>
-                      {result.allowedModels === "*" ? "Semua (*)" : result.allowedModels}
-                    </span>
-                  </div>
-                  <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">MASA AKTIF</span>
-                    <span className="font-semibold text-white">
-                      {result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "Selamanya"}
-                    </span>
-                  </div>
                 </div>
               </div>
 
-              {/* Endpoint URL Field */}
+              {/* Metadata strip */}
+              <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
+                <div className="rounded-[4px] bg-[#121215] p-2 border border-[#1f1f22]">
+                  <span className="text-[#666] block text-[9.5px]">TOKEN LIMIT</span>
+                  <span className="font-semibold text-white">
+                    {result.tokenLimit === 0 ? "Unlimited" : `${(result.tokenLimit / 1000).toLocaleString()}K tokens`}
+                  </span>
+                </div>
+                <div className="rounded-[4px] bg-[#121215] p-2 border border-[#1f1f22]">
+                  <span className="text-[#666] block text-[9.5px]">MODELS</span>
+                  <span className="font-semibold text-white truncate block" title={result.allowedModels}>
+                    {result.allowedModels === "*" ? "All Models (*)" : result.allowedModels}
+                  </span>
+                </div>
+                <div className="rounded-[4px] bg-[#121215] p-2 border border-[#1f1f22]">
+                  <span className="text-[#666] block text-[9.5px]">EXPIRES</span>
+                  <span className="font-semibold text-white">
+                    {result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "Never"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Base URL */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono text-[#aaa]">BASE URL (OPENAI COMPATIBLE)</label>
-                <div className="flex items-center gap-2 rounded-[6px] border border-[#2a2a2a] bg-[#16161a] p-2 text-xs font-mono">
-                  <span className="flex-1 text-[#ccc] truncate">{result.baseUrl}</span>
+                <span className="text-[10px] font-mono text-[#777] uppercase">BASE URL (OPENAI COMPATIBLE)</span>
+                <div className="flex items-center gap-2 rounded-[5px] border border-[#222] bg-[#141416] p-2 text-xs font-mono">
+                  <span className="flex-1 text-[#bbb] truncate">{result.baseUrl}</span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(result.baseUrl, "baseUrl")}
-                    className="text-[#888] hover:text-white transition-colors"
+                    className="text-[#777] hover:text-white transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[14px]">
+                    <span className="material-symbols-outlined text-[15px]">
                       {copiedSnippet === "baseUrl" ? "check" : "content_copy"}
                     </span>
                   </button>
                 </div>
               </div>
 
-              {/* One-Click Presets & Quickstarts */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs border-b border-[#222] pb-2 font-mono">
-                  <span className="text-[#aaa] font-bold">CLIENT QUICKSTART</span>
+              {/* Quickstart Tabs */}
+              <div className="space-y-2 border-t border-[#1c1c1f] pt-3">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-[10px] uppercase text-[#666] font-bold">CLIENT QUICKSTART</span>
                   <div className="flex items-center gap-1">
                     {["curl", "python", "cursor", "cline"].map((tab) => (
                       <button
                         key={tab}
                         type="button"
                         onClick={() => setActiveSnippetTab(tab)}
-                        className={`px-2 py-0.5 rounded-[4px] uppercase text-[10px] transition-colors ${
+                        className={`px-2 py-0.5 rounded-[3px] uppercase text-[10px] transition-colors ${
                           activeSnippetTab === tab
                             ? "bg-[#E56A4A] text-white font-bold"
-                            : "text-[#777] hover:text-white"
+                            : "text-[#666] hover:text-white"
                         }`}
                       >
                         {tab}
@@ -378,78 +373,68 @@ export default function ClaimPage() {
                 </div>
 
                 {activeSnippetTab === "curl" && (
-                  <div className="relative rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 text-[11px] font-mono">
+                  <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
                     <button
                       type="button"
                       onClick={() => copyToClipboard(result.configs.curl, "curl")}
-                      className="absolute right-2 top-2 rounded-[4px] bg-[#1c1c20] px-2 py-1 text-[10px] text-[#aaa] hover:text-white"
+                      className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white"
                     >
-                      {copiedSnippet === "curl" ? "Copied!" : "Copy"}
+                      {copiedSnippet === "curl" ? "Copied" : "Copy"}
                     </button>
-                    <pre className="overflow-x-auto text-[#ccc] pr-12">{result.configs.curl}</pre>
+                    <pre className="overflow-x-auto text-[#bbb] pr-12">{result.configs.curl}</pre>
                   </div>
                 )}
 
                 {activeSnippetTab === "python" && (
-                  <div className="relative rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 text-[11px] font-mono">
+                  <div className="relative rounded-[5px] border border-[#222] bg-[#08080a] p-3 text-[11px] font-mono">
                     <button
                       type="button"
                       onClick={() => copyToClipboard(result.configs.python, "python")}
-                      className="absolute right-2 top-2 rounded-[4px] bg-[#1c1c20] px-2 py-1 text-[10px] text-[#aaa] hover:text-white"
+                      className="absolute right-2 top-2 rounded-[3px] bg-[#1c1c20] px-2 py-0.5 text-[10px] text-[#aaa] hover:text-white"
                     >
-                      {copiedSnippet === "python" ? "Copied!" : "Copy"}
+                      {copiedSnippet === "python" ? "Copied" : "Copy"}
                     </button>
-                    <pre className="overflow-x-auto text-[#ccc] pr-12">{result.configs.python}</pre>
+                    <pre className="overflow-x-auto text-[#bbb] pr-12">{result.configs.python}</pre>
                   </div>
                 )}
 
                 {activeSnippetTab === "cursor" && (
-                  <div className="rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 space-y-2 text-xs">
-                    <p className="text-[#aaa] text-[11px]">
-                      Buka <strong>Cursor Settings → Models → OpenAI API Key</strong>:
-                    </p>
-                    <div className="space-y-1.5 font-mono text-[11px]">
-                      <div className="flex justify-between bg-[#16161a] p-2 rounded">
-                        <span className="text-[#888]">Base URL:</span>
-                        <span className="text-white select-all">{result.baseUrl}</span>
-                      </div>
-                      <div className="flex justify-between bg-[#16161a] p-2 rounded">
-                        <span className="text-[#888]">API Key:</span>
-                        <span className="text-white select-all">{result.apiKey}</span>
-                      </div>
+                  <div className="rounded-[5px] border border-[#222] bg-[#08080a] p-3 space-y-2 text-xs font-mono">
+                    <div className="flex justify-between bg-[#141416] p-2 rounded">
+                      <span className="text-[#666]">Base URL:</span>
+                      <span className="text-white select-all">{result.baseUrl}</span>
+                    </div>
+                    <div className="flex justify-between bg-[#141416] p-2 rounded">
+                      <span className="text-[#666]">API Key:</span>
+                      <span className="text-white select-all">{result.apiKey}</span>
                     </div>
                   </div>
                 )}
 
                 {activeSnippetTab === "cline" && (
-                  <div className="rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 space-y-2 text-xs">
-                    <p className="text-[#aaa] text-[11px]">
-                      Di <strong>Cline / Roo Code Settings</strong>, pilih <code>OpenAI-Compatible</code>:
-                    </p>
-                    <div className="space-y-1.5 font-mono text-[11px]">
-                      <div className="flex justify-between bg-[#16161a] p-2 rounded">
-                        <span className="text-[#888]">Base URL:</span>
-                        <span className="text-white select-all">{result.baseUrl}</span>
-                      </div>
-                      <div className="flex justify-between bg-[#16161a] p-2 rounded">
-                        <span className="text-[#888]">API Key:</span>
-                        <span className="text-white select-all">{result.apiKey}</span>
-                      </div>
+                  <div className="rounded-[5px] border border-[#222] bg-[#08080a] p-3 space-y-2 text-xs font-mono">
+                    <div className="flex justify-between bg-[#141416] p-2 rounded">
+                      <span className="text-[#666]">Base URL:</span>
+                      <span className="text-white select-all">{result.baseUrl}</span>
+                    </div>
+                    <div className="flex justify-between bg-[#141416] p-2 rounded">
+                      <span className="text-[#666]">API Key:</span>
+                      <span className="text-white select-all">{result.apiKey}</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 text-center border-t border-[#1c1c1f]">
                 <button
                   type="button"
                   onClick={() => {
                     setResult(null);
                     setCode("");
                   }}
-                  className="text-xs font-mono text-[#888] hover:text-white underline underline-offset-4"
+                  className="text-xs font-mono text-[#777] hover:text-white transition-colors"
                 >
-                  Klaim lagi atau redeem kode lain
+                  Provision another key
                 </button>
               </div>
             </div>
@@ -458,8 +443,8 @@ export default function ClaimPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-[#222] bg-[#0c0c0e]/80 py-3 px-4 text-center text-xs text-[#666] font-mono">
-        © 2026 X Router · Autonomous AI Gateway & Routing Infrastructure
+      <footer className="relative z-10 border-t border-[#222] bg-[#09090b]/90 py-3 px-4 text-center text-[11px] text-[#555] font-mono">
+        (c) 2026 X Router Infrastructure - High-Performance AI Gateway
       </footer>
     </div>
   );

@@ -67,7 +67,6 @@ export default function VouchersPage() {
     fetchCatalogModels();
   }, []);
 
-  // Filter models based on search term
   const filteredModels = useMemo(() => {
     if (!modelSearch.trim()) return catalogModels.slice(0, 100);
     const q = modelSearch.toLowerCase();
@@ -174,7 +173,7 @@ export default function VouchersPage() {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 space-y-6">
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2.5">
@@ -186,7 +185,7 @@ export default function VouchersPage() {
             </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-text-muted">
-            Kelola token voucher, pass kuota bansos 1-klik, dan portal claim mandiri klien.
+            Manage developer vouchers, public community faucets, and scoped credential passes.
           </p>
         </div>
 
@@ -195,18 +194,18 @@ export default function VouchersPage() {
             href="/claim"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-main hover:border-brand-500/50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-main hover:border-brand-500/50 transition-colors"
           >
             <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-            Buka Portal Klaim
+            Open Access Portal
           </a>
           <button
             type="button"
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-[5px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[15px]">add</span>
-            Buat Voucher / Bansos
+            Create Voucher
           </button>
         </div>
       </div>
@@ -217,27 +216,27 @@ export default function VouchersPage() {
           type="button"
           onClick={() => setActiveTab("vouchers")}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors cursor-pointer",
             activeTab === "vouchers"
               ? "bg-brand-500 text-white shadow-xs"
               : "text-text-muted hover:text-text-main hover:bg-surface-2"
           )}
         >
           <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
-          Voucher & Bansos ({vouchers.length})
+          Vouchers ({vouchers.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("claims")}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] font-medium transition-colors cursor-pointer",
             activeTab === "claims"
               ? "bg-brand-500 text-white shadow-xs"
               : "text-text-muted hover:text-text-main hover:bg-surface-2"
           )}
         >
           <span className="material-symbols-outlined text-[14px]">history</span>
-          Riwayat Klaim ({claims.length})
+          Claim Records ({claims.length})
         </button>
       </div>
 
@@ -250,17 +249,17 @@ export default function VouchersPage() {
         vouchers.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-[8px] border border-dashed border-border p-12 text-center bg-surface-1">
             <span className="material-symbols-outlined text-4xl text-text-muted/60 mb-2">loyalty</span>
-            <h3 className="text-sm font-semibold text-text-main">Belum Ada Voucher</h3>
+            <h3 className="text-sm font-semibold text-text-main">No Vouchers Configured</h3>
             <p className="mt-1 text-xs text-text-muted max-w-sm">
-              Buat voucher atau buka Bansos Token 1-klik agar komunitas atau tim kamu bisa langsung mendapatkan API key.
+              Create a voucher pass or activate a 1-click community faucet to distribute authorized access keys.
             </p>
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-[5px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
             >
               <span className="material-symbols-outlined text-[15px]">add</span>
-              Buat Voucher Pertama
+              Create Voucher
             </button>
           </div>
         ) : (
@@ -284,7 +283,7 @@ export default function VouchersPage() {
                         <div className="flex items-center gap-2">
                           {v.isBansos && (
                             <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
-                              ⚡ BANSOS 1-KLIK
+                              COMMUNITY FAUCET
                             </span>
                           )}
                           <span className="font-mono text-sm font-bold tracking-wider text-text-main">
@@ -294,7 +293,7 @@ export default function VouchersPage() {
                             type="button"
                             onClick={() => copyToClipboard(v.code, `code-${v.id}`)}
                             title="Copy Code"
-                            className="text-text-muted hover:text-text-main transition-colors"
+                            className="text-text-muted hover:text-text-main transition-colors cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[14px]">
                               {copyFeedback === `code-${v.id}` ? "check" : "content_copy"}
@@ -319,7 +318,7 @@ export default function VouchersPage() {
                       <p className="mt-2 text-xs text-text-muted line-clamp-2">{v.description}</p>
                     )}
 
-                    {/* Metadata Chips */}
+                    {/* Metadata Grid */}
                     <div className="mt-3.5 grid grid-cols-2 gap-2 text-[11px] font-mono">
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
                         <span className="text-text-muted block text-[10px]">TOKEN QUOTA</span>
@@ -330,13 +329,13 @@ export default function VouchersPage() {
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
                         <span className="text-text-muted block text-[10px]">USES</span>
                         <span className="font-semibold text-text-main">
-                          {v.usedCount} / {v.maxUses === 0 ? "∞" : v.maxUses} claimed
+                          {v.usedCount} / {v.maxUses === 0 ? "Infinite" : v.maxUses} claimed
                         </span>
                       </div>
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
                         <span className="text-text-muted block text-[10px]">EXPIRY</span>
                         <span className="text-text-main">
-                          {v.expiresInDays === 0 ? "No expiry" : `${v.expiresInDays} days`}
+                          {v.expiresInDays === 0 ? "Never" : `${v.expiresInDays} days`}
                         </span>
                       </div>
                       <div className="rounded-[4px] bg-surface-2 p-2 border border-border/50">
@@ -348,22 +347,22 @@ export default function VouchersPage() {
                     </div>
                   </div>
 
-                  {/* Footer Actions */}
+                  {/* Actions */}
                   <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
                     <button
                       type="button"
                       onClick={() => copyToClipboard(directLink, `link-${v.id}`)}
-                      className="inline-flex items-center gap-1 text-text-muted hover:text-brand-500 font-mono text-[11px] transition-colors"
+                      className="inline-flex items-center gap-1 text-text-muted hover:text-brand-500 font-mono text-[11px] transition-colors cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[13px]">link</span>
-                      {copyFeedback === `link-${v.id}` ? "Copied Direct Link!" : "Copy Claim Link"}
+                      {copyFeedback === `link-${v.id}` ? "Copied Link" : "Copy Portal Link"}
                     </button>
 
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleToggle(v)}
-                        className="text-text-muted hover:text-text-main p-1 transition-colors"
+                        className="text-text-muted hover:text-text-main p-1 transition-colors cursor-pointer"
                         title={v.isActive ? "Disable Voucher" : "Enable Voucher"}
                       >
                         <span className="material-symbols-outlined text-[16px]">
@@ -373,7 +372,7 @@ export default function VouchersPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(v.id)}
-                        className="text-text-muted hover:text-red-500 p-1 transition-colors"
+                        className="text-text-muted hover:text-red-500 p-1 transition-colors cursor-pointer"
                         title="Delete Voucher"
                       >
                         <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -402,7 +401,7 @@ export default function VouchersPage() {
                 {claims.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-text-muted">
-                      No claims recorded yet.
+                      No claim records logged yet.
                     </td>
                   </tr>
                 ) : (
@@ -418,7 +417,7 @@ export default function VouchersPage() {
                         {c.apiKey.slice(0, 10)}...{c.apiKey.slice(-6)}
                       </td>
                       <td className="py-2.5 px-4 text-text-muted font-mono">
-                        {c.clientIp || "Local/Unknown"}
+                        {c.clientIp || "Local/Loopback"}
                       </td>
                     </tr>
                   ))
@@ -431,36 +430,36 @@ export default function VouchersPage() {
 
       {/* Create Voucher Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="w-full max-w-xl rounded-[8px] border border-border bg-surface-1 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-brand-500 text-[18px]">add_circle</span>
-                <h3 className="text-sm font-bold text-text-main">Buat Voucher / Bansos Baru</h3>
+                <h3 className="text-sm font-bold text-text-main">Create Access Voucher / Faucet</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="text-text-muted hover:text-text-main text-xs p-1"
+                className="text-text-muted hover:text-text-main text-xs p-1 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
 
             <form onSubmit={handleCreate} className="space-y-4 text-xs">
-              {/* Bansos Mode Toggle */}
-              <div className="rounded-[6px] border border-emerald-500/30 bg-emerald-500/10 p-3 flex items-center justify-between">
+              {/* Community Faucet Toggle */}
+              <div className="rounded-[6px] border border-border bg-surface-2 p-3 flex items-center justify-between">
                 <div>
-                  <span className="font-semibold text-white block">Tandai Sebagai Bansos Publik (1-Klik Klaim)</span>
-                  <span className="text-[11px] text-[#aaa] block">
-                    User di portal <code>/claim</code> bisa langsung klaim key gratis tanpa perlu ngetik kode voucher.
+                  <span className="font-semibold text-white block">Mark as Public 1-Click Faucet</span>
+                  <span className="text-[11px] text-text-muted block">
+                    Available on portal for instant key generation without entering code.
                   </span>
                 </div>
                 <input
                   type="checkbox"
                   checked={form.isBansos}
                   onChange={(e) => setForm({ ...form, isBansos: e.target.checked })}
-                  className="size-4 accent-emerald-500 rounded cursor-pointer"
+                  className="size-4 accent-brand-500 rounded cursor-pointer"
                 />
               </div>
 
@@ -472,10 +471,10 @@ export default function VouchersPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. BANSOS-100K"
+                    placeholder="e.g. XR-COMMUNITY-100K"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -485,10 +484,10 @@ export default function VouchersPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Bansos Ramadhan AI"
+                    placeholder="e.g. Developer Onboarding"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -499,10 +498,10 @@ export default function VouchersPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Catatan peruntukan voucher..."
+                  placeholder="Notes about cohort or distribution target..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -517,13 +516,13 @@ export default function VouchersPage() {
                     placeholder="100000"
                     value={form.tokenLimit}
                     onChange={(e) => setForm({ ...form, tokenLimit: e.target.value })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-text-muted mt-0.5 block">0 = Unlimited</span>
                 </div>
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    MAX USES
+                    MAX CLAIMS
                   </label>
                   <input
                     type="number"
@@ -531,13 +530,13 @@ export default function VouchersPage() {
                     placeholder="1"
                     value={form.maxUses}
                     onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
-                  <span className="text-[10px] text-text-muted mt-0.5 block">Kuota klaim</span>
+                  <span className="text-[10px] text-text-muted mt-0.5 block">Total claim limit</span>
                 </div>
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    MASA AKTIF (HARI)
+                    VALIDITY (DAYS)
                   </label>
                   <input
                     type="number"
@@ -545,9 +544,9 @@ export default function VouchersPage() {
                     placeholder="30"
                     value={form.expiresInDays}
                     onChange={(e) => setForm({ ...form, expiresInDays: e.target.value })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
-                  <span className="text-[10px] text-text-muted mt-0.5 block">0 = Selamanya</span>
+                  <span className="text-[10px] text-text-muted mt-0.5 block">0 = Never expires</span>
                 </div>
               </div>
 
@@ -555,42 +554,40 @@ export default function VouchersPage() {
               <div className="space-y-2 border-t border-border pt-3">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-mono font-semibold text-text-main uppercase tracking-wider">
-                    PILIH MODEL TERSEDIA ({selectedModels.includes("*") ? "Semua Model (*)" : `${selectedModels.length} Terpilih`})
+                    ALLOWED MODELS ({selectedModels.includes("*") ? "All Models (*)" : `${selectedModels.length} Selected`})
                   </label>
                   <button
                     type="button"
                     onClick={() => toggleModelSelection("*")}
                     className={cn(
-                      "px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors",
+                      "px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors cursor-pointer",
                       selectedModels.includes("*")
                         ? "bg-brand-500 text-white"
                         : "bg-surface-2 text-text-muted hover:text-white"
                     )}
                   >
-                    Izinkan Semua Model (*)
+                    Allow All Models (*)
                   </button>
                 </div>
 
-                {/* Search Bar for models */}
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-text-muted">
                     search
                   </span>
                   <input
                     type="text"
-                    placeholder="Cari model (misal: claude, gpt, qwen, deepseek)..."
+                    placeholder="Filter models (e.g. claude, gpt, qwen, deepseek)..."
                     value={modelSearch}
                     onChange={(e) => setModelSearch(e.target.value)}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 pl-8 pr-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    className="w-full rounded-[5px] border border-border bg-surface-2 pl-8 pr-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
                 </div>
 
-                {/* Model Chips Container */}
-                <div className="max-h-40 overflow-y-auto rounded-[6px] border border-border/80 bg-surface-2/60 p-2 custom-scrollbar">
+                <div className="max-h-40 overflow-y-auto rounded-[5px] border border-border bg-surface-2/60 p-2 custom-scrollbar">
                   {loadingModels ? (
-                    <div className="text-center py-4 text-[#777] text-xs">Mendeteksi model katalog...</div>
+                    <div className="text-center py-4 text-text-muted text-xs">Loading model catalog...</div>
                   ) : filteredModels.length === 0 ? (
-                    <div className="text-center py-4 text-[#777] text-xs">Tidak ada model yang cocok.</div>
+                    <div className="text-center py-4 text-text-muted text-xs">No matching models found.</div>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {filteredModels.map((m) => {
@@ -627,16 +624,16 @@ export default function VouchersPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-[6px] border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text-main"
+                  className="rounded-[5px] border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text-main cursor-pointer"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-[6px] bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 disabled:opacity-50 cursor-pointer"
+                  className="rounded-[5px] bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 disabled:opacity-50 cursor-pointer"
                 >
-                  {submitting ? "Menyimpan..." : "Simpan Voucher / Bansos"}
+                  {submitting ? "Saving..." : "Save Voucher"}
                 </button>
               </div>
             </form>
