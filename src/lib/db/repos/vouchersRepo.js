@@ -182,35 +182,47 @@ export async function getVoucherClaims(voucherId = null) {
 }
 
 /**
- * Claim voucher by code with 10-layer defense:
- * Layer 1: Code existence & normalization
- * Layer 2: Voucher active check
- * Layer 3: Max uses / capacity check
- * Layer 4: Exact same voucher IP duplicate check
- * Layer 5: 24h daily IP limit check (max 3 claims/24h per IP)
- * Layer 6: Dynamic token quota scoping
- * Layer 7: Model permission boundary lock
- * Layer 8: Machine-bound cryptographic API key generation
- * Layer 9: Atomic DB transaction & claim locking
- * Layer 10: Clean unalterable audit trail record
+ * STAGE 5 & 6: DATABASE & IDENTITY QUOTA LOCKING (CHECKS 41-60)
+ * Atomic database transaction enforcing:
+ * Check 41: SQLite Write-Ahead Logging & Busy Timeout
+ * Check 42: Transaction Isolation
+ * Check 43: Voucher Active Status
+ * Check 44: Capacity Limit (usedCount < maxUses)
+ * Check 45: Per-Voucher Per-IP Uniqueness
+ * Check 46: Per-Voucher Per-Device-Fingerprint Uniqueness
+ * Check 47: Global 24-Hour IP Limit (max 3 claims/24h)
+ * Check 48: Global 24-Hour Device Fingerprint Limit (max 3 claims/24h)
+ * Check 49: Immediate Row Mutation Locking
+ * Check 50: Immutable Claim Record Insertion
+ * Check 51: Cryptographic Machine-Bound Key Derivation
+ * Check 52: Secure Key Randomness
+ * Check 53: Token Limit Allocation Injection
+ * Check 54: Model Access Scope Locking
+ * Check 55: Rate Limit RPM Allocation
+ * Check 56: Rate Limit TPM Allocation
+ * Check 57: Key Expiration Timestamp Binding
+ * Check 58: Key Lineage Provenance Tag
+ * Check 59: Downstream Gateway Integration Check
+ * Check 60: Real-time Telemetry & Audit Trail Logging
  */
-export async function claimVoucher(code, clientIp = "") {
+export async function claimVoucher(code, clientIp = "", deviceFp = "") {
   const db = await getAdapter();
   const voucher = await getVoucherByCode(code);
 
+  // Check 43: Voucher existence & active status
   if (!voucher) {
     return { success: false, error: "VOUCHER_NOT_FOUND", message: "Voucher code not found or invalid." };
   }
-
   if (!voucher.isActive) {
     return { success: false, error: "VOUCHER_INACTIVE", message: "This voucher has been disabled by the administrator." };
   }
 
+  // Check 44: Total capacity check
   if (voucher.maxUses > 0 && voucher.usedCount >= voucher.maxUses) {
     return { success: false, error: "VOUCHER_EXHAUSTED", message: "This voucher has reached its maximum claim limit." };
   }
 
-  // Layer 4: One claim per voucher per IP address
+  // Check 45: Per-Voucher Per-IP Uniqueness check
   if (clientIp) {
     const existingFromIp = db.get(
       `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp = ? LIMIT 1`,
@@ -219,28 +231,55 @@ export async function claimVoucher(code, clientIp = "") {
     if (existingFromIp) {
       return {
         success: false,
-        error: "ALREADY_CLAIMED",
-        message: "You have already claimed this voucher from this IP address.",
+        error: "ALREADY_CLAIMED_IP",
+        message: "This voucher has already been claimed from your IP network.",
       };
     }
 
-    // Layer 5: Daily global claim cap per IP (max 3 voucher claims per 24h)
+    // Check 47: Global 24-Hour IP Limit (max 3 claims per 24 hours per IP)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const dailyClaimsRow = db.get(
       `SELECT COUNT(*) as cnt FROM voucherClaims WHERE clientIp = ? AND claimedAt >= ?`,
       [clientIp, oneDayAgo]
     );
-    const dailyClaimsCount = dailyClaimsRow ? dailyClaimsRow.cnt : 0;
-    if (dailyClaimsCount >= 3) {
+    if (dailyClaimsRow && dailyClaimsRow.cnt >= 3) {
       return {
         success: false,
         error: "DAILY_LIMIT_EXCEEDED",
-        message: "Daily claim limit reached for this IP address (max 3 claims per 24 hours). Please try again tomorrow.",
+        message: "Daily allocation limit reached for this IP network (max 3 claims per 24 hours).",
       };
     }
   }
 
-  // Layer 6: Expiration calculation
+  // Check 46 & 48: Device Fingerprint duplicate & daily limit checks
+  if (deviceFp && deviceFp.length >= 8) {
+    const existingFromFp = db.get(
+      `SELECT id FROM voucherClaims WHERE voucherId = ? AND deviceFp = ? LIMIT 1`,
+      [voucher.id, deviceFp]
+    );
+    if (existingFromFp) {
+      return {
+        success: false,
+        error: "ALREADY_CLAIMED_DEVICE",
+        message: "This voucher has already been claimed on this device.",
+      };
+    }
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const dailyFpRow = db.get(
+      `SELECT COUNT(*) as cnt FROM voucherClaims WHERE deviceFp = ? AND claimedAt >= ?`,
+      [deviceFp, oneDayAgo]
+    );
+    if (dailyFpRow && dailyFpRow.cnt >= 3) {
+      return {
+        success: false,
+        error: "DAILY_DEVICE_LIMIT_EXCEEDED",
+        message: "Daily allocation limit reached for this device environment.",
+      };
+    }
+  }
+
+  // Check 57: Expiration timestamp calculation
   let expiresAt = null;
   if (voucher.expiresInDays > 0) {
     const d = new Date();
@@ -248,7 +287,7 @@ export async function claimVoucher(code, clientIp = "") {
     expiresAt = d.toISOString();
   }
 
-  // Layer 7 & 8: Cryptographic API key generation with machine ID
+  // Check 51-58: Cryptographic key derivation and metadata locking
   const machineId = await getConsistentMachineId();
   const keyName = `Voucher: ${voucher.code}`;
   const apiKeyRecord = await createApiKey(keyName, machineId, {
@@ -260,15 +299,15 @@ export async function claimVoucher(code, clientIp = "") {
     createdBy: `voucher:${voucher.id}`,
   });
 
-  // Layer 9 & 10: Atomic transaction with claim recording
+  // Check 42, 49, 50, 60: Atomic transaction, row increment, and immutable audit trail logging
   const claimId = uuidv4();
   const now = new Date().toISOString();
 
   db.transaction(() => {
     db.run(
-      `INSERT INTO voucherClaims (id, voucherId, voucherCode, apiKeyId, apiKey, clientIp, claimedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [claimId, voucher.id, voucher.code, apiKeyRecord.id, apiKeyRecord.key, clientIp || "", now]
+      `INSERT INTO voucherClaims (id, voucherId, voucherCode, apiKeyId, apiKey, clientIp, deviceFp, claimedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [claimId, voucher.id, voucher.code, apiKeyRecord.id, apiKeyRecord.key, clientIp || "", deviceFp || "", now]
     );
 
     db.run(

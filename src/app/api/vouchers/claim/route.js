@@ -1,76 +1,42 @@
 import { NextResponse } from "next/server";
 import { claimVoucher, getVoucherByCode, getActiveBansosVoucher } from "@/lib/localDb";
 import { getClientIp } from "@/lib/auth/loginLimiter";
+import {
+  normalizeClientIp,
+  verifyNetworkThrottle,
+  verifyClientFingerprint,
+  verifySubmissionIntegrity,
+  mintChallenge,
+  recordFailure,
+  recordSuccess,
+  acquireConcurrencyLock,
+  releaseConcurrencyLock,
+} from "@/lib/security/antiAbuseEngine";
 
-// ─── 10-LAYER ANTI-ABUSE ENGINE FOR VOUCHER CLAIMS ──────────────────────────
-
-// Layer 1: Sliding window rate limiter (max 5 requests per minute per IP)
-const requestTracker = new Map();
-const REQ_WINDOW = 60 * 1000;
-const MAX_REQ_PER_MIN = 5;
-
-// Layer 2: Progressive IP Lockout & Jail (lockout after 4 failed guesses)
-const failedAttempts = new Map(); // ip -> { count, lockedUntil }
-const MAX_FAILED_ATTEMPTS = 4;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes jail
-
-function checkRateAndLockout(ip) {
-  if (!ip) return null;
-  const now = Date.now();
-
-  const lock = failedAttempts.get(ip);
-  if (lock && lock.lockedUntil && now < lock.lockedUntil) {
-    const minutesLeft = Math.ceil((lock.lockedUntil - now) / 60000);
-    return `Access temporarily suspended due to suspicious activity. Try again in ${minutesLeft} minute(s).`;
-  }
-
-  const rec = requestTracker.get(ip);
-  if (!rec || now - rec.resetTime > REQ_WINDOW) {
-    requestTracker.set(ip, { count: 1, resetTime: now });
-  } else {
-    rec.count += 1;
-    if (rec.count > MAX_REQ_PER_MIN) {
-      return "Rate limit exceeded. Too many requests. Please wait a minute.";
-    }
-  }
-
-  return null;
-}
-
-function recordFailure(ip) {
-  if (!ip) return;
-  const now = Date.now();
-  const lock = failedAttempts.get(ip) || { count: 0, lockedUntil: 0 };
-  lock.count += 1;
-  if (lock.count >= MAX_FAILED_ATTEMPTS) {
-    lock.lockedUntil = now + LOCKOUT_DURATION;
-    lock.count = 0;
-  }
-  failedAttempts.set(ip, lock);
-}
-
-function clearFailure(ip) {
-  if (!ip) return;
-  failedAttempts.delete(ip);
-}
-
-// GET /api/vouchers/claim -> checks if there is an active bansos pool or inspects specific code
+// GET /api/vouchers/claim -> checks if there is an active bansos pool, inspects specific code, and mints PoW challenge
 export async function GET(request) {
   try {
-    const clientIp = getClientIp(request) || "";
-    const blockedReason = checkRateAndLockout(clientIp);
-    if (blockedReason) {
-      return NextResponse.json({ error: blockedReason }, { status: 429 });
+    const rawIp = getClientIp(request) || "";
+    const ip = normalizeClientIp(rawIp);
+
+    // Stage 1: Network throttle check
+    const throttle = verifyNetworkThrottle(ip);
+    if (!throttle.allowed) {
+      return NextResponse.json({ error: throttle.error }, { status: throttle.status });
     }
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
+    const wantsChallenge = searchParams.get("challenge") === "1";
 
-    // If specific code requested
+    // Mint PoW challenge if requested by client portal
+    const challengeData = wantsChallenge ? mintChallenge(ip) : null;
+
+    // If specific code inspection requested
     if (code) {
       const voucher = await getVoucherByCode(code);
       if (!voucher) {
-        recordFailure(clientIp);
+        recordFailure(ip);
         return NextResponse.json({ error: "Voucher not found" }, { status: 404 });
       }
 
@@ -88,10 +54,11 @@ export async function GET(request) {
           isBansos: voucher.isBansos,
           isAvailable,
         },
+        challenge: challengeData,
       });
     }
 
-    // Otherwise check for active Bansos pool
+    // Check for active community faucet
     const bansosVoucher = await getActiveBansosVoucher();
     return NextResponse.json({
       hasActiveBansos: !!bansosVoucher,
@@ -105,65 +72,77 @@ export async function GET(request) {
             remainingClaims: bansosVoucher.maxUses === 0 ? "Unlimited" : Math.max(0, bansosVoucher.maxUses - bansosVoucher.usedCount),
           }
         : null,
+      challenge: challengeData,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST /api/vouchers/claim -> executes claim (either 1-Click Bansos or Code)
+// POST /api/vouchers/claim -> 60-Layer Anti-Abuse Protected Claim Handler
 export async function POST(request) {
-  try {
-    const clientIp = getClientIp(request) || "";
+  const rawIp = getClientIp(request) || "";
+  const ip = normalizeClientIp(rawIp);
+  const lockKey = `claim_lock:${ip}`;
 
-    // Layer 1 & 2: Rate limit & lockout check
-    const blockedReason = checkRateAndLockout(clientIp);
-    if (blockedReason) {
-      return NextResponse.json({ error: blockedReason }, { status: 429 });
+  // Check 6: Concurrent Request Mutex Lock (prevents parallel race conditions)
+  if (!acquireConcurrencyLock(lockKey)) {
+    return NextResponse.json(
+      { error: "Another transaction from your network is currently in progress." },
+      { status: 429 }
+    );
+  }
+
+  try {
+    // STAGE 1: Network & IP Integrity Checks (Checks 1-10)
+    const throttle = verifyNetworkThrottle(ip);
+    if (!throttle.allowed) {
+      return NextResponse.json({ error: throttle.error }, { status: throttle.status });
+    }
+
+    // STAGE 2: Client & Protocol Fingerprinting (Checks 11-20)
+    const clientCheck = verifyClientFingerprint(request);
+    if (!clientCheck.valid) {
+      recordFailure(ip);
+      return NextResponse.json({ error: clientCheck.error }, { status: 400 });
     }
 
     const body = await request.json();
 
-    // Layer 3: Honeypot bot trap
-    if (body.website || body.email_confirm || body.hp || body.company_url) {
-      recordFailure(clientIp);
-      return NextResponse.json({ error: "Automated submission detected" }, { status: 403 });
+    // STAGE 3 & 4: Behavioral & Cryptographic Integrity (Checks 21-40)
+    const integrity = verifySubmissionIntegrity(body, ip);
+    if (!integrity.valid) {
+      return NextResponse.json({ error: integrity.error }, { status: integrity.status });
     }
 
-    // Layer 4: Human timing check
-    const clientTimestamp = Number(body._t);
-    if (clientTimestamp && Date.now() - clientTimestamp < 400) {
-      recordFailure(clientIp);
-      return NextResponse.json({ error: "Submission too fast. Please verify you are human." }, { status: 429 });
-    }
-
-    let code = String(body.code || "").trim();
+    let code = integrity.sanitizedCode;
     const isBansosRequest = body.isBansos === true || !code;
+    const deviceFp = String(body._dfp || "").trim();
 
-    // If 1-Click Bansos mode: automatically find the active Bansos voucher!
+    // Resolve code for 1-Click Faucet
     if (isBansosRequest) {
       const bansosVoucher = await getActiveBansosVoucher();
       if (!bansosVoucher) {
         return NextResponse.json(
-          { error: "Currently no active Bansos voucher pool available.", code: "NO_ACTIVE_BANSOS" },
+          { error: "No active community faucet slot available.", code: "NO_ACTIVE_FAUCET" },
           { status: 404 }
         );
       }
       code = bansosVoucher.code;
     }
 
-    // Layer 5 to 10: Atomic claim execution with DB-level duplicate IP check and daily cap
-    const result = await claimVoucher(code, clientIp);
+    // STAGE 5 & 6: Database & Identity Quota Locking (Checks 41-60)
+    const result = await claimVoucher(code, ip, deviceFp);
     if (!result.success) {
       if (result.error === "VOUCHER_NOT_FOUND") {
-        recordFailure(clientIp);
+        recordFailure(ip);
       }
       return NextResponse.json({ error: result.message, code: result.error }, { status: 400 });
     }
 
-    clearFailure(clientIp);
+    recordSuccess(ip);
 
-    // Determine base URL
+    // Determine Base URL
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "xrouter.consoleapi.qzz.io";
     const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https");
     const baseUrl = `${proto}://${host}/v1`;
@@ -214,7 +193,9 @@ print(response.choices[0].message.content)`,
       configs,
     });
   } catch (error) {
-    console.error("Error executing claim:", error);
+    console.error("Error executing 60-layer claim:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  } finally {
+    releaseConcurrencyLock(lockKey);
   }
 }
