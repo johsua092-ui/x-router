@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/shared/utils/cn";
 import Badge from "@/shared/components/Badge";
 
@@ -13,16 +13,22 @@ export default function VouchersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
 
+  // Model catalog for auto-detection picker
+  const [catalogModels, setCatalogModels] = useState([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelSearch, setModelSearch] = useState("");
+  const [selectedModels, setSelectedModels] = useState(["*"]); // array of model IDs or ["*"]
+
   const [form, setForm] = useState({
     code: "",
     name: "",
     description: "",
     tokenLimit: "100000",
-    allowedModels: "*",
     rpmLimit: "60",
     tpmLimit: "100000",
     expiresInDays: "30",
     maxUses: "1",
+    isBansos: false,
   });
 
   const fetchVouchers = async () => {
@@ -41,24 +47,69 @@ export default function VouchersPage() {
     }
   };
 
+  const fetchCatalogModels = async () => {
+    try {
+      setLoadingModels(true);
+      const res = await fetch("/api/models/catalog");
+      if (res.ok) {
+        const data = await res.json();
+        setCatalogModels(data.models || []);
+      }
+    } catch (err) {
+      console.error("Failed to load model catalog", err);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
   useEffect(() => {
     fetchVouchers();
+    fetchCatalogModels();
   }, []);
+
+  // Filter models based on search term
+  const filteredModels = useMemo(() => {
+    if (!modelSearch.trim()) return catalogModels.slice(0, 100);
+    const q = modelSearch.toLowerCase();
+    return catalogModels.filter(
+      (m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+    );
+  }, [catalogModels, modelSearch]);
+
+  const toggleModelSelection = (modelId) => {
+    if (modelId === "*") {
+      setSelectedModels(["*"]);
+      return;
+    }
+
+    let next = selectedModels.filter((id) => id !== "*");
+    if (next.includes(modelId)) {
+      next = next.filter((id) => id !== modelId);
+      if (next.length === 0) next = ["*"];
+    } else {
+      next.push(modelId);
+    }
+    setSelectedModels(next);
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
+      const allowedModelsStr = selectedModels.join(",");
+
       const res = await fetch("/api/vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          allowedModels: allowedModelsStr,
           tokenLimit: Number(form.tokenLimit) || 0,
           rpmLimit: Number(form.rpmLimit) || 0,
           tpmLimit: Number(form.tpmLimit) || 0,
           expiresInDays: Number(form.expiresInDays) || 30,
           maxUses: Number(form.maxUses) || 1,
+          isBansos: form.isBansos,
         }),
       });
 
@@ -69,12 +120,13 @@ export default function VouchersPage() {
           name: "",
           description: "",
           tokenLimit: "100000",
-          allowedModels: "*",
           rpmLimit: "60",
           tpmLimit: "100000",
           expiresInDays: "30",
           maxUses: "1",
+          isBansos: false,
         });
+        setSelectedModels(["*"]);
         fetchVouchers();
       } else {
         const err = await res.json();
@@ -134,7 +186,7 @@ export default function VouchersPage() {
             </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-text-muted">
-            Issue token vouchers, quota passes, and client onboarding links with automated API key provisioning.
+            Kelola token voucher, pass kuota bansos 1-klik, dan portal claim mandiri klien.
           </p>
         </div>
 
@@ -146,7 +198,7 @@ export default function VouchersPage() {
             className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-main hover:border-brand-500/50 transition-colors"
           >
             <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-            Open Public Portal
+            Buka Portal Klaim
           </a>
           <button
             type="button"
@@ -154,7 +206,7 @@ export default function VouchersPage() {
             className="inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
           >
             <span className="material-symbols-outlined text-[15px]">add</span>
-            Create Voucher
+            Buat Voucher / Bansos
           </button>
         </div>
       </div>
@@ -172,7 +224,7 @@ export default function VouchersPage() {
           )}
         >
           <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
-          Vouchers ({vouchers.length})
+          Voucher & Bansos ({vouchers.length})
         </button>
         <button
           type="button"
@@ -185,7 +237,7 @@ export default function VouchersPage() {
           )}
         >
           <span className="material-symbols-outlined text-[14px]">history</span>
-          Claim History ({claims.length})
+          Riwayat Klaim ({claims.length})
         </button>
       </div>
 
@@ -198,9 +250,9 @@ export default function VouchersPage() {
         vouchers.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-[8px] border border-dashed border-border p-12 text-center bg-surface-1">
             <span className="material-symbols-outlined text-4xl text-text-muted/60 mb-2">loyalty</span>
-            <h3 className="text-sm font-semibold text-text-main">No Vouchers Created Yet</h3>
+            <h3 className="text-sm font-semibold text-text-main">Belum Ada Voucher</h3>
             <p className="mt-1 text-xs text-text-muted max-w-sm">
-              Generate token voucher codes to distribute scoped API keys to team members, clients, or community members.
+              Buat voucher atau buka Bansos Token 1-klik agar komunitas atau tim kamu bisa langsung mendapatkan API key.
             </p>
             <button
               type="button"
@@ -208,7 +260,7 @@ export default function VouchersPage() {
               className="mt-4 inline-flex items-center gap-1.5 rounded-[6px] bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 transition-colors"
             >
               <span className="material-symbols-outlined text-[15px]">add</span>
-              Create First Voucher
+              Buat Voucher Pertama
             </button>
           </div>
         ) : (
@@ -230,6 +282,11 @@ export default function VouchersPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
+                          {v.isBansos && (
+                            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
+                              ⚡ BANSOS 1-KLIK
+                            </span>
+                          )}
                           <span className="font-mono text-sm font-bold tracking-wider text-text-main">
                             {v.code}
                           </span>
@@ -375,11 +432,11 @@ export default function VouchersPage() {
       {/* Create Voucher Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-[8px] border border-border bg-surface-1 p-5 shadow-2xl space-y-4">
+          <div className="w-full max-w-xl rounded-[8px] border border-border bg-surface-1 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-brand-500 text-[18px]">add_circle</span>
-                <h3 className="text-sm font-bold text-text-main">Create New Token Voucher</h3>
+                <h3 className="text-sm font-bold text-text-main">Buat Voucher / Bansos Baru</h3>
               </div>
               <button
                 type="button"
@@ -390,7 +447,23 @@ export default function VouchersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-3.5 text-xs">
+            <form onSubmit={handleCreate} className="space-y-4 text-xs">
+              {/* Bansos Mode Toggle */}
+              <div className="rounded-[6px] border border-emerald-500/30 bg-emerald-500/10 p-3 flex items-center justify-between">
+                <div>
+                  <span className="font-semibold text-white block">Tandai Sebagai Bansos Publik (1-Klik Klaim)</span>
+                  <span className="text-[11px] text-[#aaa] block">
+                    User di portal <code>/claim</code> bisa langsung klaim key gratis tanpa perlu ngetik kode voucher.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={form.isBansos}
+                  onChange={(e) => setForm({ ...form, isBansos: e.target.checked })}
+                  className="size-4 accent-emerald-500 rounded cursor-pointer"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
@@ -412,7 +485,7 @@ export default function VouchersPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Community Giveaway"
+                    placeholder="e.g. Bansos Ramadhan AI"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
@@ -426,17 +499,17 @@ export default function VouchersPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Notes about this voucher cohort..."
+                  placeholder="Catatan peruntukan voucher..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    TOKEN QUOTA PER KEY
+                    TOKEN QUOTA
                   </label>
                   <input
                     type="number"
@@ -450,7 +523,7 @@ export default function VouchersPage() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    MAX CLAIMS (USES)
+                    MAX USES
                   </label>
                   <input
                     type="number"
@@ -460,14 +533,11 @@ export default function VouchersPage() {
                     onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
                     className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
-                  <span className="text-[10px] text-text-muted mt-0.5 block">How many people can redeem</span>
+                  <span className="text-[10px] text-text-muted mt-0.5 block">Kuota klaim</span>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    EXPIRATION (DAYS)
+                    MASA AKTIF (HARI)
                   </label>
                   <input
                     type="number"
@@ -477,21 +547,79 @@ export default function VouchersPage() {
                     onChange={(e) => setForm({ ...form, expiresInDays: e.target.value })}
                     className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
-                  <span className="text-[10px] text-text-muted mt-0.5 block">Active lifespan after claim</span>
+                  <span className="text-[10px] text-text-muted mt-0.5 block">0 = Selamanya</span>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-text-muted mb-1">
-                    ALLOWED MODELS
+              </div>
+
+              {/* MODEL SELECTOR (AUTO DETECT - TINGGAL PILIH) */}
+              <div className="space-y-2 border-t border-border pt-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-mono font-semibold text-text-main uppercase tracking-wider">
+                    PILIH MODEL TERSEDIA ({selectedModels.includes("*") ? "Semua Model (*)" : `${selectedModels.length} Terpilih`})
                   </label>
+                  <button
+                    type="button"
+                    onClick={() => toggleModelSelection("*")}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors",
+                      selectedModels.includes("*")
+                        ? "bg-brand-500 text-white"
+                        : "bg-surface-2 text-text-muted hover:text-white"
+                    )}
+                  >
+                    Izinkan Semua Model (*)
+                  </button>
+                </div>
+
+                {/* Search Bar for models */}
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-text-muted">
+                    search
+                  </span>
                   <input
                     type="text"
-                    required
-                    placeholder="* or gpt-4o, claude-3-5"
-                    value={form.allowedModels}
-                    onChange={(e) => setForm({ ...form, allowedModels: e.target.value })}
-                    className="w-full rounded-[6px] border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs text-text-main focus:border-brand-500 focus:outline-none"
+                    placeholder="Cari model (misal: claude, gpt, qwen, deepseek)..."
+                    value={modelSearch}
+                    onChange={(e) => setModelSearch(e.target.value)}
+                    className="w-full rounded-[6px] border border-border bg-surface-2 pl-8 pr-3 py-1.5 text-xs text-text-main focus:border-brand-500 focus:outline-none"
                   />
-                  <span className="text-[10px] text-text-muted mt-0.5 block">* = unrestricted</span>
+                </div>
+
+                {/* Model Chips Container */}
+                <div className="max-h-40 overflow-y-auto rounded-[6px] border border-border/80 bg-surface-2/60 p-2 custom-scrollbar">
+                  {loadingModels ? (
+                    <div className="text-center py-4 text-[#777] text-xs">Mendeteksi model katalog...</div>
+                  ) : filteredModels.length === 0 ? (
+                    <div className="text-center py-4 text-[#777] text-xs">Tidak ada model yang cocok.</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {filteredModels.map((m) => {
+                        const isSelected = selectedModels.includes(m.id) || selectedModels.includes("*");
+                        const isExplicitSelected = selectedModels.includes(m.id);
+
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => toggleModelSelection(m.id)}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-[4px] text-[10.5px] font-mono border transition-all cursor-pointer",
+                              isExplicitSelected
+                                ? "bg-brand-500 text-white border-brand-500 shadow-xs"
+                                : isSelected
+                                ? "bg-surface-1 text-text-main border-brand-500/40 opacity-80"
+                                : "bg-surface-1 text-text-muted border-border hover:border-text-muted hover:text-white"
+                            )}
+                          >
+                            <span>{m.id}</span>
+                            {isExplicitSelected && (
+                              <span className="material-symbols-outlined text-[11px]">check</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -501,14 +629,14 @@ export default function VouchersPage() {
                   onClick={() => setShowModal(false)}
                   className="rounded-[6px] border border-border px-3 py-1.5 text-xs text-text-muted hover:text-text-main"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-[6px] bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 disabled:opacity-50"
+                  className="rounded-[6px] bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-600 disabled:opacity-50 cursor-pointer"
                 >
-                  {submitting ? "Creating..." : "Save Voucher"}
+                  {submitting ? "Menyimpan..." : "Simpan Voucher / Bansos"}
                 </button>
               </div>
             </form>

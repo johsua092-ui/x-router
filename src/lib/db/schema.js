@@ -179,6 +179,7 @@ export const TABLES = {
       expiresInDays: "INTEGER DEFAULT 30",
       maxUses: "INTEGER DEFAULT 1",
       usedCount: "INTEGER DEFAULT 0",
+      isBansos: "INTEGER DEFAULT 0",
       isActive: "INTEGER DEFAULT 1",
       createdAt: "TEXT NOT NULL",
       updatedAt: "TEXT NOT NULL",
@@ -186,6 +187,7 @@ export const TABLES = {
     indexes: [
       "CREATE INDEX IF NOT EXISTS idx_voucher_code ON vouchers(code)",
       "CREATE INDEX IF NOT EXISTS idx_voucher_active ON vouchers(isActive)",
+      "CREATE INDEX IF NOT EXISTS idx_voucher_bansos ON vouchers(isBansos)",
     ],
   },
   voucherClaims: {

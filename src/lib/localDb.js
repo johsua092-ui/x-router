@@ -19,5 +19,5 @@ export {
   getMitmAlias, setMitmAliasAll,
   getPricing, getPricingForModel, updatePricing, resetPricing, resetAllPricing,
   exportDb, importDb, getDbSummary,
-  getVouchers, getVoucherById, getVoucherByCode, createVoucher, updateVoucher, deleteVoucher, getVoucherClaims, claimVoucher,
+  getVouchers, getActiveBansosVoucher, getVoucherById, getVoucherByCode, createVoucher, updateVoucher, deleteVoucher, getVoucherClaims, claimVoucher,
 } from "@/lib/db/index.js";

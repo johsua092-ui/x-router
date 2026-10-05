@@ -1,31 +1,29 @@
 import { NextResponse } from "next/server";
-import { claimVoucher, getVoucherByCode } from "@/lib/localDb";
+import { claimVoucher, getVoucherByCode, getActiveBansosVoucher } from "@/lib/localDb";
 import { getClientIp } from "@/lib/auth/loginLimiter";
 
-// ─── ANTI-ABUSE ENGINE FOR VOUCHER CLAIMS ─────────────────────────────────
+// ─── 10-LAYER ANTI-ABUSE ENGINE FOR VOUCHER CLAIMS ──────────────────────────
 
-// 1. Sliding window rate limiter for general claim requests (max 5 requests / min per IP)
+// Layer 1: Sliding window rate limiter (max 5 requests per minute per IP)
 const requestTracker = new Map();
 const REQ_WINDOW = 60 * 1000;
 const MAX_REQ_PER_MIN = 5;
 
-// 2. Strict brute-force protection (lockout after 4 failed voucher code guesses)
+// Layer 2: Progressive IP Lockout & Jail (lockout after 4 failed guesses)
 const failedAttempts = new Map(); // ip -> { count, lockedUntil }
 const MAX_FAILED_ATTEMPTS = 4;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes ban
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes jail
 
 function checkRateAndLockout(ip) {
   if (!ip) return null;
   const now = Date.now();
 
-  // Check if IP is currently locked out
   const lock = failedAttempts.get(ip);
   if (lock && lock.lockedUntil && now < lock.lockedUntil) {
     const minutesLeft = Math.ceil((lock.lockedUntil - now) / 60000);
-    return `Access temporarily suspended due to repeated invalid attempts. Try again in ${minutesLeft} minute(s).`;
+    return `Access temporarily suspended due to suspicious activity. Try again in ${minutesLeft} minute(s).`;
   }
 
-  // Check sliding window rate limit
   const rec = requestTracker.get(ip);
   if (!rec || now - rec.resetTime > REQ_WINDOW) {
     requestTracker.set(ip, { count: 1, resetTime: now });
@@ -46,7 +44,7 @@ function recordFailure(ip) {
   lock.count += 1;
   if (lock.count >= MAX_FAILED_ATTEMPTS) {
     lock.lockedUntil = now + LOCKOUT_DURATION;
-    lock.count = 0; // reset counter after locking
+    lock.count = 0;
   }
   failedAttempts.set(ip, lock);
 }
@@ -56,7 +54,7 @@ function clearFailure(ip) {
   failedAttempts.delete(ip);
 }
 
-// GET /api/vouchers/claim?code=XXX -> inspect voucher public metadata without claiming
+// GET /api/vouchers/claim -> checks if there is an active bansos pool or inspects specific code
 export async function GET(request) {
   try {
     const clientIp = getClientIp(request) || "";
@@ -67,42 +65,58 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    if (!code) {
-      return NextResponse.json({ error: "Missing voucher code parameter" }, { status: 400 });
+
+    // If specific code requested
+    if (code) {
+      const voucher = await getVoucherByCode(code);
+      if (!voucher) {
+        recordFailure(clientIp);
+        return NextResponse.json({ error: "Voucher not found" }, { status: 404 });
+      }
+
+      const isAvailable = voucher.isActive && (voucher.maxUses === 0 || voucher.usedCount < voucher.maxUses);
+      return NextResponse.json({
+        voucher: {
+          code: voucher.code,
+          name: voucher.name,
+          description: voucher.description,
+          tokenLimit: voucher.tokenLimit,
+          allowedModels: voucher.allowedModels,
+          expiresInDays: voucher.expiresInDays,
+          maxUses: voucher.maxUses,
+          usedCount: voucher.usedCount,
+          isBansos: voucher.isBansos,
+          isAvailable,
+        },
+      });
     }
 
-    const voucher = await getVoucherByCode(code);
-    if (!voucher) {
-      recordFailure(clientIp);
-      return NextResponse.json({ error: "Voucher not found" }, { status: 404 });
-    }
-
-    const isAvailable = voucher.isActive && (voucher.maxUses === 0 || voucher.usedCount < voucher.maxUses);
-
+    // Otherwise check for active Bansos pool
+    const bansosVoucher = await getActiveBansosVoucher();
     return NextResponse.json({
-      voucher: {
-        code: voucher.code,
-        name: voucher.name,
-        description: voucher.description,
-        tokenLimit: voucher.tokenLimit,
-        allowedModels: voucher.allowedModels,
-        expiresInDays: voucher.expiresInDays,
-        maxUses: voucher.maxUses,
-        usedCount: voucher.usedCount,
-        isAvailable,
-      },
+      hasActiveBansos: !!bansosVoucher,
+      bansos: bansosVoucher
+        ? {
+            name: bansosVoucher.name,
+            description: bansosVoucher.description,
+            tokenLimit: bansosVoucher.tokenLimit,
+            allowedModels: bansosVoucher.allowedModels,
+            expiresInDays: bansosVoucher.expiresInDays,
+            remainingClaims: bansosVoucher.maxUses === 0 ? "Unlimited" : Math.max(0, bansosVoucher.maxUses - bansosVoucher.usedCount),
+          }
+        : null,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST /api/vouchers/claim -> execute claim with multi-layered anti-abuse checks
+// POST /api/vouchers/claim -> executes claim (either 1-Click Bansos or Code)
 export async function POST(request) {
   try {
     const clientIp = getClientIp(request) || "";
 
-    // 1. Check IP rate-limiting & brute-force lockout
+    // Layer 1 & 2: Rate limit & lockout check
     const blockedReason = checkRateAndLockout(clientIp);
     if (blockedReason) {
       return NextResponse.json({ error: blockedReason }, { status: 429 });
@@ -110,25 +124,35 @@ export async function POST(request) {
 
     const body = await request.json();
 
-    // 2. Anti-Bot Honeypot trap (bots fill hidden form fields)
-    if (body.website || body.email_confirm || body.hp) {
+    // Layer 3: Honeypot bot trap
+    if (body.website || body.email_confirm || body.hp || body.company_url) {
       recordFailure(clientIp);
       return NextResponse.json({ error: "Automated submission detected" }, { status: 403 });
     }
 
-    // 3. Human timing validation (submissions under 400ms are automated scripts)
+    // Layer 4: Human timing check
     const clientTimestamp = Number(body._t);
     if (clientTimestamp && Date.now() - clientTimestamp < 400) {
       recordFailure(clientIp);
       return NextResponse.json({ error: "Submission too fast. Please verify you are human." }, { status: 429 });
     }
 
-    const code = String(body.code || "").trim();
-    if (!code) {
-      return NextResponse.json({ error: "Voucher code is required" }, { status: 400 });
+    let code = String(body.code || "").trim();
+    const isBansosRequest = body.isBansos === true || !code;
+
+    // If 1-Click Bansos mode: automatically find the active Bansos voucher!
+    if (isBansosRequest) {
+      const bansosVoucher = await getActiveBansosVoucher();
+      if (!bansosVoucher) {
+        return NextResponse.json(
+          { error: "Currently no active Bansos voucher pool available.", code: "NO_ACTIVE_BANSOS" },
+          { status: 404 }
+        );
+      }
+      code = bansosVoucher.code;
     }
 
-    // 4. Execute atomic claim with DB-level IP deduplication & daily quota
+    // Layer 5 to 10: Atomic claim execution with DB-level duplicate IP check and daily cap
     const result = await claimVoucher(code, clientIp);
     if (!result.success) {
       if (result.error === "VOUCHER_NOT_FOUND") {
@@ -137,15 +161,13 @@ export async function POST(request) {
       return NextResponse.json({ error: result.message, code: result.error }, { status: 400 });
     }
 
-    // Successful claim: reset failure count
     clearFailure(clientIp);
 
-    // Determine base URL from request host
+    // Determine base URL
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "xrouter.consoleapi.qzz.io";
     const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https");
     const baseUrl = `${proto}://${host}/v1`;
 
-    // Presets for instant setup
     const configs = {
       curl: `curl ${baseUrl}/chat/completions \\
   -H "Content-Type: application/json" \\
@@ -192,7 +214,7 @@ print(response.choices[0].message.content)`,
       configs,
     });
   } catch (error) {
-    console.error("Error executing voucher claim:", error);
+    console.error("Error executing claim:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

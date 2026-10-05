@@ -652,6 +652,7 @@ export async function importDbProgressive(payload, onProgress) {
 
 export {
   getVouchers,
+  getActiveBansosVoucher,
   getVoucherById,
   getVoucherByCode,
   createVoucher,

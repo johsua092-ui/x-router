@@ -11,13 +11,34 @@ export default function ClaimPage() {
   const [copiedSnippet, setCopiedSnippet] = useState("");
   const [activeSnippetTab, setActiveSnippetTab] = useState("curl"); // "curl" | "python" | "cursor" | "cline"
 
+  // Bansos pool info
+  const [bansosInfo, setBansosInfo] = useState(null);
+  const [loadingBansos, setLoadingBansos] = useState(true);
+
   // Anti-Bot: Page load timestamp & Honeypot field
   const pageLoadTime = useRef(Date.now());
   const [honeypot, setHoneypot] = useState("");
 
-  // Auto-fill from URL query ?code=XXX
+  // Check active Bansos & URL params
   useEffect(() => {
     pageLoadTime.current = Date.now();
+    const fetchBansos = async () => {
+      try {
+        const res = await fetch("/api/vouchers/claim");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.hasActiveBansos && data.bansos) {
+            setBansosInfo(data.bansos);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingBansos(false);
+      }
+    };
+    fetchBansos();
+
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const c = p.get("code");
@@ -25,7 +46,38 @@ export default function ClaimPage() {
     }
   }, []);
 
-  const handleClaim = async (e) => {
+  // 1-Click Bansos Claim (NO PASSWORD / NO KEY NEEDED!)
+  const handleClaimBansos = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      setResult(null);
+
+      const res = await fetch("/api/vouchers/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isBansos: true,
+          website: honeypot,
+          _t: pageLoadTime.current,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Gagal klaim bansos token");
+      } else {
+        setResult(data);
+      }
+    } catch (err) {
+      setError(err.message || "Network error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Specific Voucher Code Claim
+  const handleClaimCustom = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
 
@@ -39,14 +91,14 @@ export default function ClaimPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: code.trim(),
-          website: honeypot, // Honeypot: must be empty
-          _t: pageLoadTime.current, // Human timing check
+          website: honeypot,
+          _t: pageLoadTime.current,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to redeem voucher");
+        setError(data.error || "Failed to redeem voucher code");
       } else {
         setResult(data);
       }
@@ -71,7 +123,7 @@ export default function ClaimPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col justify-between selection:bg-brand-500/30 selection:text-brand-400">
       {/* Background ambient lighting */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(229,106,74,0.08),transparent_60%)]" />
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(229,106,74,0.09),transparent_60%)]" />
 
       {/* Top Header */}
       <header className="relative z-10 flex h-14 w-full items-center justify-between border-b border-[#222] bg-[#0c0c0e]/80 px-4 sm:px-8 backdrop-blur-md">
@@ -82,12 +134,12 @@ export default function ClaimPage() {
             </svg>
           </span>
           <span className="font-mono text-sm font-bold tracking-wider text-white">
-            X ROUTER <span className="text-[11px] text-[#888] font-normal">· TOKEN MARKET</span>
+            X ROUTER <span className="text-[11px] text-[#888] font-normal">· BANSOS & TOKEN MARKET</span>
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-[#888]">
           <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>PORTAL ONLINE</span>
+          <span>PORTAL ACTIVE</span>
         </div>
       </header>
 
@@ -95,22 +147,87 @@ export default function ClaimPage() {
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-xl">
           {!result ? (
-            /* Voucher Claim Form */
+            /* Main Claim Container */
             <div className="rounded-[10px] border border-[#262626] bg-[#101012] p-6 sm:p-8 shadow-2xl space-y-6">
+              
+              {/* Header Title */}
               <div className="text-center space-y-2">
-                <div className="inline-flex size-12 items-center justify-center rounded-[8px] bg-[#E56A4A]/10 text-[#E56A4A] border border-[#E56A4A]/25 mb-1">
-                  <span className="material-symbols-outlined text-2xl">card_giftcard</span>
+                <div className="inline-flex size-12 items-center justify-center rounded-[8px] bg-[#E56A4A]/10 text-[#E56A4A] border border-[#E56A4A]/25 mb-1 shadow-[0_0_15px_rgba(229,106,74,0.15)]">
+                  <span className="material-symbols-outlined text-2xl">volunteer_activism</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                  Redeem Token Voucher
+                  Klaim Bansos AI X Router
                 </h2>
                 <p className="text-xs sm:text-sm text-[#888] max-w-md mx-auto">
-                  Enter your voucher pass code below to claim an authorized X Router API key with allocated model quota.
+                  Dapatkan API Key siap pakai langsung dalam 1 klik tanpa ribet masukin password atau kunci.
                 </p>
               </div>
 
-              <form onSubmit={handleClaim} className="space-y-4">
-                {/* Honeypot field for bot traps - hidden from human eyes */}
+              {/* SECTION 1: 1-CLICK INSTANT BANSOS CLAIM */}
+              {bansosInfo ? (
+                <div className="rounded-[8px] border border-emerald-500/40 bg-emerald-500/5 p-4 sm:p-5 space-y-3 relative overflow-hidden">
+                  <div className="absolute right-0 top-0 translate-x-3 -translate-y-3 size-24 rounded-full bg-emerald-500/10 blur-xl pointer-events-none" />
+                  
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="inline-flex items-center gap-1 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
+                        ⚡ POOL BANSOS AKTIF
+                      </span>
+                      <h3 className="text-sm font-bold text-white mt-1.5">{bansosInfo.name}</h3>
+                      <p className="text-xs text-[#aaa] mt-0.5">{bansosInfo.description || "Token gratis siap pakai untuk kebutuhan coding dan chat."}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-[11px] font-mono py-1">
+                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
+                      <span className="text-[#777] block text-[9px]">KUOTA</span>
+                      <span className="text-white font-bold">{bansosInfo.tokenLimit === 0 ? "Unlimited" : `${(bansosInfo.tokenLimit / 1000).toLocaleString()}K`}</span>
+                    </div>
+                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
+                      <span className="text-[#777] block text-[9px]">SISA KUOTA</span>
+                      <span className="text-emerald-400 font-bold">{bansosInfo.remainingClaims}</span>
+                    </div>
+                    <div className="bg-[#121814] p-2 rounded border border-emerald-500/20 text-center">
+                      <span className="text-[#777] block text-[9px]">MASA AKTIF</span>
+                      <span className="text-white font-bold">{bansosInfo.expiresInDays} Hari</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleClaimBansos}
+                    disabled={loading}
+                    className="w-full rounded-[6px] bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="inline-block size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Menerbitkan API Key Bansos...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-[20px]">bolt</span>
+                        <span>⚡ Klaim Bansos 1-Klik (Langsung Dapat Key)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : !loadingBansos && (
+                <div className="rounded-[8px] border border-[#2a2a2a] bg-[#141417] p-4 text-center space-y-1">
+                  <span className="text-xs text-[#888]">Saat ini belum ada bansos publik yang dibuka oleh Admin.</span>
+                </div>
+              )}
+
+              {/* DIVIDER */}
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-[#262626]" />
+                <span className="text-[11px] font-mono text-[#666] uppercase">Atau Redeem Kode Khusus</span>
+                <div className="flex-1 h-px bg-[#262626]" />
+              </div>
+
+              {/* SECTION 2: CUSTOM VOUCHER CODE CLAIM */}
+              <form onSubmit={handleClaimCustom} className="space-y-3.5">
+                {/* Honeypot field for bot traps */}
                 <input
                   type="text"
                   name="website"
@@ -123,61 +240,37 @@ export default function ClaimPage() {
                 />
 
                 <div>
-                  <label className="block text-[11px] font-mono text-[#aaa] uppercase tracking-wider mb-2">
-                    VOUCHER PASS CODE
+                  <label className="block text-[11px] font-mono text-[#aaa] uppercase tracking-wider mb-1.5">
+                    Punya Voucher / VIP Pass Code?
                   </label>
-                  <div className="relative">
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      required
-                      placeholder="e.g. BANSOS-100K or XR-XXXX"
+                      placeholder="e.g. VIP-PRO-100K"
                       value={code}
                       onChange={(e) => setCode(e.target.value.toUpperCase())}
-                      className="w-full rounded-[6px] border border-[#333] bg-[#16161a] px-4 py-3 font-mono text-base tracking-widest text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none focus:ring-1 focus:ring-[#E56A4A] transition-all"
+                      className="flex-1 rounded-[6px] border border-[#333] bg-[#16161a] px-3.5 py-2 font-mono text-sm tracking-wider text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
                     />
                     <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const text = await navigator.clipboard.readText();
-                          if (text) setCode(text.trim().toUpperCase());
-                        } catch {}
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-[4px] bg-[#222] px-2 py-1 text-[10px] font-mono text-[#aaa] hover:text-white hover:bg-[#333] transition-colors"
+                      type="submit"
+                      disabled={loading || !code.trim()}
+                      className="rounded-[6px] bg-[#E56A4A] px-4 py-2 text-xs font-semibold text-white hover:bg-[#d0593b] disabled:opacity-50 transition-colors shrink-0"
                     >
-                      PASTE
+                      Redeem
                     </button>
                   </div>
                 </div>
-
-                {error && (
-                  <div className="rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
-                    <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || !code.trim()}
-                  className="w-full rounded-[6px] bg-[#E56A4A] py-3 text-sm font-semibold text-white shadow-lg shadow-[#E56A4A]/20 hover:bg-[#d0593b] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all duration-150 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <span className="inline-block size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      <span>Validating & Provisioning...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[18px]">verified</span>
-                      <span>Claim API Key</span>
-                    </>
-                  )}
-                </button>
               </form>
 
-              <div className="pt-4 border-t border-[#222] text-center text-xs text-[#666]">
-                Protected by X Router Anti-Abuse Shield · Rate Limited & Bot Protected
+              {error && (
+                <div className="rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-[#222] text-center text-xs text-[#666]">
+                Dilindungi 10-Lapis Anti-Abuse Shield · 1 Klaim per IP/Hari · Bot Protected
               </div>
             </div>
           ) : (
@@ -189,10 +282,10 @@ export default function ClaimPage() {
                   <span className="material-symbols-outlined text-2xl">check_circle</span>
                 </div>
                 <h2 className="text-xl font-bold tracking-tight text-white">
-                  Voucher Successfully Claimed!
+                  API Key Berhasil Diterbitkan!
                 </h2>
                 <p className="text-xs text-[#888]">
-                  Your dedicated API key has been provisioned. Save your key now—it will not be shown again.
+                  Simpan API Key di bawah sekarang. Kunci langsung aktif dan siap dipasang ke tool coding lo.
                 </p>
               </div>
 
@@ -200,7 +293,7 @@ export default function ClaimPage() {
               <div className="rounded-[8px] border border-[#E56A4A]/40 bg-[#16161a] p-4 space-y-3">
                 <div className="flex items-center justify-between text-[11px] font-mono text-[#aaa]">
                   <span>YOUR X ROUTER API KEY</span>
-                  <span className="text-[#E56A4A] font-bold">READY TO USE</span>
+                  <span className="text-emerald-400 font-bold">● ACTIVE & READY</span>
                 </div>
 
                 <div className="flex items-center gap-2 rounded-[6px] border border-[#333] bg-[#0c0c0e] p-2.5">
@@ -225,21 +318,21 @@ export default function ClaimPage() {
                 {/* Quota Chips */}
                 <div className="grid grid-cols-3 gap-2 text-[11px] font-mono pt-1 text-center">
                   <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">QUOTA</span>
+                    <span className="text-[#777] block text-[10px]">KUOTA TOKEN</span>
                     <span className="font-semibold text-white">
-                      {result.tokenLimit === 0 ? "Unlimited" : `${(result.tokenLimit / 1000).toLocaleString()}K tokens`}
+                      {result.tokenLimit === 0 ? "Unlimited" : `${(result.tokenLimit / 1000).toLocaleString()}K`}
                     </span>
                   </div>
                   <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">ALLOWED MODELS</span>
+                    <span className="text-[#777] block text-[10px]">MODEL ACCESS</span>
                     <span className="font-semibold text-white truncate block" title={result.allowedModels}>
-                      {result.allowedModels === "*" ? "All (*)" : result.allowedModels}
+                      {result.allowedModels === "*" ? "Semua (*)" : result.allowedModels}
                     </span>
                   </div>
                   <div className="rounded-[4px] bg-[#202026] p-2">
-                    <span className="text-[#777] block text-[10px]">EXPIRATION</span>
+                    <span className="text-[#777] block text-[10px]">MASA AKTIF</span>
                     <span className="font-semibold text-white">
-                      {result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "Never"}
+                      {result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "Selamanya"}
                     </span>
                   </div>
                 </div>
@@ -313,7 +406,7 @@ export default function ClaimPage() {
                 {activeSnippetTab === "cursor" && (
                   <div className="rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 space-y-2 text-xs">
                     <p className="text-[#aaa] text-[11px]">
-                      Open <strong>Cursor Settings → Models → OpenAI API Key</strong>:
+                      Buka <strong>Cursor Settings → Models → OpenAI API Key</strong>:
                     </p>
                     <div className="space-y-1.5 font-mono text-[11px]">
                       <div className="flex justify-between bg-[#16161a] p-2 rounded">
@@ -331,7 +424,7 @@ export default function ClaimPage() {
                 {activeSnippetTab === "cline" && (
                   <div className="rounded-[6px] border border-[#262626] bg-[#0c0c0e] p-3 space-y-2 text-xs">
                     <p className="text-[#aaa] text-[11px]">
-                      In <strong>Cline / Roo Code Settings</strong>, select <code>OpenAI-Compatible</code>:
+                      Di <strong>Cline / Roo Code Settings</strong>, pilih <code>OpenAI-Compatible</code>:
                     </p>
                     <div className="space-y-1.5 font-mono text-[11px]">
                       <div className="flex justify-between bg-[#16161a] p-2 rounded">
@@ -356,7 +449,7 @@ export default function ClaimPage() {
                   }}
                   className="text-xs font-mono text-[#888] hover:text-white underline underline-offset-4"
                 >
-                  Redeem another voucher
+                  Klaim lagi atau redeem kode lain
                 </button>
               </div>
             </div>

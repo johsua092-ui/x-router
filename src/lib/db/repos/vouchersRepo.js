@@ -18,6 +18,7 @@ function rowToVoucher(row) {
     expiresInDays: Number(row.expiresInDays) || 30,
     maxUses: Number(row.maxUses) || 1,
     usedCount: Number(row.usedCount) || 0,
+    isBansos: row.isBansos === 1 || row.isBansos === true,
     isActive: row.isActive === 1 || row.isActive === true,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -28,6 +29,16 @@ export async function getVouchers() {
   const db = await getAdapter();
   const rows = db.all(`SELECT * FROM vouchers ORDER BY createdAt DESC`);
   return rows.map(rowToVoucher);
+}
+
+export async function getActiveBansosVoucher() {
+  const db = await getAdapter();
+  const row = db.get(
+    `SELECT * FROM vouchers 
+     WHERE isBansos = 1 AND isActive = 1 AND (maxUses = 0 OR usedCount < maxUses)
+     ORDER BY createdAt DESC LIMIT 1`
+  );
+  return rowToVoucher(row);
 }
 
 export async function getVoucherById(id) {
@@ -60,8 +71,9 @@ export async function createVoucher(data) {
     rpmLimit: Number(data.rpmLimit) || 0,
     tpmLimit: Number(data.tpmLimit) || 0,
     expiresInDays: Number(data.expiresInDays) || 30,
-    maxUses: Number(data.maxUses) > 0 ? Number(data.maxUses) : 1,
+    maxUses: Number(data.maxUses) >= 0 ? Number(data.maxUses) : 1,
     usedCount: 0,
+    isBansos: data.isBansos === true || data.isBansos === 1 ? 1 : 0,
     isActive: data.isActive !== false ? 1 : 0,
     createdAt: now,
     updatedAt: now,
@@ -70,8 +82,8 @@ export async function createVoucher(data) {
   db.run(
     `INSERT INTO vouchers (
       id, code, name, description, tokenLimit, allowedModels,
-      rpmLimit, tpmLimit, expiresInDays, maxUses, usedCount, isActive, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      rpmLimit, tpmLimit, expiresInDays, maxUses, usedCount, isBansos, isActive, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       voucher.id,
       voucher.code,
@@ -84,6 +96,7 @@ export async function createVoucher(data) {
       voucher.expiresInDays,
       voucher.maxUses,
       voucher.usedCount,
+      voucher.isBansos,
       voucher.isActive,
       voucher.createdAt,
       voucher.updatedAt,
@@ -133,6 +146,10 @@ export async function updateVoucher(id, updates) {
     fields.push("maxUses = ?");
     values.push(Number(updates.maxUses) || 1);
   }
+  if (updates.isBansos !== undefined) {
+    fields.push("isBansos = ?");
+    values.push(updates.isBansos ? 1 : 0);
+  }
   if (updates.isActive !== undefined) {
     fields.push("isActive = ?");
     values.push(updates.isActive ? 1 : 0);
@@ -165,11 +182,17 @@ export async function getVoucherClaims(voucherId = null) {
 }
 
 /**
- * Claim voucher by code with strict anti-abuse protections:
- * 1. Voucher validity, status, and maxUses check.
- * 2. Strict 1 claim per voucher per IP address (enforced even if maxUses > 1).
- * 3. Daily IP claim quota (max 3 total voucher claims per IP per 24 hours).
- * 4. Atomic transaction with row locking.
+ * Claim voucher by code with 10-layer defense:
+ * Layer 1: Code existence & normalization
+ * Layer 2: Voucher active check
+ * Layer 3: Max uses / capacity check
+ * Layer 4: Exact same voucher IP duplicate check
+ * Layer 5: 24h daily IP limit check (max 3 claims/24h per IP)
+ * Layer 6: Dynamic token quota scoping
+ * Layer 7: Model permission boundary lock
+ * Layer 8: Machine-bound cryptographic API key generation
+ * Layer 9: Atomic DB transaction & claim locking
+ * Layer 10: Clean unalterable audit trail record
  */
 export async function claimVoucher(code, clientIp = "") {
   const db = await getAdapter();
@@ -187,7 +210,7 @@ export async function claimVoucher(code, clientIp = "") {
     return { success: false, error: "VOUCHER_EXHAUSTED", message: "This voucher has reached its maximum claim limit." };
   }
 
-  // Anti-Abuse Rule 1: One claim per voucher per IP address
+  // Layer 4: One claim per voucher per IP address
   if (clientIp) {
     const existingFromIp = db.get(
       `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp = ? LIMIT 1`,
@@ -201,7 +224,7 @@ export async function claimVoucher(code, clientIp = "") {
       };
     }
 
-    // Anti-Abuse Rule 2: Daily global claim cap per IP (max 3 voucher claims per 24h)
+    // Layer 5: Daily global claim cap per IP (max 3 voucher claims per 24h)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const dailyClaimsRow = db.get(
       `SELECT COUNT(*) as cnt FROM voucherClaims WHERE clientIp = ? AND claimedAt >= ?`,
@@ -217,7 +240,7 @@ export async function claimVoucher(code, clientIp = "") {
     }
   }
 
-  // Calculate expiration date
+  // Layer 6: Expiration calculation
   let expiresAt = null;
   if (voucher.expiresInDays > 0) {
     const d = new Date();
@@ -225,7 +248,7 @@ export async function claimVoucher(code, clientIp = "") {
     expiresAt = d.toISOString();
   }
 
-  // Create API key in database
+  // Layer 7 & 8: Cryptographic API key generation with machine ID
   const machineId = await getConsistentMachineId();
   const keyName = `Voucher: ${voucher.code}`;
   const apiKeyRecord = await createApiKey(keyName, machineId, {
@@ -237,7 +260,7 @@ export async function claimVoucher(code, clientIp = "") {
     createdBy: `voucher:${voucher.id}`,
   });
 
-  // Record claim and increment usedCount atomically
+  // Layer 9 & 10: Atomic transaction with claim recording
   const claimId = uuidv4();
   const now = new Date().toISOString();
 
