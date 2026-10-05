@@ -16,7 +16,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
   const isArenaAi = provider === "arena-ai" || provider === "arena";
   const isZCode = provider === "zcode" || provider === "zcode-desktop" || provider === "zcode-plan";
   const credentialLabel = isZCode
-    ? "JWT Token"
+    ? "JWT Token or Callback URL"
     : isArenaAi
       ? "User Token"
       : isCookie
@@ -25,7 +25,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
           ? "Personal Access Token (PAT)"
           : "API Key";
   const credentialPlaceholder = isZCode
-    ? "zcodeJwtToken (eyJ...)"
+    ? "Paste zcodeJwtToken OR callback URL (https://zcode.z.ai/... or zcode://...)"
     : isArenaAi
       ? "userToken / evaluation_session token value"
       : isCookie

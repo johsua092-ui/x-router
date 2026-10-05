@@ -143,6 +143,28 @@ const OAUTH_TEST_CONFIG = {
     extraHeaders: { "x-api-version": "1.0.0" },
     refreshable: false,
   },
+  "zcode": {
+    buildUrl: () => "https://zcode.z.ai/api/v1/zcode-plan/billing/balance?app_version=3.14.3",
+    method: "GET",
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    extraHeaders: {
+      "User-Agent": "ZCode/3.14.3",
+      "HTTP-Referer": "https://zcode.z.ai",
+      "X-Title": "Z Code@electron",
+      "X-ZCode-App-Version": "3.14.3",
+      "X-Platform": "win32-x64",
+      "X-Device-Mid": "7e5d2c18-912b-42fa-9082-8c1e405e3214",
+    },
+    refreshable: false,
+  },
+  "glm": {
+    url: "https://api.z.ai/api/monitor/usage/quota/limit",
+    method: "GET",
+    authHeader: "x-api-key",
+    authPrefix: "",
+    refreshable: false,
+  },
 };
 
 /**
@@ -338,14 +360,17 @@ function isTokenExpired(connection) {
 async function testOAuthConnection(connection, effectiveProxy = null) {
   const config = OAUTH_TEST_CONFIG[connection.provider];
   if (!config) return { valid: false, error: "Provider test not supported", refreshed: false };
-  if (!connection.accessToken) return { valid: false, error: "No access token", refreshed: false };
+
+  // For ZCode, prefer zcodeJwtToken over accessToken
+  const jwt = connection.providerSpecificData?.zcodeJwtToken || connection.accessToken;
+  if (!jwt) return { valid: false, error: "No access token", refreshed: false };
 
   // Cursor uses protobuf API - can only verify token exists, not test endpoint
   if (config.tokenExists) {
     return { valid: true, error: null, refreshed: false, newTokens: null };
   }
 
-  let accessToken = connection.accessToken;
+  let accessToken = connection.provider === "zcode" ? jwt : connection.accessToken;
   let refreshed = false;
   let newTokens = null;
 
@@ -587,6 +612,23 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
       case "openrouter": {
         const res = await fetchWithConnectionProxy("https://openrouter.ai/api/v1/auth/key", { headers: { Authorization: `Bearer ${connection.apiKey}` } }, effectiveProxy);
         return { valid: res.ok, error: res.ok ? null : "Invalid API key" };
+      }
+      case "zcode": {
+        const jwt = connection.providerSpecificData?.zcodeJwtToken || connection.apiKey || connection.accessToken;
+        const res = await fetchWithConnectionProxy("https://zcode.z.ai/api/v1/zcode-plan/billing/balance?app_version=3.14.3", {
+          method: "GET",
+          headers: {
+            "User-Agent": "ZCode/3.14.3",
+            "HTTP-Referer": "https://zcode.z.ai",
+            "X-Title": "Z Code@electron",
+            "X-ZCode-App-Version": "3.14.3",
+            "X-Platform": "win32-x64",
+            "X-Device-Mid": "7e5d2c18-912b-42fa-9082-8c1e405e3214",
+            "Authorization": `Bearer ${jwt}`,
+          },
+        }, effectiveProxy);
+        const valid = res.ok;
+        return { valid, error: valid ? null : "ZCode Start Plan balance verification failed" };
       }
       case "glm": {
         const res = await fetchWithConnectionProxy("https://api.z.ai/api/anthropic/v1/messages", {

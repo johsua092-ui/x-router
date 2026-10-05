@@ -88,7 +88,58 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const provider = normalizeProviderId(body.provider);
-    const { apiKey, name, displayName, priority, globalPriority, defaultModel, testStatus } = body;
+    let { apiKey, name, displayName, priority, globalPriority, defaultModel, testStatus } = body;
+    let autoSpecificData = {};
+
+    // Auto-exchange if user pasted an OAuth callback URL for zcode
+    if (provider === "zcode" && typeof apiKey === "string" && (apiKey.includes("code=") || apiKey.includes("callback"))) {
+      try {
+        let codeVal = "";
+        let stateVal = "";
+        const matchCode = apiKey.match(/[?&]code=([^&]+)/);
+        if (matchCode) codeVal = decodeURIComponent(matchCode[1]);
+        const matchState = apiKey.match(/[?&]state=([^&]+)/);
+        if (matchState) stateVal = decodeURIComponent(matchState[1]);
+
+        if (codeVal) {
+          const redirectUri = apiKey.includes("zcode://")
+            ? "zcode://oauth/callback"
+            : (apiKey.split("?")[0].trim() || "https://zcode.z.ai/api/v1/oauth/cli/callback/zai");
+
+          const exchangeRes = await fetch("https://zcode.z.ai/api/v1/oauth/token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "User-Agent": "ZCode/3.14.3",
+            },
+            body: JSON.stringify({
+              provider: "zai",
+              code: codeVal,
+              redirect_uri: redirectUri,
+              state: stateVal || "xrouter",
+            }),
+          });
+
+          if (exchangeRes.ok) {
+            const tokenData = await exchangeRes.json();
+            if (tokenData?.code === 0 && tokenData?.data?.token) {
+              apiKey = tokenData.data.token;
+              autoSpecificData = {
+                zcodeJwtToken: tokenData.data.token,
+                accessToken: tokenData.data.zai?.access_token || null,
+                userId: tokenData.data.user?.user_id || null,
+                username: tokenData.data.user?.name || null,
+              };
+              if (!name && tokenData.data.user?.name) {
+                name = tokenData.data.user.name;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("ZCode auto-exchange error:", err);
+      }
+    }
     const proxyConfig = normalizeProxyConfig(body);
     if (proxyConfig.error) {
       return NextResponse.json({ error: proxyConfig.error }, { status: 400 });
@@ -162,6 +213,7 @@ export async function POST(request) {
     }
 
     const mergedProviderSpecificData = {
+      ...autoSpecificData,
       ...(providerSpecificData || {}),
       connectionProxyEnabled: proxyConfig.connectionProxyEnabled,
       connectionProxyUrl: proxyConfig.connectionProxyUrl,
