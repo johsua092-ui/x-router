@@ -3,24 +3,43 @@ import crypto from "node:crypto";
 
 const ZCODE_BASE = "https://zcode.z.ai";
 const ZCODE_PLAN_ANTHROPIC = `${ZCODE_BASE}/api/v1/zcode-plan/anthropic/v1/messages`;
+const ZCODE_ULTRA_ZAI = `${ZCODE_BASE}/api/v1/ultra-zai/anthropic/v1/messages`;
+const ZAI_OFFICIAL_API = "https://api.z.ai/api/anthropic/v1/messages?beta=true";
 const ZCODE_BILLING_BALANCE = `${ZCODE_BASE}/api/v1/zcode-plan/billing/balance?app_version=3.14.3`;
 
-// Generate stable or random Device MID for desktop hardware attestation
+// Persistent desktop device hardware MID
 const DESKTOP_DEVICE_MID = "7e5d2c18-912b-42fa-9082-8c1e405e3214";
 
-const DESKTOP_HEADERS = {
-  "User-Agent": "ZCode/3.14.3",
-  "HTTP-Referer": "https://zcode.z.ai",
-  "X-Title": "Z Code@electron",
-  "X-ZCode-App-Version": "3.14.3",
-  "X-Platform": "win32-x64",
-  "X-Release-Channel": "stable",
-  "X-Client-Language": "en-US",
-  "X-Client-Timezone": "Asia/Jakarta",
-  "X-Os-Category": "windows",
-  "X-Os-Version": "10.0.22631",
-  "X-Device-Mid": DESKTOP_DEVICE_MID,
-};
+export function buildDesktopHeaders(extra = {}) {
+  const reqId = crypto.randomUUID();
+  return {
+    "User-Agent": "ZCode/3.14.3 (Windows NT 10.0; Win64; x64) Electron/33.2.1",
+    "HTTP-Referer": "https://zcode.z.ai",
+    Origin: "https://zcode.z.ai",
+    Referer: "https://zcode.z.ai/",
+    "X-Title": "Z Code@electron",
+    "X-Client-Version": "3.14.3",
+    "X-ZCode-App-Version": "3.14.3",
+    "X-Platform": "win32-x64",
+    "X-Release-Channel": "stable",
+    "X-Client-Language": "en-US",
+    "X-Client-Timezone": "Asia/Jakarta",
+    "X-Os-Category": "windows",
+    "X-Os-Version": "10.0.22631",
+    "X-Device-Mid": DESKTOP_DEVICE_MID,
+    "X-ZCode-Agent": "glm",
+    "x-request-id": reqId,
+    "sec-ch-ua": '"Chromium";v="130", "ZCode";v="3.14.3", "Not?A_Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Site": "same-site",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    Accept: "text/event-stream, application/json;q=0.9, */*;q=0.8",
+    "anthropic-version": "2023-06-01",
+    ...extra,
+  };
+}
 
 export function extractZCodeToken(raw) {
   if (!raw) return "";
@@ -57,10 +76,9 @@ export async function checkZCodeBansos(token) {
   try {
     const res = await fetch(ZCODE_BILLING_BALANCE, {
       method: "GET",
-      headers: {
-        ...DESKTOP_HEADERS,
+      headers: buildDesktopHeaders({
         Authorization: `Bearer ${jwt}`,
-      },
+      }),
     });
 
     if (!res.ok) {
@@ -118,6 +136,8 @@ export class ZCodeExecutor extends BaseExecutor {
       rawCreds.apiKey ||
       rawCreds.token
     );
+    const planApiKey = rawCreds.accessToken || rawCreds.apiKey || "";
+    const userId = rawCreds.providerSpecificData?.userId || "";
 
     if (!jwtToken) {
       return {
@@ -155,15 +175,21 @@ export class ZCodeExecutor extends BaseExecutor {
       ...(systemPrompt.trim() ? { system: systemPrompt.trim() } : {}),
       ...(bodyObj.temperature !== undefined ? { temperature: bodyObj.temperature } : {}),
       ...(bodyObj.top_p !== undefined ? { top_p: bodyObj.top_p } : {}),
+      metadata: {
+        user_id: JSON.stringify({
+          device_id: DESKTOP_DEVICE_MID,
+          account_uuid: userId,
+          session_id: crypto.randomUUID(),
+        }),
+      },
     };
 
     const targetUrl = ZCODE_PLAN_ANTHROPIC;
-    const requestHeaders = {
-      ...DESKTOP_HEADERS,
+    const requestHeaders = buildDesktopHeaders({
       "Content-Type": "application/json",
       Authorization: `Bearer ${jwtToken}`,
-      "anthropic-version": "2023-06-01",
-    };
+      ...(planApiKey ? { "X-Coding-Plan-Api-Key": planApiKey } : {}),
+    });
 
     try {
       const response = await fetch(targetUrl, {
@@ -172,6 +198,30 @@ export class ZCodeExecutor extends BaseExecutor {
         body: JSON.stringify(anthropicPayload),
         signal,
       });
+
+      // If zcode-plan returns 405 (unusual activity) and planApiKey exists, fallback to gateway
+      if (response.status === 405 && planApiKey && planApiKey !== jwtToken) {
+        const fallbackHeaders = {
+          ...requestHeaders,
+          Authorization: `Bearer ${planApiKey}`,
+          "x-api-key": planApiKey,
+        };
+        const fallbackRes = await fetch(ZCODE_ULTRA_ZAI, {
+          method: "POST",
+          headers: fallbackHeaders,
+          body: JSON.stringify(anthropicPayload),
+          signal,
+        });
+        if (fallbackRes.ok) {
+          return {
+            response: fallbackRes,
+            url: ZCODE_ULTRA_ZAI,
+            headers: fallbackHeaders,
+            transformedBody: anthropicPayload,
+            responseFormat: "claude",
+          };
+        }
+      }
 
       return {
         response,
