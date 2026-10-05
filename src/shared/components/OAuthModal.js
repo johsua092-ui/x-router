@@ -289,6 +289,9 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
         "grok-cli",
         "muse",
         "glm",
+        "zcode",
+        "zcode-desktop",
+        "zcode-plan",
       ];
       if (deviceCodeProviders.includes(provider)) {
         setIsDeviceCode(true);
@@ -331,7 +334,7 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
             }
           : (provider === "kimi" || provider === "kimi-coding")
           ? { _kimiDeviceId: data._kimiDeviceId }
-          : provider === "glm"
+          : (provider === "glm" || provider === "zcode" || provider === "zcode-desktop" || provider === "zcode-plan")
           ? { _zcodePollToken: data._zcodePollToken }
           : null;
         startPolling(
