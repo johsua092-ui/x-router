@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="28" fill="#18181B"/>
+  <!-- Outer arena arches -->
+  <path d="M24 88C24 52.6538 52.6538 24 88 24" stroke="#FF5722" stroke-width="8" stroke-linecap="round"/>
+  <path d="M40 88C40 61.4903 61.4903 40 88 40" stroke="#FF8A65" stroke-width="8" stroke-linecap="round"/>
+  <path d="M56 88C56 70.3269 70.3269 56 88 56" stroke="#FFCCBC" stroke-width="8" stroke-linecap="round"/>
+  <!-- Central core glow -->
+  <circle cx="88" cy="88" r="16" fill="#FF5722"/>
+  <circle cx="88" cy="88" r="8" fill="#FFFFFF"/>
+  <path d="M24 100H104" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+</svg>

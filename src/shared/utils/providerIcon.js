@@ -19,6 +19,12 @@ const ICON_ALIASES = {
   "yuanbao-web": "yuanbao-web",
   "duckduckgo-web": "duckduckgo-web",
   "notion-web": "notion-web",
+  "arena-ai": "arena-ai",
+  arena: "arena-ai",
+  lmsys: "arena-ai",
+  zcode: "zcode",
+  "zcode-desktop": "zcode",
+  "zcode-plan": "zcode",
 };
 
 const TYPE_PREFIX_ALIASES = {

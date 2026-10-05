@@ -14,6 +14,8 @@ import { OpenCodeGoExecutor } from "./opencode-go.js";
 import { OpenCodeZenExecutor } from "./opencode-zen.js";
 import { GrokCliExecutor } from "./grok-cli.js";
 import { DeepSeekWebExecutor } from "./deepseek-web.js";
+import { ArenaAIExecutor } from "./arena-ai.js";
+import { ZCodeExecutor } from "./zcode.js";
 import { GeminiWebExecutor } from "./gemini-web.js";
 import { KimiWebExecutor } from "./kimi-web.js";
 import { OllamaLocalExecutor } from "./ollama-local.js";
@@ -53,6 +55,13 @@ const executors = {
   "deepseek-web": new DeepSeekWebExecutor(),
   dsw: new DeepSeekWebExecutor(),
   "deepseek-cookie": new DeepSeekWebExecutor(),
+  "arena-ai": new ArenaAIExecutor(),
+  arena: new ArenaAIExecutor(),
+  lmsys: new ArenaAIExecutor(),
+  "arena-web": new ArenaAIExecutor(),
+  zcode: new ZCodeExecutor(),
+  "zcode-desktop": new ZCodeExecutor(),
+  "zcode-plan": new ZCodeExecutor(),
   "gemini-web": new GeminiWebExecutor(),
   gweb: new GeminiWebExecutor(),
   "gemini-cookie": new GeminiWebExecutor(),
@@ -100,6 +109,8 @@ export { CodexExecutor } from "./codex.js";
 export { CursorExecutor } from "./cursor.js";
 export { VertexExecutor } from "./vertex.js";
 export { DefaultExecutor } from "./default.js";
+export { ArenaAIExecutor } from "./arena-ai.js";
+export { ZCodeExecutor } from "./zcode.js";
 export { OpenCodeExecutor } from "./opencode.js";
 export { OpenCodeGoExecutor } from "./opencode-go.js";
 export { OpenCodeZenExecutor } from "./opencode-zen.js";

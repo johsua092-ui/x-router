@@ -1,0 +1,36 @@
+export default {
+  id: "zcode",
+  priority: 146,
+  alias: "zcode",
+  aliases: ["zcode-desktop", "zcode-plan", "zai-zcode"],
+  uiAlias: "zcode",
+  display: {
+    name: "ZCode (Z.ai)",
+    icon: "terminal",
+    color: "#3B82F6",
+    textIcon: "ZCD",
+    website: "https://zcode.z.ai",
+    notice: {
+      apiKeyUrl: "https://zcode.z.ai",
+    },
+  },
+  category: "oauth",
+  authType: "apikey",
+  authModes: ["apikey", "oauth"],
+  authHint: "Paste your zcodeJwtToken from ZCode or click Login to authenticate via Z.ai CLI OAuth",
+  transport: {
+    baseUrl: "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
+    format: "anthropic",
+    authType: "token",
+  },
+  models: [
+    { id: "GLM-5.3", name: "GLM-5.3 (ZCode)" },
+    { id: "GLM-5.3-Flash", name: "GLM-5.3 Flash (ZCode Start Plan)" },
+    { id: "GLM-5.2", name: "GLM-5.2 (ZCode Start Plan)" },
+    { id: "GLM-5-Turbo", name: "GLM-5 Turbo (ZCode Start Plan)" },
+    { id: "GLM-4.7", name: "GLM-4.7 (ZCode)" },
+    { id: "GLM-4.7-Flash", name: "GLM-4.7 Flash (ZCode)" },
+    { id: "codegeex-4", name: "CodeGeeX 4 (ZCode)" },
+  ],
+  passthroughModels: true,
+};
