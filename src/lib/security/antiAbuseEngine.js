@@ -3,27 +3,26 @@ import { getClientIp } from "@/lib/auth/loginLimiter";
 
 /**
  * ============================================================================
- * X ROUTER MILITARY-GRADE ZERO-ABUSE FORTRESS ENGINE (TITANIUM EDITION)
+ * X ROUTER TITANIUM FORTRESS ANTI-ABUSE ENGINE (V4 - ZERO-BYPASS)
  * ============================================================================
- * 1. Self-Hosted Native Visual Anti-Bot SVG CAPTCHA (HMAC Signed, zero 3rd party)
- * 2. Adaptive Proof-of-Work (Dynamic Difficulty 4 to 5 based on IP reputation)
- * 3. Physical Device Hardware Attestation (Canvas 2D + WebGL + AudioContext)
- * 4. Anti-Airplane Mode & Anti-VPN Lockout (Persistent hardware binding)
- * 5. Headless Automation Detection (WebDriver, SwiftShader, llvmpipe virtual GPUs)
- * 6. Global Anti-Blitz Voucher Pacing (Stops botnets from draining pools)
- * 7. 4-Attempt Progressive IP Lockout Jail (15m, 1h, 24h escalating bans)
- * 8. IPv6 Subnet /64 Normalization & Concurrency Mutex Locks
- * 9. Single-Use Nonce & Signature Replay Defense
+ * 1. Visual Dynamic Math Evaluation CAPTCHA (OCR-Proof, HMAC Signed)
+ * 2. IPv4 /24 Subnet & IPv6 /48 Subnet Normalization (Blocks Mobile Airplane Mode)
+ * 3. Deep Hardware Attestation (Canvas 2D + WebGL GPU + AudioContext DSP)
+ * 4. Adaptive Proof-of-Work (Dynamic Difficulty 4-5 based on IP strikes)
+ * 5. Headless Automation Killer (WebDriver & Virtual GPU SwiftShader/llvmpipe block)
+ * 6. Global Anti-Blitz Voucher Pacing (2000ms debounce per pool)
+ * 7. 3-Strike Escalating IP Lockout Jail (15m, 1h, 24h)
+ * 8. Concurrency Mutex Locks & Single-Use Nonce Replay Guards
  * ============================================================================
  */
 
-const CAPTCHA_SECRET = process.env.JWT_SECRET || "xrouter-military-captcha-secret-key";
+const CAPTCHA_SECRET = process.env.JWT_SECRET || "xrouter-titanium-captcha-secret-key";
 
 // State stores in memory
-const requestWindows = new Map();     // ip -> { count, resetTime, lastReqTime }
-const ipLockouts = new Map();         // ip -> { strikes, lockedUntil }
+const requestWindows = new Map();     // subnet -> { count, resetTime, lastReqTime }
+const ipLockouts = new Map();         // subnet -> { strikes, lockedUntil }
 const inFlightLocks = new Set();      // lock keys for concurrency mutex
-const activeChallenges = new Map();   // token -> { ip, issuedAt, salt, difficulty, consumed }
+const activeChallenges = new Map();   // token -> { subnet, issuedAt, salt, difficulty, consumed }
 const usedNonces = new Set();         // replay cache of used PoW nonces
 const usedCaptchaTokens = new Set();  // replay cache of solved CAPTCHAs
 
@@ -40,14 +39,27 @@ setInterval(() => {
   if (usedCaptchaTokens.size > 50000) usedCaptchaTokens.clear();
 }, CLEANUP_INTERVAL_MS);
 
-/** Normalize IPv6 to /64 subnet */
+/**
+ * Normalize IP address to subnet:
+ * - IPv4: /24 subnet (e.g. 180.254.74.37 -> 180.254.74.0/24)
+ *   Blocks Airplane Mode (mode pesawat) IP rotation from the same mobile tower!
+ * - IPv6: /48 subnet (blocks rotating across trillions of IPv6 addresses)
+ */
 export function normalizeClientIp(rawIp) {
   if (!rawIp) return "127.0.0.1";
   let ip = String(rawIp).trim();
   if (ip.startsWith("::ffff:")) ip = ip.slice(7);
+
+  // IPv6: Normalize to /48
   if (ip.includes(":")) {
     const parts = ip.split(":");
-    return parts.slice(0, 4).join(":") + "::/64";
+    return parts.slice(0, 3).join(":") + "::/48";
+  }
+
+  // IPv4: Normalize to /24 (Blocks mobile carrier airplane-mode hop)
+  const parts = ip.split(".");
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
   }
   return ip;
 }
@@ -56,28 +68,28 @@ export function isInternalSocket(ip) {
   return ip === "127.0.0.1" || ip === "::1" || ip === "localhost";
 }
 
-/** Rate throttle per IP */
-export function verifyNetworkThrottle(ip) {
+/** Rate throttle per Subnet */
+export function verifyNetworkThrottle(subnet) {
   const now = Date.now();
 
-  const lock = ipLockouts.get(ip);
+  const lock = ipLockouts.get(subnet);
   if (lock && lock.lockedUntil && now < lock.lockedUntil) {
     const minutesLeft = Math.ceil((lock.lockedUntil - now) / 60000);
     return {
       allowed: false,
       status: 429,
       code: "IP_LOCKOUT",
-      error: `IP address suspended due to repeated verification failures. Retry in ${minutesLeft} minute(s).`,
+      error: `Network subnet suspended due to repeated verification failures. Retry in ${minutesLeft} minute(s).`,
     };
   }
 
-  const rec = requestWindows.get(ip);
+  const rec = requestWindows.get(subnet);
   if (!rec || now - rec.resetTime > 60000) {
-    requestWindows.set(ip, { count: 1, resetTime: now, lastReqTime: now });
+    requestWindows.set(subnet, { count: 1, resetTime: now, lastReqTime: now });
   } else {
     // Minimum 1000ms gap between consecutive attempts
     if (now - rec.lastReqTime < 1000) {
-      recordFailure(ip);
+      recordFailure(subnet);
       return {
         allowed: false,
         status: 429,
@@ -88,14 +100,14 @@ export function verifyNetworkThrottle(ip) {
     rec.lastReqTime = now;
     rec.count += 1;
 
-    // Max 5 requests per 60 seconds per IP
+    // Max 5 requests per 60 seconds per Subnet
     if (rec.count > 5) {
-      recordFailure(ip);
+      recordFailure(subnet);
       return {
         allowed: false,
         status: 429,
         code: "RATE_LIMIT_EXCEEDED",
-        error: "Rate limit exceeded. Maximum 5 attempts per minute.",
+        error: "Rate limit exceeded for this network subnet. Maximum 5 attempts per minute.",
       };
     }
   }
@@ -113,10 +125,10 @@ export function releaseConcurrencyLock(key) {
   inFlightLocks.delete(key);
 }
 
-export function recordFailure(ip) {
-  if (!ip) return;
+export function recordFailure(subnet) {
+  if (!subnet) return;
   const now = Date.now();
-  const lock = ipLockouts.get(ip) || { strikes: 0, lockedUntil: 0 };
+  const lock = ipLockouts.get(subnet) || { strikes: 0, lockedUntil: 0 };
   lock.strikes += 1;
 
   if (lock.strikes >= 8) {
@@ -126,12 +138,12 @@ export function recordFailure(ip) {
   } else if (lock.strikes >= 3) {
     lock.lockedUntil = now + 15 * 60 * 1000;      // 15m ban
   }
-  ipLockouts.set(ip, lock);
+  ipLockouts.set(subnet, lock);
 }
 
-export function recordSuccess(ip) {
-  if (!ip) return;
-  ipLockouts.delete(ip);
+export function recordSuccess(subnet) {
+  if (!subnet) return;
+  ipLockouts.delete(subnet);
 }
 
 /** Check browser identity and block headless scraping frameworks */
@@ -168,38 +180,39 @@ export function verifyClientFingerprint(request) {
 }
 
 /**
- * Generate Visual Anti-Bot SVG CAPTCHA (Clean & Fast)
- * Eliminates character ambiguity (no 0/O, no 1/I).
+ * Generate Visual Dynamic Math CAPTCHA
+ * Defeats standard OCR bots because the model must read AND evaluate the math.
+ * (e.g. 7 + 5 = ? -> user must type 12, not "7+5").
  */
 export function generateVisualCaptcha() {
-  const charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-  let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += charset[Math.floor(Math.random() * charset.length)];
-  }
+  const a = Math.floor(Math.random() * 9) + 2; // 2 to 10
+  const b = Math.floor(Math.random() * 8) + 1; // 1 to 8
+  const op = Math.random() > 0.4 ? "+" : (a > b ? "-" : "+");
+  const answer = op === "+" ? a + b : a - b;
+  const question = `${a} ${op} ${b} = ?`;
 
   const salt = crypto.randomBytes(8).toString("hex");
   const ts = Date.now();
-  const sig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${code}:${salt}:${ts}`).digest("hex");
+  const sig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${answer}:${salt}:${ts}`).digest("hex");
   const token = `${ts}.${salt}.${sig}`;
 
-  const width = 120;
+  const width = 130;
   const height = 40;
   let noise = "";
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     const x1 = Math.floor(Math.random() * width);
     const y1 = Math.floor(Math.random() * height);
     const x2 = Math.floor(Math.random() * width);
     const y2 = Math.floor(Math.random() * height);
-    noise += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E56A4A" stroke-width="1.2" stroke-opacity="0.35" />`;
+    noise += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E56A4A" stroke-width="1.2" stroke-opacity="0.38" />`;
   }
 
-  const glyphs = code.split("").map((ch, idx) => {
-    const x = 14 + idx * 25 + (Math.random() * 4 - 2);
-    const y = 28 + (Math.random() * 4 - 2);
-    const rot = Math.floor(Math.random() * 22) - 11;
-    const color = idx % 2 === 0 ? "#FFFFFF" : "#E56A4A";
-    return `<text x="${x}" y="${y}" fill="${color}" font-size="20" font-weight="bold" font-family="monospace" letter-spacing="2" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
+  const glyphs = question.split("").map((ch, idx) => {
+    const x = 12 + idx * 16 + (Math.random() * 2 - 1);
+    const y = 27 + (Math.random() * 4 - 2);
+    const rot = Math.floor(Math.random() * 18) - 9;
+    const color = ch === "?" ? "#E56A4A" : (idx % 2 === 0 ? "#FFFFFF" : "#E0E0E0");
+    return `<text x="${x}" y="${y}" fill="${color}" font-size="19" font-weight="bold" font-family="monospace" transform="rotate(${rot}, ${x}, ${y})">${ch}</text>`;
   }).join("");
 
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#141416;border-radius:4px;border:1px solid #28282c;user-select:none;">${noise}${glyphs}</svg>`;
@@ -211,10 +224,10 @@ export function generateVisualCaptcha() {
 }
 
 /**
- * Verify Visual CAPTCHA token and user answer
+ * Verify Visual Math CAPTCHA answer
  */
-export function verifyVisualCaptcha(inputCode, token) {
-  if (!inputCode || !token) return false;
+export function verifyVisualCaptcha(inputAnswer, token) {
+  if (inputAnswer === undefined || inputAnswer === null || !token) return false;
   if (usedCaptchaTokens.has(token)) return false;
 
   const parts = String(token).split(".");
@@ -223,7 +236,7 @@ export function verifyVisualCaptcha(inputCode, token) {
   const ts = parseInt(tsStr, 10);
   if (Date.now() - ts > 10 * 60 * 1000) return false; // 10 min TTL
 
-  const normalizedInput = String(inputCode).trim().toUpperCase();
+  const normalizedInput = String(inputAnswer).trim();
   const expectedSig = crypto.createHmac("sha256", CAPTCHA_SECRET).update(`${normalizedInput}:${salt}:${ts}`).digest("hex");
   if (expectedSig.length !== sig.length) return false;
 
@@ -236,17 +249,16 @@ export function verifyVisualCaptcha(inputCode, token) {
 
 /**
  * Mint Proof-of-Work Challenge with Adaptive Scaling
- * Default difficulty = 4 (0000 prefix). Scales to 5 if IP has strikes.
  */
-export function mintChallenge(ip) {
+export function mintChallenge(subnet) {
   const challengeToken = crypto.randomBytes(24).toString("hex");
   const salt = crypto.randomBytes(10).toString("hex");
-  const strikes = ipLockouts.get(ip)?.strikes || 0;
+  const strikes = ipLockouts.get(subnet)?.strikes || 0;
   const difficulty = strikes >= 1 ? 5 : 4;
   const now = Date.now();
 
   activeChallenges.set(challengeToken, {
-    ip,
+    subnet,
     salt,
     difficulty,
     issuedAt: now,
@@ -269,16 +281,16 @@ export function mintChallenge(ip) {
  * Strict Submission Integrity Verification:
  * ZERO-BYPASS: PoW token, nonce, visual CAPTCHA, and hardware attestation are mandatory.
  */
-export function verifySubmissionIntegrity(body, ip) {
+export function verifySubmissionIntegrity(body, subnet) {
   // 1. Honeypot check
   if (body.website || body.email_confirm || body.hp_field || body.company_url || body.phone_number) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 403, error: "Automated honeypot trigger detected." };
   }
 
   // 2. Headless automation & Virtual GPU detection
   if (body._isWebdriver === true) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 403, error: "Automated browser controller (WebDriver) detected." };
   }
 
@@ -290,28 +302,28 @@ export function verifySubmissionIntegrity(body, ip) {
     gpuRenderer.includes("vmware") ||
     gpuRenderer.includes("software rasterizer")
   ) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 403, error: "Virtual / Headless GPU execution environment rejected." };
   }
 
-  // 3. Visual CAPTCHA verification (Mandatory)
+  // 3. Visual Math CAPTCHA verification (Mandatory)
   const captchaCode = body.captchaCode;
   const captchaToken = body.captchaToken;
   if (!captchaCode || !captchaToken) {
-    recordFailure(ip);
-    return { valid: false, status: 400, error: "Verification code (CAPTCHA) is required." };
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Visual math verification answer is required." };
   }
 
   if (!verifyVisualCaptcha(captchaCode, captchaToken)) {
-    recordFailure(ip);
-    return { valid: false, status: 400, error: "Incorrect verification code. Please try again." };
+    recordFailure(subnet);
+    return { valid: false, status: 400, error: "Incorrect math verification calculation. Please calculate the result." };
   }
 
   // 4. Proof-of-Work is MANDATORY — Cannot be omitted
   const token = body._challengeToken;
   const nonce = body._powNonce;
   if (!token || nonce === undefined || nonce === null) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return {
       valid: false,
       status: 400,
@@ -321,11 +333,11 @@ export function verifySubmissionIntegrity(body, ip) {
 
   const challenge = activeChallenges.get(token);
   if (!challenge) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Challenge token invalid or expired. Refresh page." };
   }
   if (challenge.consumed) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Challenge token already consumed." };
   }
 
@@ -333,14 +345,14 @@ export function verifySubmissionIntegrity(body, ip) {
   const hash = crypto.createHash("sha256").update(challenge.salt + String(nonce)).digest("hex");
   const requiredPrefix = "0".repeat(challenge.difficulty);
   if (!hash.startsWith(requiredPrefix)) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Cryptographic PoW solution invalid." };
   }
 
   // 6. Anti-Replay: Nonce check
   const nonceKey = `${challenge.salt}:${nonce}`;
   if (usedNonces.has(nonceKey)) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Replay attack detected." };
   }
   usedNonces.add(nonceKey);
@@ -352,13 +364,13 @@ export function verifySubmissionIntegrity(body, ip) {
   // 7. Timing verification: minimum 800ms human delay
   const clientTime = Number(body._t);
   if (!clientTime || Date.now() - clientTime < 800) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 429, error: "Action performed impossibly fast. Verification failed." };
   }
 
   // 8. Human interactive proof requirement
   if (!body.interactiveProof) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Human telemetry interaction proof missing." };
   }
 
@@ -366,11 +378,11 @@ export function verifySubmissionIntegrity(body, ip) {
   const dfp = String(body._dfp || "").trim();
   const hfp = String(body._hfp || "").trim();
   if (!dfp || dfp.length < 8) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Client environment integrity verification missing." };
   }
   if (!hfp || hfp.length < 8) {
-    recordFailure(ip);
+    recordFailure(subnet);
     return { valid: false, status: 400, error: "Physical hardware attestation missing." };
   }
 

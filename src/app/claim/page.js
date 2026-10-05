@@ -431,10 +431,10 @@ export default function ClaimPage() {
                     </div>
                   </div>
 
-                  {/* VISUAL CAPTCHA FIELD */}
+                  {/* VISUAL MATH CAPTCHA FIELD */}
                   <div className="pt-1 space-y-1.5">
                     <label className="text-[10.5px] font-mono text-[#888] flex items-center justify-between">
-                      <span>HUMAN VERIFICATION CODE</span>
+                      <span>SOLVE MATH EQUATION</span>
                       <button
                         type="button"
                         onClick={loadSecurityChallenge}
@@ -443,7 +443,7 @@ export default function ClaimPage() {
                         Refresh Image
                       </button>
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full">
                       {captchaImage ? (
                         <div
                           className="shrink-0"
@@ -452,15 +452,15 @@ export default function ClaimPage() {
                           }}
                         />
                       ) : (
-                        <div className="h-10 w-[120px] rounded bg-[#141416] border border-[#2a2a2e] animate-pulse" />
+                        <div className="h-10 w-[130px] rounded bg-[#141416] border border-[#2a2a2e] animate-pulse" />
                       )}
                       <input
                         type="text"
-                        maxLength={4}
-                        placeholder="4-digit code"
+                        maxLength={6}
+                        placeholder="Answer (e.g. 15)"
                         value={captchaInput}
-                        onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-                        className="flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3.5 py-2 font-mono text-xs tracking-widest text-white uppercase placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
+                        onChange={(e) => setCaptchaInput(e.target.value)}
+                        className="w-full min-w-0 flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3 py-2 font-mono text-xs tracking-wider text-white placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -535,11 +535,6 @@ export default function ClaimPage() {
                   <span>{error}</span>
                 </div>
               )}
-
-              <div className="pt-2 border-t border-[#1c1c1f] flex items-center justify-between text-[10px] font-mono text-[#555]">
-                <span>TITANIUM FORTRESS ACTIVE</span>
-                <span>PHYSICAL HW ATTESTED &bull; ANTI-BLITZ PACED</span>
-              </div>
             </div>
           ) : (
             /* Result Panel */
