@@ -235,8 +235,9 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
     return { success: false, error: "VOUCHER_EXHAUSTED", message: "This voucher has reached its maximum claim limit." };
   }
 
-  // Check 45: Per-Voucher Per-IP Uniqueness check
+  // Check 45: Per-Voucher Per-IP & Carrier Subnet (/16) Uniqueness check
   if (clientIp) {
+    // 1. Direct / Subnet exact match check
     const existingFromIp = db.get(
       `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp = ? LIMIT 1`,
       [voucher.id, clientIp]
@@ -247,6 +248,25 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
         error: "ALREADY_CLAIMED_IP",
         message: "This voucher has already been claimed from your IP network.",
       };
+    }
+
+    // 2. Carrier-level /16 subnet check (Blocks mobile phone Airplane Mode rotation)
+    // Mobile carriers assign IPs dynamically within the same /16 pool (e.g. 41.92.x.x, 180.254.x.x).
+    const ipStr = String(clientIp).split("/")[0].trim();
+    const parts = ipStr.split(".");
+    if (parts.length === 4 && parts[0] !== "127") {
+      const carrierPrefix = `${parts[0]}.${parts[1]}.%`;
+      const existingFromCarrier = db.get(
+        `SELECT id FROM voucherClaims WHERE voucherId = ? AND clientIp LIKE ? LIMIT 1`,
+        [voucher.id, carrierPrefix]
+      );
+      if (existingFromCarrier) {
+        return {
+          success: false,
+          error: "ALREADY_CLAIMED_CARRIER",
+          message: "Jaringan operator seluler atau subnet ini sudah pernah mengklaim voucher ini. Trik ganti IP / mode pesawat diblokir.",
+        };
+      }
     }
 
     // Check 47: Global 24-Hour IP Limit (max 3 claims per 24 hours per IP)

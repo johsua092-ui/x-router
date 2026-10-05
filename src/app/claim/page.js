@@ -201,15 +201,43 @@ export default function ClaimPage() {
     }
   };
 
+  const saveClaimReceipt = (data) => {
+    try {
+      if (!data || !data.apiKey) return;
+      const receipt = JSON.stringify(data);
+      if (typeof window !== "undefined") {
+        const key = data.code ? data.code.toUpperCase() : "BANSOS";
+        localStorage.setItem("xr_receipt_" + key, receipt);
+        sessionStorage.setItem("xr_receipt_" + key, receipt);
+        document.cookie = `xr_v_${key}=1; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     pageLoadTime.current = Date.now();
-    loadSecurityChallenge();
 
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const c = p.get("code");
+      const key = c ? c.toUpperCase() : "BANSOS";
       if (c) setCode(c.toUpperCase());
+
+      // Check persistent multi-store vault
+      try {
+        const saved = localStorage.getItem("xr_receipt_" + key) || sessionStorage.getItem("xr_receipt_" + key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.apiKey) {
+            setResult(parsed);
+            setLoadingFaucet(false);
+            return;
+          }
+        }
+      } catch {}
     }
+
+    loadSecurityChallenge();
   }, []);
 
   // Client-Side Proof-of-Work Solver (SHA-256)
@@ -275,6 +303,7 @@ export default function ClaimPage() {
         loadSecurityChallenge();
         setCaptchaInput("");
       } else {
+        saveClaimReceipt(data);
         setResult(data);
       }
     } catch (err) {
@@ -327,6 +356,7 @@ export default function ClaimPage() {
         loadSecurityChallenge();
         setCaptchaInput("");
       } else {
+        saveClaimReceipt(data);
         setResult(data);
       }
     } catch (err) {
