@@ -222,11 +222,12 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
   // Anti-Blitz Global Cooldown (prevents botnets from draining vouchers in 1 second)
   const nowMs = Date.now();
   const lastClaim = voucherLastClaimTime.get(voucher.id);
-  if (lastClaim && nowMs - lastClaim < 2000) {
+  if (lastClaim && nowMs - lastClaim < 10000) {
+    const waitSec = Math.ceil((10000 - (nowMs - lastClaim)) / 1000);
     return {
       success: false,
       error: "VOUCHER_PACED",
-      message: "High voucher demand detected. Please wait 2 seconds and retry.",
+      message: `Trafik klaim sedang padat. Harap tunggu ${waitSec} detik untuk klaim berikutnya.`,
     };
   }
 

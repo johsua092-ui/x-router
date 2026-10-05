@@ -69,35 +69,11 @@ export default function ClaimPage() {
       }
       deviceFpRef.current = "dfp_" + Math.abs(envHash).toString(16);
 
-      // 2. Hardware Canvas 2D Font Rasterizer Hash
-      let canvasSig = "";
-      try {
-        const c = document.createElement("canvas");
-        c.width = 160;
-        c.height = 36;
-        const ctx = c.getContext("2d");
-        if (ctx) {
-          ctx.textBaseline = "top";
-          ctx.font = "14px 'Arial', sans-serif";
-          ctx.fillStyle = "#f60";
-          ctx.fillRect(100, 1, 50, 18);
-          ctx.fillStyle = "#069";
-          ctx.fillText("XR.HwSignature!@#$", 2, 12);
-          ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-          ctx.fillText("XR.HwSignature!@#$", 4, 14);
-          const dataUrl = c.toDataURL();
-          let cHash = 0;
-          for (let i = 0; i < dataUrl.length; i++) {
-            cHash = (cHash << 5) - cHash + dataUrl.charCodeAt(i);
-            cHash |= 0;
-          }
-          canvasSig = Math.abs(cHash).toString(16);
-        }
-      } catch {}
-
-      // 3. Hardware WebGL GPU Renderer & Vendor Extraction
+      // 2. STABLE Hardware WebGL GPU & Silicon Parameters (Brave/Incognito/Airplane resistant)
       let gpuVendor = "";
       let gpuRenderer = "";
+      let extCount = 0;
+      let maxAnisotropy = 0;
       try {
         const c = document.createElement("canvas");
         const gl = c.getContext("webgl") || c.getContext("experimental-webgl");
@@ -105,49 +81,26 @@ export default function ClaimPage() {
           const dbg = gl.getExtension("WEBGL_debug_renderer_info");
           gpuVendor = dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
           gpuRenderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+          extCount = (gl.getSupportedExtensions() || []).length;
+          const aniso = gl.getExtension("EXT_texture_filter_anisotropic") || gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic");
+          maxAnisotropy = aniso ? gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 0;
         }
       } catch {}
 
-      // 4. OfflineAudioContext Frequency Hardware Response Hash
-      let audioSig = "";
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const actx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
-          const osc = actx.createOscillator();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(10000, actx.currentTime);
-          const comp = actx.createDynamicsCompressor();
-          comp.threshold.setValueAtTime(-50, actx.currentTime);
-          comp.knee.setValueAtTime(40, actx.currentTime);
-          comp.ratio.setValueAtTime(12, actx.currentTime);
-          comp.reduction.setValueAtTime(-20, actx.currentTime);
-          comp.attack.setValueAtTime(0, actx.currentTime);
-          comp.release.setValueAtTime(0.25, actx.currentTime);
-          osc.connect(comp);
-          comp.connect(actx.destination);
-          osc.start(0);
-          actx.startRendering().then((buf) => {
-            const data = buf.getChannelData(0);
-            let aHash = 0;
-            for (let i = 4500; i < 5000; i++) {
-              aHash += Math.abs(data[i]);
-            }
-            audioSig = Math.floor(aHash * 1000000).toString(16);
-          }).catch(() => {});
-        }
-      } catch {}
-
-      // 5. Combine into immutable physical hardware fingerprint
+      // 3. Immutable Hardware Invariant Signature:
+      // Even if user changes IP, turns on Airplane Mode, or uses Incognito/Private tabs,
+      // the physical GPU model, core count, RAM, touch sensors, and screen geometry remain IDENTICAL!
       const hardwareRaw = [
-        canvasSig,
         gpuVendor,
         gpuRenderer,
-        audioSig,
+        extCount,
+        maxAnisotropy,
         nav.hardwareConcurrency || 4,
         nav.deviceMemory || 4,
+        nav.maxTouchPoints || 0,
         screen.width + "x" + screen.height + "x" + screen.colorDepth,
-      ].join("~~~");
+        screen.pixelDepth || 24,
+      ].join("|||");
 
       let hwHash = 0;
       for (let i = 0; i < hardwareRaw.length; i++) {
