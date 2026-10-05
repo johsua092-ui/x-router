@@ -1,3 +1,5 @@
+import { CLAUDE_API_HEADERS } from "../shared.js";
+
 export default {
   id: "zcode",
   priority: 146,
@@ -12,16 +14,27 @@ export default {
     website: "https://zcode.z.ai",
     notice: {
       apiKeyUrl: "https://zcode.z.ai",
+      signupUrl: "https://chat.z.ai",
     },
   },
   category: "oauth",
+  authModes: ["oauth", "apikey"],
+  hasOAuth: true,
+  oauth: {
+    providerId: "zai",
+    cliInitUrl: "https://zcode.z.ai/api/v1/oauth/cli/init",
+    cliPollUrl: "https://zcode.z.ai/api/v1/oauth/cli/poll",
+    businessLoginUrl: "https://api.z.ai/api/auth/z/login",
+    apiBaseUrl: "https://api.z.ai",
+    planApiKeyName: "zcode-api-key",
+  },
   authType: "apikey",
-  authModes: ["apikey", "oauth"],
   authHint: "Paste your zcodeJwtToken from ZCode or click Login to authenticate via Z.ai CLI OAuth",
   transport: {
-    baseUrl: "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
+    baseUrl: "https://zcode.z.ai/api/v1/zcode-plan/anthropic/v1/messages",
     format: "anthropic",
     authType: "token",
+    headers: { ...CLAUDE_API_HEADERS },
   },
   models: [
     { id: "GLM-5.3", name: "GLM-5.3 (ZCode)" },
@@ -32,5 +45,6 @@ export default {
     { id: "GLM-4.7-Flash", name: "GLM-4.7 Flash (ZCode)" },
     { id: "codegeex-4", name: "CodeGeeX 4 (ZCode)" },
   ],
+  serviceKinds: ["llm", "webSearch"],
   passthroughModels: true,
 };
