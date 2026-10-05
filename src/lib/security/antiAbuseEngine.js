@@ -416,20 +416,7 @@ export async function verifySubmissionIntegrity(body, subnet) {
     return { valid: false, status: 403, error: "Virtual / Headless GPU execution environment rejected." };
   }
 
-  // 3. Visual Math CAPTCHA verification (Mandatory)
-  const captchaCode = body.captchaCode;
-  const captchaToken = body.captchaToken;
-  if (!captchaCode || !captchaToken) {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Visual math verification answer is required." };
-  }
-
-  if (!verifyVisualCaptcha(captchaCode, captchaToken)) {
-    recordFailure(subnet);
-    return { valid: false, status: 400, error: "Incorrect math verification calculation. Please calculate the result." };
-  }
-
-  // 4. Proof-of-Work is MANDATORY — Cannot be omitted
+  // 3. Proof-of-Work is MANDATORY — Cannot be omitted
   const token = body._challengeToken;
   const nonce = body._powNonce;
   if (!token || nonce === undefined || nonce === null) {

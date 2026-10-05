@@ -367,8 +367,8 @@ export default function ClaimPage() {
   // 1-Click Instant Faucet Provisioning
   const handleInstantProvision = async (e) => {
     if (e && !e.isTrusted) return; // Block synthetic click bots
-    if (!captchaInput.trim()) {
-      setError("Please enter the math calculation result.");
+    if (!turnstileToken) {
+      setError("Harap selesaikan verifikasi Cloudflare Turnstile terlebih dahulu.");
       return;
     }
 
@@ -397,9 +397,7 @@ export default function ClaimPage() {
           trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
-          captchaCode: captchaInput.trim(),
-          captchaToken: captchaToken,
-          turnstileToken: turnstileToken || "turnstile_pass",
+          turnstileToken: turnstileToken,
           interactiveProof: true,
         }),
       });
@@ -409,7 +407,6 @@ export default function ClaimPage() {
         setError(data.error || "Failed to provision API key");
         // Reload challenge on failure
         loadSecurityChallenge();
-        setCaptchaInput("");
       } else {
         saveClaimReceipt(data);
         setResult(data);
@@ -427,8 +424,8 @@ export default function ClaimPage() {
     e.preventDefault();
     if (!e.isTrusted) return; // Block synthetic click bots
     if (!code.trim()) return;
-    if (!captchaInput.trim()) {
-      setError("Please enter the math calculation result.");
+    if (!turnstileToken) {
+      setError("Harap selesaikan verifikasi Cloudflare Turnstile terlebih dahulu.");
       return;
     }
 
@@ -457,9 +454,7 @@ export default function ClaimPage() {
           trajectory: trajectoryRef.current,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
-          captchaCode: captchaInput.trim(),
-          captchaToken: captchaToken,
-          turnstileToken: turnstileToken || "turnstile_pass",
+          turnstileToken: turnstileToken,
           interactiveProof: true,
         }),
       });
@@ -468,7 +463,6 @@ export default function ClaimPage() {
       if (!res.ok) {
         setError(data.error || "Failed to redeem pass code");
         loadSecurityChallenge();
-        setCaptchaInput("");
       } else {
         saveClaimReceipt(data);
         setResult(data);
@@ -575,40 +569,6 @@ export default function ClaimPage() {
                     </div>
                   </div>
 
-                  {/* VISUAL MATH CAPTCHA FIELD */}
-                  <div className="pt-1 space-y-1.5">
-                    <label className="text-[10.5px] font-mono text-[#888] flex items-center justify-between">
-                      <span>SOLVE MATH EQUATION</span>
-                      <button
-                        type="button"
-                        onClick={loadSecurityChallenge}
-                        className="text-[#E56A4A] hover:underline text-[10px] cursor-pointer"
-                      >
-                        Refresh Image
-                      </button>
-                    </label>
-                    <div className="flex items-center gap-2 w-full">
-                      {captchaImage ? (
-                        <div
-                          className="shrink-0"
-                          dangerouslySetInnerHTML={{
-                            __html: `<img src="${captchaImage}" alt="Captcha" class="h-10 rounded border border-[#2a2a2e]" />`,
-                          }}
-                        />
-                      ) : (
-                        <div className="h-10 w-[130px] rounded bg-[#141416] border border-[#2a2a2e] animate-pulse" />
-                      )}
-                      <input
-                        type="text"
-                        maxLength={6}
-                        placeholder="Answer (e.g. 15)"
-                        value={captchaInput}
-                        onChange={(e) => setCaptchaInput(e.target.value)}
-                        className="w-full min-w-0 flex-1 rounded-[5px] border border-[#2c2c30] bg-[#141416] px-3 py-2 font-mono text-xs tracking-wider text-white placeholder:text-[#555] focus:border-[#E56A4A] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
                   {/* CLOUDFLARE TURNSTILE SHIELD */}
                   <div className="pt-2 flex flex-col items-center justify-center">
                     <div
@@ -620,7 +580,7 @@ export default function ClaimPage() {
                   <button
                     type="button"
                     onClick={handleInstantProvision}
-                    disabled={loading || !captchaInput.trim()}
+                    disabled={loading || !turnstileToken}
                     className="w-full rounded-[5px] bg-[#E56A4A] py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#d45838] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
                   >
                     {loading ? (
@@ -673,7 +633,7 @@ export default function ClaimPage() {
                   />
                   <button
                     type="submit"
-                    disabled={loading || !code.trim() || !captchaInput.trim()}
+                    disabled={loading || !code.trim() || !turnstileToken}
                     className="rounded-[5px] border border-[#333] bg-[#1a1a1e] px-4 py-2 text-xs font-semibold text-white hover:border-[#E56A4A] hover:bg-[#222] disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
                   >
                     Redeem Code
