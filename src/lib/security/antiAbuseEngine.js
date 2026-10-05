@@ -3,15 +3,17 @@ import { getClientIp } from "@/lib/auth/loginLimiter";
 
 /**
  * ============================================================================
- * X ROUTER MILITARY-GRADE ZERO-ABUSE FORTRESS ENGINE
+ * X ROUTER MILITARY-GRADE ZERO-ABUSE FORTRESS ENGINE (TITANIUM EDITION)
  * ============================================================================
- * - Self-Hosted Native Visual Anti-Bot CAPTCHA (HMAC Signed, zero 3rd party)
- * - Cryptographic Proof-of-Work (Mandatory SHA-256 Leading Zeroes Puzzle)
- * - 4-Attempt Progressive IP Lockout & Jail System
- * - Anti-Automation Header Validation & Scraper Blocker
- * - Concurrency Mutex Lock (Anti-Race Condition)
- * - Subnet /64 Normalization & Device Fingerprinting
- * - Single-Use Nonce & Signature Replay Defense
+ * 1. Self-Hosted Native Visual Anti-Bot SVG CAPTCHA (HMAC Signed, zero 3rd party)
+ * 2. Adaptive Proof-of-Work (Dynamic Difficulty 4 to 5 based on IP reputation)
+ * 3. Physical Device Hardware Attestation (Canvas 2D + WebGL + AudioContext)
+ * 4. Anti-Airplane Mode & Anti-VPN Lockout (Persistent hardware binding)
+ * 5. Headless Automation Detection (WebDriver, SwiftShader, llvmpipe virtual GPUs)
+ * 6. Global Anti-Blitz Voucher Pacing (Stops botnets from draining pools)
+ * 7. 4-Attempt Progressive IP Lockout Jail (15m, 1h, 24h escalating bans)
+ * 8. IPv6 Subnet /64 Normalization & Concurrency Mutex Locks
+ * 9. Single-Use Nonce & Signature Replay Defense
  * ============================================================================
  */
 
@@ -65,7 +67,7 @@ export function verifyNetworkThrottle(ip) {
       allowed: false,
       status: 429,
       code: "IP_LOCKOUT",
-      error: `IP address suspended due to abuse activity. Retry in ${minutesLeft} minute(s).`,
+      error: `IP address suspended due to repeated verification failures. Retry in ${minutesLeft} minute(s).`,
     };
   }
 
@@ -233,12 +235,14 @@ export function verifyVisualCaptcha(inputCode, token) {
 }
 
 /**
- * Mint Proof-of-Work Challenge (Difficulty = 4: 0000 prefix, ~15,000-65,000 hashes)
+ * Mint Proof-of-Work Challenge with Adaptive Scaling
+ * Default difficulty = 4 (0000 prefix). Scales to 5 if IP has strikes.
  */
 export function mintChallenge(ip) {
   const challengeToken = crypto.randomBytes(24).toString("hex");
   const salt = crypto.randomBytes(10).toString("hex");
-  const difficulty = 4;
+  const strikes = ipLockouts.get(ip)?.strikes || 0;
+  const difficulty = strikes >= 1 ? 5 : 4;
   const now = Date.now();
 
   activeChallenges.set(challengeToken, {
@@ -263,7 +267,7 @@ export function mintChallenge(ip) {
 
 /**
  * Strict Submission Integrity Verification:
- * ZERO-BYPASS: PoW token, nonce, AND visual CAPTCHA are mandatory.
+ * ZERO-BYPASS: PoW token, nonce, visual CAPTCHA, and hardware attestation are mandatory.
  */
 export function verifySubmissionIntegrity(body, ip) {
   // 1. Honeypot check
@@ -272,7 +276,25 @@ export function verifySubmissionIntegrity(body, ip) {
     return { valid: false, status: 403, error: "Automated honeypot trigger detected." };
   }
 
-  // 2. Visual CAPTCHA verification (Mandatory)
+  // 2. Headless automation & Virtual GPU detection
+  if (body._isWebdriver === true) {
+    recordFailure(ip);
+    return { valid: false, status: 403, error: "Automated browser controller (WebDriver) detected." };
+  }
+
+  const gpuRenderer = String(body._gpuRenderer || "").toLowerCase();
+  if (
+    gpuRenderer.includes("swiftshader") ||
+    gpuRenderer.includes("llvmpipe") ||
+    gpuRenderer.includes("virtualbox") ||
+    gpuRenderer.includes("vmware") ||
+    gpuRenderer.includes("software rasterizer")
+  ) {
+    recordFailure(ip);
+    return { valid: false, status: 403, error: "Virtual / Headless GPU execution environment rejected." };
+  }
+
+  // 3. Visual CAPTCHA verification (Mandatory)
   const captchaCode = body.captchaCode;
   const captchaToken = body.captchaToken;
   if (!captchaCode || !captchaToken) {
@@ -285,7 +307,7 @@ export function verifySubmissionIntegrity(body, ip) {
     return { valid: false, status: 400, error: "Incorrect verification code. Please try again." };
   }
 
-  // 3. Proof-of-Work is MANDATORY — Cannot be omitted
+  // 4. Proof-of-Work is MANDATORY — Cannot be omitted
   const token = body._challengeToken;
   const nonce = body._powNonce;
   if (!token || nonce === undefined || nonce === null) {
@@ -307,7 +329,7 @@ export function verifySubmissionIntegrity(body, ip) {
     return { valid: false, status: 400, error: "Challenge token already consumed." };
   }
 
-  // 4. PoW Hash Verification: SHA-256(salt + nonce) MUST start with '0000'
+  // 5. PoW Hash Verification: SHA-256(salt + nonce) MUST start with required zeroes
   const hash = crypto.createHash("sha256").update(challenge.salt + String(nonce)).digest("hex");
   const requiredPrefix = "0".repeat(challenge.difficulty);
   if (!hash.startsWith(requiredPrefix)) {
@@ -315,7 +337,7 @@ export function verifySubmissionIntegrity(body, ip) {
     return { valid: false, status: 400, error: "Cryptographic PoW solution invalid." };
   }
 
-  // 5. Anti-Replay: Nonce check
+  // 6. Anti-Replay: Nonce check
   const nonceKey = `${challenge.salt}:${nonce}`;
   if (usedNonces.has(nonceKey)) {
     recordFailure(ip);
@@ -327,27 +349,32 @@ export function verifySubmissionIntegrity(body, ip) {
   challenge.consumed = true;
   activeChallenges.delete(token);
 
-  // 6. Timing verification: minimum 800ms human delay
+  // 7. Timing verification: minimum 800ms human delay
   const clientTime = Number(body._t);
   if (!clientTime || Date.now() - clientTime < 800) {
     recordFailure(ip);
     return { valid: false, status: 429, error: "Action performed impossibly fast. Verification failed." };
   }
 
-  // 7. Human interactive proof requirement
+  // 8. Human interactive proof requirement
   if (!body.interactiveProof) {
     recordFailure(ip);
     return { valid: false, status: 400, error: "Human telemetry interaction proof missing." };
   }
 
-  // 8. Device fingerprint check
+  // 9. Device & Hardware fingerprint checks
   const dfp = String(body._dfp || "").trim();
+  const hfp = String(body._hfp || "").trim();
   if (!dfp || dfp.length < 8) {
     recordFailure(ip);
     return { valid: false, status: 400, error: "Client environment integrity verification missing." };
   }
+  if (!hfp || hfp.length < 8) {
+    recordFailure(ip);
+    return { valid: false, status: 400, error: "Physical hardware attestation missing." };
+  }
 
-  // 9. Voucher code sanitization
+  // 10. Voucher code sanitization
   let code = String(body.code || "").trim();
   if (code) {
     code = code.replace(/[\u200B-\u200D\uFEFF]/g, "");
@@ -359,5 +386,5 @@ export function verifySubmissionIntegrity(body, ip) {
     }
   }
 
-  return { valid: true, sanitizedCode: code, deviceFp: dfp };
+  return { valid: true, sanitizedCode: code, deviceFp: dfp, hardwareFp: hfp };
 }

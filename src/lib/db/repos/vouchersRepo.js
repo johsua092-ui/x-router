@@ -205,6 +205,8 @@ export async function getVoucherClaims(voucherId = null) {
  * Check 59: Downstream Gateway Integration Check
  * Check 60: Real-time Telemetry & Audit Trail Logging
  */
+const voucherLastClaimTime = new Map(); // voucherId -> timestamp
+
 export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareFp = "") {
   const db = await getAdapter();
   const voucher = await getVoucherByCode(code);
@@ -215,6 +217,17 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
   }
   if (!voucher.isActive) {
     return { success: false, error: "VOUCHER_INACTIVE", message: "This voucher has been disabled by the administrator." };
+  }
+
+  // Anti-Blitz Global Cooldown (prevents botnets from draining vouchers in 1 second)
+  const nowMs = Date.now();
+  const lastClaim = voucherLastClaimTime.get(voucher.id);
+  if (lastClaim && nowMs - lastClaim < 2000) {
+    return {
+      success: false,
+      error: "VOUCHER_PACED",
+      message: "High voucher demand detected. Please wait 2 seconds and retry.",
+    };
   }
 
   // Check 44: Total capacity check
@@ -344,6 +357,8 @@ export async function claimVoucher(code, clientIp = "", deviceFp = "", hardwareF
       [now, voucher.id]
     );
   });
+
+  voucherLastClaimTime.set(voucher.id, Date.now());
 
   return {
     success: true,

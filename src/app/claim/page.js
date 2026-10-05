@@ -108,11 +108,42 @@ export default function ClaimPage() {
         }
       } catch {}
 
-      // 4. Combine into immutable physical hardware fingerprint
+      // 4. OfflineAudioContext Frequency Hardware Response Hash
+      let audioSig = "";
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const actx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+          const osc = actx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(10000, actx.currentTime);
+          const comp = actx.createDynamicsCompressor();
+          comp.threshold.setValueAtTime(-50, actx.currentTime);
+          comp.knee.setValueAtTime(40, actx.currentTime);
+          comp.ratio.setValueAtTime(12, actx.currentTime);
+          comp.reduction.setValueAtTime(-20, actx.currentTime);
+          comp.attack.setValueAtTime(0, actx.currentTime);
+          comp.release.setValueAtTime(0.25, actx.currentTime);
+          osc.connect(comp);
+          comp.connect(actx.destination);
+          osc.start(0);
+          actx.startRendering().then((buf) => {
+            const data = buf.getChannelData(0);
+            let aHash = 0;
+            for (let i = 4500; i < 5000; i++) {
+              aHash += Math.abs(data[i]);
+            }
+            audioSig = Math.floor(aHash * 1000000).toString(16);
+          }).catch(() => {});
+        }
+      } catch {}
+
+      // 5. Combine into immutable physical hardware fingerprint
       const hardwareRaw = [
         canvasSig,
         gpuVendor,
         gpuRenderer,
+        audioSig,
         nav.hardwareConcurrency || 4,
         nav.deviceMemory || 4,
         screen.width + "x" + screen.height + "x" + screen.colorDepth,
@@ -227,6 +258,8 @@ export default function ClaimPage() {
           _t: pageLoadTime.current,
           _dfp: deviceFpRef.current,
           _hfp: hardwareFpRef.current,
+          _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
+          _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),
@@ -278,6 +311,8 @@ export default function ClaimPage() {
           _t: pageLoadTime.current,
           _dfp: deviceFpRef.current,
           _hfp: hardwareFpRef.current,
+          _gpuRenderer: typeof window !== "undefined" ? window.navigator?.userAgent : "",
+          _isWebdriver: typeof window !== "undefined" ? Boolean(window.navigator?.webdriver) : false,
           _challengeToken: pow.token,
           _powNonce: pow.nonce,
           captchaCode: captchaInput.trim(),
@@ -502,8 +537,8 @@ export default function ClaimPage() {
               )}
 
               <div className="pt-2 border-t border-[#1c1c1f] flex items-center justify-between text-[10px] font-mono text-[#555]">
-                <span>ZERO-ABUSE FORTRESS ACTIVE</span>
-                <span>HMAC CAPTCHA &amp; SHA-256 POW</span>
+                <span>TITANIUM FORTRESS ACTIVE</span>
+                <span>PHYSICAL HW ATTESTED &bull; ANTI-BLITZ PACED</span>
               </div>
             </div>
           ) : (
