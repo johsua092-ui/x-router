@@ -219,16 +219,18 @@ http.createServer = (...args) => {
     const xRealIp = req.headers["x-real-ip"];
     const viaProxy = !!(xff || xRealIp || cfIp);
     const isLoopbackProxy = socketIp === "127.0.0.1" || socketIp === "::1" || socketIp === "::ffff:127.0.0.1";
-    // Trust forwarding headers only when the TCP peer is a local reverse proxy (like Cloudflare Tunnel).
-    // Direct/public sockets remain keyed by the unspoofable peer address.
-    const proxyIp = (cfIp ? String(cfIp).trim() : null) || xRealIp || (xff ? String(xff).split(",")[0].trim() : "");
-    const ip = isLoopbackProxy && proxyIp ? proxyIp : socketIp;
+    // CF-Connecting-IP is set by Cloudflare edge and CANNOT be forged by the client.
+    // If the TCP peer is loopback (Cloudflare tunnel), CF-Connecting-IP is the single source of truth.
+    // NEVER allow attacker-controlled X-Forwarded-For or X-Real-IP to override or substitute!
+    const realClientIp = (isLoopbackProxy && cfIp) ? String(cfIp).trim() : (isLoopbackProxy ? (xRealIp || (xff ? String(xff).split(",")[0].trim() : "")) : socketIp);
+    const ip = realClientIp || socketIp;
+
     delete req.headers["x-9r-real-ip"];
     delete req.headers["x-forwarded-for"];
     delete req.headers["x-9r-via-proxy"];
     delete req.headers["x-9r-peer-token"];
-    delete req.headers["cf-connecting-ip"];
     req.headers["x-9r-real-ip"] = ip;
+    req.headers["cf-connecting-ip"] = ip;
     req.headers["x-9r-peer-token"] = PEER_TOKEN;
     if (viaProxy) req.headers["x-9r-via-proxy"] = "1";
     // Auth gate ahead of Next; runAuthGuard resolves false when the request

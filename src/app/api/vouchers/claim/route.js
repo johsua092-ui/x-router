@@ -16,7 +16,8 @@ import {
 // GET /api/vouchers/claim -> checks if there is an active bansos pool, inspects specific code, and mints PoW challenge
 export async function GET(request) {
   try {
-    const rawIp = getClientIp(request) || "";
+    const cfIp = request.headers.get("cf-connecting-ip");
+    const rawIp = (cfIp && cfIp.trim()) ? cfIp.trim() : (getClientIp(request) || "");
     const ip = normalizeClientIp(rawIp);
 
     // Stage 1: Network throttle check
@@ -80,7 +81,8 @@ export async function GET(request) {
 
 // POST /api/vouchers/claim -> Bulletproof Anti-Abuse Protected Claim Handler
 export async function POST(request) {
-  const rawIp = getClientIp(request) || "";
+  const cfIp = request.headers.get("cf-connecting-ip");
+  const rawIp = (cfIp && cfIp.trim()) ? cfIp.trim() : (getClientIp(request) || "");
   const ip = normalizeClientIp(rawIp);
   const lockKey = `claim_lock:${ip}`;
   let hwLockKey = null;

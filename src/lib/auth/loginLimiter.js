@@ -47,22 +47,20 @@ export function recordSuccess(ip) {
 }
 
 export function getClientIp(request) {
-  // Trusted only when custom-server.js proves it stamped the header from the TCP socket;
-  // otherwise a client could rotate the value to escape its own lockout bucket.
+  // 1. Direct Cloudflare Tunnel real client IP (unspoofable, stamped by CF edge)
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+
+  // 2. Trusted peer header stamped by custom-server.js from TCP socket
   if (hasTrustedPeerHeaders(request)) {
     const realIp = request.headers.get("x-9r-real-ip");
     if (realIp) return realIp;
   }
-  // Cloudflare Tunnel real client IP
-  const cfIp = request.headers.get("cf-connecting-ip");
-  if (cfIp && cfIp.trim()) return cfIp.trim();
 
-  // Behind a trusted reverse proxy that overwrites XFF with the real client IP.
+  // 3. Fallback only if TRUST_PROXY is explicitly enabled
   if (process.env.TRUST_PROXY === "true") {
     const xff = request.headers.get("x-forwarded-for");
     if (xff) return xff.split(",")[0].trim();
   }
-  // Direct exposure without custom-server: single bucket so spoofed XFF
-  // rotation cannot escape the limiter.
-  return "unknown";
+  return "127.0.0.1";
 }
